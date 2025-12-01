@@ -1,8 +1,8 @@
 # Euchre Reasoning Arena
 
 ![Tests](https://github.com/estern1011/euchre-reasoning-arena/workflows/Tests/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-98.14%25-brightgreen)
-![Tests](https://img.shields.io/badge/tests-165%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-98.01%25-brightgreen)
+![Tests](https://img.shields.io/badge/tests-177%20passing-brightgreen)
 
 An interactive playground for exploring, comparing, and evaluating AI strategic reasoning through the card game Euchre.
 
@@ -43,9 +43,9 @@ bun run test:ui
 ```
 
 **Current Test Coverage:**
-- ✅ **165 tests passing**
-- ✅ **98.1% statement coverage**
-- ✅ **94.8% branch coverage**
+- ✅ **177 tests passing**
+- ✅ **98.0% statement coverage**
+- ✅ **94.1% branch coverage**
 - ✅ **100% function coverage**
 
 ## Production
@@ -97,19 +97,19 @@ The game engine implements full Euchre rules with comprehensive test coverage:
 
 **Core Features:**
 - ✅ Trump selection (2-round bidding with order-up and call-trump)
-- ✅ Going alone support
+- ✅ Going alone support with partner skip logic
 - ✅ Dealer discard after ordering up
 - ✅ Bower logic (right bower, left bower)
 - ✅ Suit-following validation
-- ✅ Trick winner determination
-- ✅ Score calculation
+- ✅ Trick winner determination (3-card and 4-card tricks)
+- ✅ Proper Euchre scoring (march, euchre, going alone bonuses)
 - ✅ Custom error types with detailed messages
 
 **Test Coverage:**
-- 165 tests across 5 test suites
+- 177 tests across 5 test suites
 - Tests for all game phases: trump selection → playing → complete
-- Edge case coverage for invalid plays, corrupt state, etc.
-- 98.1% statement coverage, 100% function coverage
+- Edge case coverage for invalid plays, corrupt state, going alone scenarios
+- 98.0% statement coverage, 100% function coverage
 
 ## Contributing
 

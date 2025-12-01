@@ -395,11 +395,18 @@ export function getLeadSuit(trick: Trick, trump: Suit): Suit | null {
 
 /**
  * Determine the winner of a completed trick
+ * When going alone, trick has 3 plays instead of 4
  */
-export function determineTrickWinner(trick: Trick, trump: Suit): Position {
-  if (trick.plays.length !== PLAYERS_PER_GAME) {
+export function determineTrickWinner(
+  trick: Trick,
+  trump: Suit,
+  goingAlone: boolean = false,
+): Position {
+  const expectedPlays = goingAlone ? 3 : PLAYERS_PER_GAME;
+
+  if (trick.plays.length !== expectedPlays) {
     throw new InvalidGameStateError(
-      "Trick must have 4 plays to determine winner",
+      `Trick must have ${expectedPlays} plays to determine winner (${goingAlone ? "going alone" : "normal"})`,
     );
   }
 
@@ -482,6 +489,7 @@ export function validatePlay(
 
 /**
  * Get the next player to play in the current trick
+ * Skips partner if someone is going alone
  */
 export function getNextPlayer(game: GameState): Position {
   const trick = game.currentTrick;
@@ -491,10 +499,34 @@ export function getNextPlayer(game: GameState): Position {
     return trick.leadPlayer;
   }
 
-  // Otherwise, go clockwise from lead player
+  // Find the partner of the player going alone (if any)
+  let partnerToSkip: Position | undefined;
+  if (game.goingAlone) {
+    const goingAlonePlayer = game.players.find(
+      (p) => p.position === game.goingAlone,
+    );
+    if (goingAlonePlayer) {
+      const partner = game.players.find(
+        (p) =>
+          p.team === goingAlonePlayer.team && p.position !== game.goingAlone,
+      );
+      partnerToSkip = partner?.position;
+    }
+  }
+
+  // Get all players in clockwise order starting from lead
   const leadIndex = positionToIndex(trick.leadPlayer);
-  const nextIndex = (leadIndex + trick.plays.length) % PLAYERS_PER_GAME;
-  return indexToPosition(nextIndex);
+  const allPlayers: Position[] = [];
+  for (let i = 0; i < PLAYERS_PER_GAME; i++) {
+    const pos = indexToPosition((leadIndex + i) % PLAYERS_PER_GAME);
+    // Skip the partner if going alone
+    if (!partnerToSkip || pos !== partnerToSkip) {
+      allPlayers.push(pos);
+    }
+  }
+
+  // Return the player at index equal to number of plays already made
+  return allPlayers[trick.plays.length];
 }
 
 /**
@@ -537,9 +569,15 @@ export function playCard(
   let currentTrick = updatedTrick;
   let scores = game.scores;
 
-  if (updatedTrick.plays.length === PLAYERS_PER_GAME) {
+  const expectedPlays = game.goingAlone ? 3 : PLAYERS_PER_GAME;
+
+  if (updatedTrick.plays.length === expectedPlays) {
     // Determine winner
-    const winner = determineTrickWinner(updatedTrick, game.trump!);
+    const winner = determineTrickWinner(
+      updatedTrick,
+      game.trump!,
+      !!game.goingAlone,
+    );
     updatedTrick.winner = winner;
 
     // Add to completed tricks
@@ -554,7 +592,7 @@ export function playCard(
 
     // Update scores if all tricks are complete
     if (completedTricks.length === TRICKS_PER_GAME) {
-      scores = calculateScores(game.players, completedTricks);
+      scores = calculateScores(game, completedTricks);
     }
   }
 
@@ -568,24 +606,70 @@ export function playCard(
 }
 
 /**
- * Calculate scores based on completed tricks
+ * Calculate scores based on completed tricks using proper Euchre scoring rules
  * Returns [team0Score, team1Score]
+ *
+ * Scoring rules:
+ * - Makers win 3-4 tricks: 1 point
+ * - Makers march (all 5 tricks): 2 points
+ * - Makers march while going alone: 4 points
+ * - Defenders euchre makers (makers win <3 tricks): 2 points
  */
 export function calculateScores(
-  players: Player[],
+  game: GameState,
   completedTricks: Trick[],
 ): [number, number] {
+  if (!game.trumpCaller) {
+    throw new InvalidGameStateError("No trump caller set");
+  }
+
+  // Find trump caller's team
+  const trumpCallerPlayer = game.players.find(
+    (p) => p.position === game.trumpCaller,
+  );
+  if (!trumpCallerPlayer) {
+    throw new InvalidGameStateError("Trump caller not found");
+  }
+
+  const makersTeam = trumpCallerPlayer.team;
+  const defendersTeam = (makersTeam === 0 ? 1 : 0) as 0 | 1;
+
+  // Count tricks won by each team
   const team0Tricks = completedTricks.filter((trick) => {
-    const winner = players.find((p) => p.position === trick.winner);
+    const winner = game.players.find((p) => p.position === trick.winner);
     return winner?.team === 0;
   }).length;
 
   const team1Tricks = TRICKS_PER_GAME - team0Tricks;
 
-  // Simple scoring: 1 point per trick won (majority)
-  // In real Euchre, scoring is more complex, but this works for demo
-  const team0Score = team0Tricks >= 3 ? 1 : 0;
-  const team1Score = team1Tricks >= 3 ? 1 : 0;
+  const makersTricks = makersTeam === 0 ? team0Tricks : team1Tricks;
+  const isGoingAlone = game.goingAlone === game.trumpCaller;
+
+  let team0Score = 0;
+  let team1Score = 0;
+
+  if (makersTricks >= 3) {
+    // Makers won
+    let points = 1; // Default: 3-4 tricks
+
+    if (makersTricks === 5) {
+      // March
+      points = isGoingAlone ? 4 : 2;
+    }
+
+    if (makersTeam === 0) {
+      team0Score = points;
+    } else {
+      team1Score = points;
+    }
+  } else {
+    // Defenders euchred the makers
+    if (defendersTeam === 0) {
+      team0Score = 2;
+    } else {
+      team1Score = 2;
+    }
+  }
 
   return [team0Score, team1Score];
 }

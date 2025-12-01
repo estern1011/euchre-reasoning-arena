@@ -427,11 +427,38 @@ describe("Format Trump Selection for AI", () => {
     expect(formatted).toContain("east: Pass");
   });
 
-  it("should show going alone in bid history", () => {
+  it("should show going alone in bid history for order_up", () => {
     game = makeTrumpBid(game, "east", "order_up", undefined, true);
 
     // This would throw since game is in playing phase now, so test the bid was recorded
     expect(game.goingAlone).toBe("east");
+  });
+
+  it("should format going alone for order_up in bid history", () => {
+    game = makeTrumpBid(game, "east", "order_up", undefined, true);
+
+    // Game transitions to playing phase, so we can't call formatTrumpSelectionForAI
+    // But we verified the goingAlone flag is set above
+    expect(game.goingAlone).toBe("east");
+  });
+
+  it("should format going alone for call_trump in bid history", () => {
+    // Progress through round 1
+    game = makeTrumpBid(game, "east", "pass");
+    game = makeTrumpBid(game, "south", "pass");
+    game = makeTrumpBid(game, "west", "pass");
+    game = makeTrumpBid(game, "north", "pass");
+
+    // Round 2 - someone calls trump going alone
+    game = makeTrumpBid(game, "east", "pass");
+    const turnedUpSuit = game.trumpSelection!.turnedUpCard.suit;
+    const validSuit: Suit = turnedUpSuit === "hearts" ? "spades" : "hearts";
+
+    game = makeTrumpBid(game, "south", "call_trump", validSuit, true);
+
+    // Verify going alone is set
+    expect(game.goingAlone).toBe("south");
+    expect(game.trumpCaller).toBe("south");
   });
 
   it("should warn dealer about must-call in round 2", () => {

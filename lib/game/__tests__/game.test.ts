@@ -14,6 +14,7 @@ import {
   getWinningTeam,
   formatGameStateForAI,
 } from "../game";
+import { InvalidGameStateError } from "../errors";
 
 describe("Create New Game", () => {
   it("should create game with 4 players", () => {
@@ -197,6 +198,54 @@ describe("Determine Trick Winner", () => {
 
     expect(() => determineTrickWinner(trick, "hearts")).toThrow();
   });
+
+  it("should determine winner for 3-card trick when going alone", () => {
+    const trick: Trick = {
+      leadPlayer: "north",
+      plays: [
+        { player: "north", card: { rank: "10", suit: "spades" } },
+        { player: "east", card: { rank: "ace", suit: "spades" } }, // Highest spade
+        { player: "south", card: { rank: "king", suit: "spades" } },
+        // West skipped (partner of going alone player)
+      ],
+      winner: undefined,
+    };
+
+    expect(determineTrickWinner(trick, "hearts", true)).toBe("east");
+  });
+
+  it("should throw error for 4-card trick when expecting going alone", () => {
+    const trick: Trick = {
+      leadPlayer: "north",
+      plays: [
+        { player: "north", card: { rank: "ace", suit: "spades" } },
+        { player: "east", card: { rank: "9", suit: "hearts" } },
+        { player: "south", card: { rank: "king", suit: "spades" } },
+        { player: "west", card: { rank: "queen", suit: "spades" } },
+      ],
+      winner: undefined,
+    };
+
+    expect(() => determineTrickWinner(trick, "hearts", true)).toThrow(
+      InvalidGameStateError,
+    );
+  });
+
+  it("should throw error for 3-card trick when not going alone", () => {
+    const trick: Trick = {
+      leadPlayer: "north",
+      plays: [
+        { player: "north", card: { rank: "ace", suit: "spades" } },
+        { player: "east", card: { rank: "9", suit: "hearts" } },
+        { player: "south", card: { rank: "king", suit: "spades" } },
+      ],
+      winner: undefined,
+    };
+
+    expect(() => determineTrickWinner(trick, "hearts", false)).toThrow(
+      InvalidGameStateError,
+    );
+  });
 });
 
 describe("Validate Play", () => {
@@ -345,6 +394,53 @@ describe("Get Next Player", () => {
     ];
     expect(getNextPlayer(game)).toBe("west");
   });
+
+  it("should skip partner when going alone", () => {
+    game.goingAlone = "north"; // North going alone
+    game.currentTrick.leadPlayer = "east";
+    game.currentTrick.plays = [];
+
+    // Normal order: east -> south -> west -> north
+    // With north going alone, skip south (north's partner)
+    // Order becomes: east -> west -> north
+
+    expect(getNextPlayer(game)).toBe("east"); // Lead player
+
+    game.currentTrick.plays = [
+      { player: "east", card: game.players[1].hand[0] },
+    ];
+    expect(getNextPlayer(game)).toBe("west"); // Skip south (partner of north)
+
+    game.currentTrick.plays.push({
+      player: "west",
+      card: game.players[3].hand[0],
+    });
+    expect(getNextPlayer(game)).toBe("north"); // North goes last
+  });
+
+  it("should skip partner when going alone from different position", () => {
+    game.goingAlone = "east"; // East going alone
+    game.trumpCaller = "east";
+    game.currentTrick.leadPlayer = "north";
+    game.currentTrick.plays = [];
+
+    // Normal order: north -> east -> south -> west
+    // With east going alone, skip west (east's partner)
+    // Order becomes: north -> east -> south
+
+    expect(getNextPlayer(game)).toBe("north"); // Lead player
+
+    game.currentTrick.plays = [
+      { player: "north", card: game.players[0].hand[0] },
+    ];
+    expect(getNextPlayer(game)).toBe("east");
+
+    game.currentTrick.plays.push({
+      player: "east",
+      card: game.players[1].hand[0],
+    });
+    expect(getNextPlayer(game)).toBe("south"); // Skip west (partner)
+  });
 });
 
 describe("Play Card", () => {
@@ -432,8 +528,9 @@ describe("Play Card", () => {
 });
 
 describe("Calculate Scores", () => {
-  it("should award point to team winning majority", () => {
-    const players = createNewGame(["a", "b", "c", "d"]).players;
+  it("should award 1 point to makers winning 3-4 tricks", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "north"; // Team 0 called trump
 
     const tricks: Trick[] = [
       { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
@@ -443,41 +540,130 @@ describe("Calculate Scores", () => {
       { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
     ];
 
-    const scores = calculateScores(players, tricks);
+    const scores = calculateScores(game, tricks);
 
-    expect(scores).toEqual([1, 0]); // Team 0 won 3/5
+    expect(scores).toEqual([1, 0]); // Makers (Team 0) won 3/5 = 1 point
   });
 
-  it("should handle team 1 winning", () => {
-    const players = createNewGame(["a", "b", "c", "d"]).players;
-
-    const tricks: Trick[] = [
-      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
-      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
-      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
-      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
-      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
-    ];
-
-    const scores = calculateScores(players, tricks);
-
-    expect(scores).toEqual([0, 1]); // Team 1 won 4/5
-  });
-
-  it("should handle minimum winning tricks (3)", () => {
-    const players = createNewGame(["a", "b", "c", "d"]).players;
+  it("should award 2 points for march (all 5 tricks)", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "north"; // Team 0 called trump
 
     const tricks: Trick[] = [
       { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
       { leadPlayer: "north", plays: [], winner: "south" }, // Team 0
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
       { leadPlayer: "north", plays: [], winner: "south" }, // Team 0
-      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
-      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
     ];
 
-    const scores = calculateScores(players, tricks);
+    const scores = calculateScores(game, tricks);
 
-    expect(scores).toEqual([1, 0]); // Team 0 won exactly 3
+    expect(scores).toEqual([2, 0]); // March = 2 points
+  });
+
+  it("should award 4 points for going alone march", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "north"; // Team 0 called trump
+    game.goingAlone = "north"; // Going alone
+
+    const tricks: Trick[] = [
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
+    ];
+
+    const scores = calculateScores(game, tricks);
+
+    expect(scores).toEqual([4, 0]); // Going alone march = 4 points
+  });
+
+  it("should award 2 points to defenders for euchring makers", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "north"; // Team 0 called trump
+
+    const tricks: Trick[] = [
+      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0 (only 1 trick)
+    ];
+
+    const scores = calculateScores(game, tricks);
+
+    expect(scores).toEqual([0, 2]); // Makers euchred = defenders get 2 points
+  });
+
+  it("should handle team 1 as makers winning", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "east"; // Team 1 called trump
+
+    const tricks: Trick[] = [
+      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "east" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "north", plays: [], winner: "north" }, // Team 0
+    ];
+
+    const scores = calculateScores(game, tricks);
+
+    expect(scores).toEqual([0, 1]); // Team 1 (makers) won 4/5 = 1 point
+  });
+
+  it("should handle team 1 going alone march", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "east"; // Team 1 called trump
+    game.goingAlone = "east"; // Going alone
+
+    const tricks: Trick[] = [
+      { leadPlayer: "east", plays: [], winner: "east" }, // Team 1
+      { leadPlayer: "east", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "east", plays: [], winner: "east" }, // Team 1
+      { leadPlayer: "east", plays: [], winner: "west" }, // Team 1
+      { leadPlayer: "east", plays: [], winner: "east" }, // Team 1
+    ];
+
+    const scores = calculateScores(game, tricks);
+
+    expect(scores).toEqual([0, 4]); // Team 1 going alone march = 4 points
+  });
+
+  it("should throw error when trump caller is not set", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    delete game.trumpCaller; // Remove trump caller
+
+    const tricks: Trick[] = [
+      { leadPlayer: "north", plays: [], winner: "north" },
+      { leadPlayer: "north", plays: [], winner: "north" },
+      { leadPlayer: "north", plays: [], winner: "north" },
+      { leadPlayer: "north", plays: [], winner: "east" },
+      { leadPlayer: "north", plays: [], winner: "east" },
+    ];
+
+    expect(() => calculateScores(game, tricks)).toThrow(InvalidGameStateError);
+    expect(() => calculateScores(game, tricks)).toThrow("No trump caller set");
+  });
+
+  it("should throw error when trump caller player not found", () => {
+    const game = createGameWithTrump(["a", "b", "c", "d"], "hearts");
+    game.trumpCaller = "invalid" as any; // Invalid position
+
+    const tricks: Trick[] = [
+      { leadPlayer: "north", plays: [], winner: "north" },
+      { leadPlayer: "north", plays: [], winner: "north" },
+      { leadPlayer: "north", plays: [], winner: "north" },
+      { leadPlayer: "north", plays: [], winner: "east" },
+      { leadPlayer: "north", plays: [], winner: "east" },
+    ];
+
+    expect(() => calculateScores(game, tricks)).toThrow(InvalidGameStateError);
+    expect(() => calculateScores(game, tricks)).toThrow(
+      "Trump caller not found",
+    );
   });
 });
 
