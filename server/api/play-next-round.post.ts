@@ -60,10 +60,10 @@ export default defineEventHandler(
     let game = body.gameState;
     if (!game) {
       const modelIds = body.modelIds || [
-        "gpt-4",
-        "claude-3-5-sonnet",
-        "gemini-1.5-pro",
-        "gpt-3.5-turbo",
+        "gpt-4o",
+        "claude-3-5-sonnet-20241022",
+        "gemini-2.0-flash-exp",
+        "gpt-4o-mini",
       ];
       game = createNewGame(modelIds);
     }

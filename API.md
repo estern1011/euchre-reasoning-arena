@@ -63,7 +63,7 @@ Create a new Euchre game.
 **Request Body:**
 ```json
 {
-  "modelIds": ["gpt-4", "claude-3-5-sonnet-20241022", "gemini-1.5-pro", "gpt-3.5-turbo"],
+  "modelIds": ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-2.0-flash-exp", "gpt-4o-mini"],
   "dealer": "north"
 }
 ```
@@ -100,7 +100,7 @@ Advance the game by one round (trump selection or trick).
 ```json
 {
   "gameState": { ... },  // Current game state
-  "modelIds": ["gpt-4", "claude-3-5-sonnet-20241022", "gemini-1.5-pro", "gpt-3.5-turbo"]
+  "modelIds": ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-2.0-flash-exp", "gpt-4o-mini"]
 }
 ```
 
@@ -192,7 +192,7 @@ const newGameResponse = await fetch('http://localhost:3000/api/new-game', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    modelIds: ['gpt-4', 'claude-3-5-sonnet-20241022', 'gemini-1.5-pro', 'gpt-3.5-turbo']
+    modelIds: ['gpt-4o', 'claude-3-5-sonnet-20241022', 'gemini-2.0-flash-exp', 'gpt-4o-mini']
   })
 });
 let { gameState } = await newGameResponse.json();

@@ -18,7 +18,12 @@ interface NewGameResponse {
 export default defineEventHandler(async (event): Promise<NewGameResponse> => {
   const body = await readBody<NewGameRequest>(event);
 
-  const modelIds = body.modelIds || ["gpt-4", "claude-3-5-sonnet", "gemini-1.5-pro", "gpt-3.5-turbo"];
+  const modelIds = body.modelIds || [
+    "gpt-4o",
+    "claude-3-5-sonnet-20241022",
+    "gemini-2.0-flash-exp",
+    "gpt-4o-mini",
+  ];
   const dealer = body.dealer || "north";
 
   const gameState = createNewGame(modelIds, dealer);
