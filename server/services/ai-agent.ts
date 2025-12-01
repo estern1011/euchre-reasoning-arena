@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
-import { generateText } from "ai";
-import { createGateway } from "ai";
+import { createGateway, generateText } from "ai";
 import type {
   GameState,
   Position,

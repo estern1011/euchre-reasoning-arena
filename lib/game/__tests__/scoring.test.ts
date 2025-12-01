@@ -56,7 +56,6 @@ describe("calculateScores", () => {
 
 describe("determineTrickWinner validation", () => {
   it("throws when trick is incomplete", () => {
-    const game = createGameWithTrump(modelIds, "clubs");
     const incomplete = {
       leadPlayer: "north" as const,
       plays: [
