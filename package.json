@@ -14,6 +14,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.53",
+    "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/openai": "^2.0.75",
+    "ai": "^5.0.105",
     "nuxt": "^4.2.1",
     "vue": "^3.5.25",
     "vue-router": "^4.6.3"
