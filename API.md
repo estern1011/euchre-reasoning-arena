@@ -8,18 +8,18 @@
 npm install
 ```
 
-### 2. Configure API Keys
+### 2. Configure Vercel AI Gateway
 
-Copy `.env.example` to `.env` and add your API keys:
+Copy `.env.example` to `.env` and add your Vercel AI Gateway token:
 
 ```bash
 cp .env.example .env
 ```
 
-Required API keys:
-- `OPENAI_API_KEY` - For GPT models
-- `ANTHROPIC_API_KEY` - For Claude models  
-- `GOOGLE_GENERATIVE_AI_API_KEY` - For Gemini models
+Required environment variable:
+- `VERCEL_AI_GATEWAY_TOKEN` - Single token for access to all AI providers (OpenAI, Anthropic, Google, xAI)
+
+Get your token from: https://vercel.com/docs/ai-gateway
 
 ### 3. Start Development Server
 
@@ -35,19 +35,37 @@ Server runs on `http://localhost:3000`
 
 ### GET `/api/models`
 
-Get list of available AI models.
+Get list of available AI models via Vercel AI Gateway (fast and cheap models only).
 
 **Response:**
 ```json
 {
   "models": [
     {
-      "id": "gpt-4",
-      "name": "GPT-4",
-      "provider": "openai",
-      "description": "Most capable OpenAI model",
-      "speed": "slow",
-      "cost": "high"
+      "id": "google/gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash-Lite",
+      "provider": "google",
+      "description": "Cheapest and fastest - optimized for speed and cost-efficiency",
+      "speed": "fast",
+      "cost": "low",
+      "pricing": {
+        "input": "$0.10/M",
+        "output": "$0.40/M"
+      },
+      "contextWindow": "1M"
+    },
+    {
+      "id": "xai/grok-code-fast-1",
+      "name": "Grok Code Fast",
+      "provider": "xai",
+      "description": "Fast code-focused model from xAI",
+      "speed": "fast",
+      "cost": "low",
+      "pricing": {
+        "input": "$0.20/M",
+        "output": "$1.50/M"
+      },
+      "contextWindow": "256K"
     },
     ...
   ]
@@ -63,7 +81,12 @@ Create a new Euchre game.
 **Request Body:**
 ```json
 {
-  "modelIds": ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-2.0-flash-exp", "gpt-4o-mini"],
+  "modelIds": [
+    "google/gemini-2.5-flash-lite",
+    "xai/grok-code-fast-1",
+    "google/gemini-2.5-flash",
+    "anthropic/claude-haiku-4.5"
+  ],
   "dealer": "north"
 }
 ```
@@ -74,7 +97,32 @@ Create a new Euchre game.
   "gameState": {
     "id": "uuid",
     "phase": "trump_selection",
-    "players": [...],
+    "players": [
+      {
+        "position": "north",
+        "team": 0,
+        "modelId": "google/gemini-2.5-flash-lite",
+        "hand": [...]
+      },
+      {
+        "position": "east",
+        "team": 1,
+        "modelId": "xai/grok-code-fast-1",
+        "hand": [...]
+      },
+      {
+        "position": "south",
+        "team": 0,
+        "modelId": "google/gemini-2.5-flash",
+        "hand": [...]
+      },
+      {
+        "position": "west",
+        "team": 1,
+        "modelId": "anthropic/claude-haiku-4.5",
+        "hand": [...]
+      }
+    ],
     "trump": null,
     "dealer": "north",
     "trumpSelection": {
@@ -86,7 +134,7 @@ Create a new Euchre game.
     },
     ...
   },
-  "message": "New game created..."
+  "message": "New game created with google/gemini-2.5-flash-lite, xai/grok-code-fast-1, google/gemini-2.5-flash, anthropic/claude-haiku-4.5. Dealer: north. First bidder: east"
 }
 ```
 
@@ -99,8 +147,13 @@ Advance the game by one round (trump selection or trick).
 **Request Body:**
 ```json
 {
-  "gameState": { ... },  // Current game state
-  "modelIds": ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-2.0-flash-exp", "gpt-4o-mini"]
+  "gameState": { ... },  // Current game state (optional - creates new game if omitted)
+  "modelIds": [
+    "google/gemini-2.5-flash-lite",
+    "xai/grok-code-fast-1",
+    "google/gemini-2.5-flash",
+    "anthropic/claude-haiku-4.5"
+  ]  // Optional - only used if creating new game
 }
 ```
 
@@ -112,11 +165,11 @@ Advance the game by one round (trump selection or trick).
   "decisions": [
     {
       "player": "east",
-      "modelId": "gpt-4",
+      "modelId": "xai/grok-code-fast-1",
       "action": "order_up",
       "goingAlone": false,
-      "reasoning": "I have strong trump cards...",
-      "duration": 2341
+      "reasoning": "I have strong trump cards with the Jack and Ace of hearts...",
+      "duration": 1234
     },
     ...
   ],
@@ -149,6 +202,29 @@ Card Play Decision:
   duration: number;  // milliseconds
 }
 ```
+
+---
+
+## Available Models
+
+All models are accessed via Vercel AI Gateway. Model IDs include provider prefix.
+
+### Fast & Cheap Models (Default)
+
+| Model ID | Provider | Input Price | Output Price | Context | Speed |
+|----------|----------|-------------|--------------|---------|-------|
+| `google/gemini-2.5-flash-lite` | Google | $0.10/M | $0.40/M | 1M | Fast |
+| `xai/grok-code-fast-1` | xAI | $0.20/M | $1.50/M | 256K | Fast |
+| `google/gemini-2.5-flash` | Google | $0.30/M | $2.50/M | 1M | Fast |
+| `anthropic/claude-haiku-4.5` | Anthropic | $1.00/M | $5.00/M | 200K | Fast |
+
+### Additional Models
+
+| Model ID | Provider | Input Price | Output Price | Context | Speed |
+|----------|----------|-------------|--------------|---------|-------|
+| `openai/gpt-5` | OpenAI | $1.25/M | $10.00/M | 400K | Medium |
+| `google/gemini-3-pro-preview` | Google | $2.00/M | $12.00/M | 1M | Medium |
+| `anthropic/claude-sonnet-4.5` | Anthropic | $3.00/M | $15.00/M | 200K | Medium |
 
 ---
 
@@ -187,17 +263,27 @@ Card Play Decision:
 ## Example Usage
 
 ```javascript
-// 1. Create new game
+// 1. Get available models
+const modelsResponse = await fetch('http://localhost:3000/api/models');
+const { models } = await modelsResponse.json();
+console.log('Available models:', models);
+
+// 2. Create new game with fast & cheap models
 const newGameResponse = await fetch('http://localhost:3000/api/new-game', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    modelIds: ['gpt-4o', 'claude-3-5-sonnet-20241022', 'gemini-2.0-flash-exp', 'gpt-4o-mini']
+    modelIds: [
+      'google/gemini-2.5-flash-lite',
+      'xai/grok-code-fast-1',
+      'google/gemini-2.5-flash',
+      'anthropic/claude-haiku-4.5'
+    ]
   })
 });
 let { gameState } = await newGameResponse.json();
 
-// 2. Play through trump selection and tricks
+// 3. Play through trump selection and tricks
 while (gameState.phase !== 'complete') {
   const roundResponse = await fetch('http://localhost:3000/api/play-next-round', {
     method: 'POST',
@@ -209,11 +295,39 @@ while (gameState.phase !== 'complete') {
   gameState = result.gameState;
   
   console.log(result.roundSummary);
-  console.log('Decisions:', result.decisions);
+  console.log('AI Decisions:', result.decisions.map(d => ({
+    player: d.player,
+    model: d.modelId,
+    duration: `${d.duration}ms`,
+    reasoning: d.reasoning.substring(0, 100) + '...'
+  })));
 }
 
 console.log('Final scores:', gameState.scores);
+console.log('Winner:', gameState.scores[0] > gameState.scores[1] ? 'Team 0' : 'Team 1');
 ```
+
+---
+
+## Cost Estimation
+
+With default fast & cheap models, approximate costs per game:
+
+**Trump Selection (8 decisions):**
+- ~500 tokens input per decision
+- ~100 tokens output per decision
+- Total: ~4,000 input + ~800 output tokens
+- Cost: ~$0.0005
+
+**Playing 5 Tricks (15-20 decisions):**
+- ~800 tokens input per decision
+- ~100 tokens output per decision
+- Total: ~14,000 input + ~1,800 output tokens
+- Cost: ~$0.002
+
+**Total per game: ~$0.0025** (with cheapest models)
+
+Using all `google/gemini-2.5-flash-lite` would reduce cost to ~$0.0015 per game.
 
 ---
 
@@ -233,11 +347,20 @@ Error response format:
 }
 ```
 
+Common errors:
+- `VERCEL_AI_GATEWAY_TOKEN not set` - Missing environment variable
+- `Unknown model: xyz` - Invalid model ID (must include provider prefix)
+- `Invalid game state` - Malformed game state object
+
 ---
 
 ## Rate Limiting
 
 No rate limiting currently implemented. Use responsibly to avoid excessive AI API costs.
+
+Recommended limits:
+- Max 100 games/hour in development
+- Monitor your Vercel AI Gateway usage dashboard
 
 ---
 
@@ -249,6 +372,8 @@ No rate limiting currently implemented. Use responsibly to avoid excessive AI AP
 npm test
 ```
 
+Current coverage: 98.01% (177 passing tests)
+
 ### Type Checking
 
 ```bash
@@ -259,4 +384,10 @@ npm run typecheck
 
 ```bash
 npm run lint
+```
+
+### Build
+
+```bash
+npm run build
 ```

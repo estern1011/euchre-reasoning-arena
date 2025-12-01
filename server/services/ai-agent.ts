@@ -1,13 +1,20 @@
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
-import type { GameState, Position, Card, Suit, TrumpBidAction } from "~/lib/game/types";
-import { formatTrumpSelectionForAI, formatGameStateForAI } from "~/lib/game/game";
+import { createOpenAI } from "@ai-sdk/openai";
+import type {
+  GameState,
+  Position,
+  Card,
+  Suit,
+  TrumpBidAction,
+} from "~/lib/game/types";
+import {
+  formatTrumpSelectionForAI,
+  formatGameStateForAI,
+} from "~/lib/game/game";
 import { cardToString } from "~/lib/game/card";
 
 /**
- * AI Agent service for making game decisions
+ * AI Agent service for making game decisions via Vercel AI Gateway
  */
 
 export interface TrumpBidResult {
@@ -25,31 +32,49 @@ export interface CardPlayResult {
 }
 
 /**
- * Get the appropriate AI model provider
+ * Get the Vercel AI Gateway client
+ */
+function getGatewayClient() {
+  const token = process.env.VERCEL_AI_GATEWAY_TOKEN;
+  if (!token) {
+    throw new Error("VERCEL_AI_GATEWAY_TOKEN environment variable is not set");
+  }
+
+  return createOpenAI({
+    baseURL: "https://gateway.ai.cloudflare.com/v1",
+    apiKey: token,
+  });
+}
+
+/**
+ * Get the appropriate AI model from the gateway
+ * Model IDs include provider prefix (e.g., "google/gemini-2.5-flash-lite")
  */
 function getModel(modelId: string) {
-  if (modelId.startsWith("gpt")) {
-    return openai(modelId);
-  } else if (modelId.startsWith("claude")) {
-    return anthropic(modelId);
-  } else if (modelId.startsWith("gemini")) {
-    return google(modelId);
-  }
-  throw new Error(`Unknown model: ${modelId}`);
+  const gateway = getGatewayClient();
+  return gateway(modelId);
 }
 
 /**
  * Parse AI response for trump bidding
  */
-function parseTrumpBid(response: string, round: 1 | 2, turnedUpSuit: Suit): TrumpBidResult {
+function parseTrumpBid(
+  response: string,
+  round: 1 | 2,
+  turnedUpSuit: Suit,
+): TrumpBidResult {
   const lowerResponse = response.toLowerCase();
 
   // Check for going alone
-  const goingAlone = lowerResponse.includes("going alone") || lowerResponse.includes("go alone");
+  const goingAlone =
+    lowerResponse.includes("going alone") || lowerResponse.includes("go alone");
 
   // Round 1: order up or pass
   if (round === 1) {
-    if (lowerResponse.includes("order up") || lowerResponse.includes("order it up")) {
+    if (
+      lowerResponse.includes("order up") ||
+      lowerResponse.includes("order it up")
+    ) {
       return {
         action: "order_up",
         goingAlone,
@@ -99,22 +124,26 @@ function parseCardPlay(response: string, validCards: Card[]): Card {
     const rankNames: Record<string, string[]> = {
       "9": ["9", "nine"],
       "10": ["10", "ten"],
-      "jack": ["jack", "j"],
-      "queen": ["queen", "q"],
-      "king": ["king", "k"],
-      "ace": ["ace", "a"],
+      jack: ["jack", "j"],
+      queen: ["queen", "q"],
+      king: ["king", "k"],
+      ace: ["ace", "a"],
     };
 
     const suitNames: Record<Suit, string[]> = {
-      "hearts": ["hearts", "heart", "♥"],
-      "diamonds": ["diamonds", "diamond", "♦"],
-      "clubs": ["clubs", "club", "♣"],
-      "spades": ["spades", "spade", "♠"],
+      hearts: ["hearts", "heart", "♥"],
+      diamonds: ["diamonds", "diamond", "♦"],
+      clubs: ["clubs", "club", "♣"],
+      spades: ["spades", "spade", "♠"],
     };
 
     // Check if response mentions this card
-    const rankMatches = rankNames[card.rank].some(r => lowerResponse.includes(r));
-    const suitMatches = suitNames[card.suit].some(s => lowerResponse.includes(s));
+    const rankMatches = rankNames[card.rank].some((r) =>
+      lowerResponse.includes(r),
+    );
+    const suitMatches = suitNames[card.suit].some((s) =>
+      lowerResponse.includes(s),
+    );
 
     if (rankMatches && suitMatches) {
       return card;
@@ -132,14 +161,16 @@ export async function makeTrumpBidDecision(
   game: GameState,
   player: Position,
   modelId: string,
-  customPrompt?: string
+  customPrompt?: string,
 ): Promise<TrumpBidResult> {
   const startTime = Date.now();
 
   const model = getModel(modelId);
   const gameContext = formatTrumpSelectionForAI(game, player);
 
-  const systemPrompt = customPrompt || `You are an expert Euchre player. Analyze the game state carefully and make the best trump bidding decision.
+  const systemPrompt =
+    customPrompt ||
+    `You are an expert Euchre player. Analyze the game state carefully and make the best trump bidding decision.
 
 Key principles:
 - Order up or call trump when you have a strong hand (3+ trump cards, or multiple high cards)
@@ -166,7 +197,7 @@ Respond with your decision and reasoning. Format your final decision clearly:
   const result = parseTrumpBid(
     text,
     game.trumpSelection!.round,
-    game.trumpSelection!.turnedUpCard.suit
+    game.trumpSelection!.turnedUpCard.suit,
   );
 
   result.duration = duration;
@@ -180,15 +211,17 @@ export async function makeCardPlayDecision(
   game: GameState,
   player: Position,
   modelId: string,
-  customPrompt?: string
+  customPrompt?: string,
 ): Promise<CardPlayResult> {
   const startTime = Date.now();
 
   const model = getModel(modelId);
   const gameContext = formatGameStateForAI(game, player);
-  const playerObj = game.players.find(p => p.position === player)!;
+  const playerObj = game.players.find((p) => p.position === player)!;
 
-  const systemPrompt = customPrompt || `You are an expert Euchre player. Analyze the game state and select the best card to play.
+  const systemPrompt =
+    customPrompt ||
+    `You are an expert Euchre player. Analyze the game state and select the best card to play.
 
 Key principles:
 - Follow suit if you can (required)
