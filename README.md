@@ -1,9 +1,8 @@
 # Euchre Reasoning Arena
 
 ![Tests](https://github.com/estern1011/euchre-reasoning-arena/workflows/Tests/badge.svg)
-[![codecov](https://codecov.io/gh/estern1011/euchre-reasoning-arena/branch/main/graph/badge.svg)](https://codecov.io/gh/estern1011/euchre-reasoning-arena)
 ![Coverage](https://img.shields.io/badge/coverage-98.14%25-brightgreen)
-![Tests Passing](https://img.shields.io/badge/tests-165%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-165%20passing-brightgreen)
 
 An interactive playground for exploring, comparing, and evaluating AI strategic reasoning through the card game Euchre.
 
