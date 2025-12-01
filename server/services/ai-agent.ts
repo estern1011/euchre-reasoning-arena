@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { generateText } from "ai";
 import { createGateway } from "ai";
 import type {

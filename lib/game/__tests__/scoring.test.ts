@@ -4,20 +4,20 @@ import {
   determineTrickWinner,
   createGameWithTrump,
 } from "../game";
-import type { Trick } from "../types";
+import type { Trick, Position } from "../types";
 
 const modelIds: [string, string, string, string] = ["m1", "m2", "m3", "m4"];
 
-function trick(winner: string): Trick {
+function trick(winner: Position): Trick {
   return {
-    leadPlayer: winner as any,
+    leadPlayer: winner,
     plays: [
-      { player: winner as any, card: { suit: "hearts", rank: "ace" } },
+      { player: winner, card: { suit: "hearts", rank: "ace" } },
       { player: "north", card: { suit: "clubs", rank: "9" } },
       { player: "south", card: { suit: "spades", rank: "9" } },
       { player: "west", card: { suit: "diamonds", rank: "9" } },
     ],
-    winner: winner as any,
+    winner,
   };
 }
 
