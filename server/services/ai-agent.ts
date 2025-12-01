@@ -267,7 +267,7 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
   const attemptDecision = async (
     retryNote?: string,
   ): Promise<{ reasoning: string; card: Card }> => {
-    const messages = [
+    const messages: { role: "system" | "user"; content: string }[] = [
       { role: "system", content: systemPrompt },
       {
         role: "user",
