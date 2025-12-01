@@ -10,17 +10,18 @@ bun install
 
 ### 2. Configure API Keys
 
-Copy `.env.example` to `.env` and add your API keys:
+Copy `.env.example` to `.env` and add your Vercel AI Gateway API key:
 
 ```bash
 cp .env.example .env
 ```
 
-Required API keys (only configure the providers you want to use):
-- `OPENAI_API_KEY` - For GPT and o3 models (https://platform.openai.com/api-keys)
-- `ANTHROPIC_API_KEY` - For Claude models (https://console.anthropic.com/)
-- `GOOGLE_GENERATIVE_AI_API_KEY` - For Gemini models (https://makersuite.google.com/app/apikey)
-- `XAI_API_KEY` - For Grok models (https://console.x.ai/)
+Required environment variable:
+- `AI_GATEWAY_API_KEY` - Single API key for access to all AI providers (OpenAI, Anthropic, Google, xAI)
+
+Get your API key from: https://vercel.com/ai-gateway
+
+**Note:** Vercel AI Gateway manages provider access without needing individual API keys.
 
 ### 3. Start Development Server
 
