@@ -1,20 +1,22 @@
 import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
 import type {
   GameState,
   Position,
   Card,
   Suit,
   TrumpBidAction,
-} from "~/lib/game/types";
+} from "../../lib/game/types";
 import {
   formatTrumpSelectionForAI,
   formatGameStateForAI,
-} from "~/lib/game/game";
-import { cardToString } from "~/lib/game/card";
+} from "../../lib/game/game";
+import { cardToString } from "../../lib/game/card";
 
 /**
- * AI Agent service for making game decisions via Vercel AI Gateway
+ * AI Agent service for making game decisions
  */
 
 export interface TrumpBidResult {
@@ -32,27 +34,28 @@ export interface CardPlayResult {
 }
 
 /**
- * Get the Vercel AI Gateway client
- */
-function getGatewayClient() {
-  const token = process.env.VERCEL_AI_GATEWAY_TOKEN;
-  if (!token) {
-    throw new Error("VERCEL_AI_GATEWAY_TOKEN environment variable is not set");
-  }
-
-  return createOpenAI({
-    baseURL: "https://gateway.ai.cloudflare.com/v1",
-    apiKey: token,
-  });
-}
-
-/**
- * Get the appropriate AI model from the gateway
+ * Get the appropriate AI model provider
  * Model IDs include provider prefix (e.g., "google/gemini-2.5-flash-lite")
  */
 function getModel(modelId: string) {
-  const gateway = getGatewayClient();
-  return gateway(modelId);
+  // Extract provider and model name from format "provider/model-name"
+  const [provider, ...modelParts] = modelId.split("/");
+  const modelName = modelParts.join("/");
+
+  if (provider === "openai") {
+    return openai(modelName);
+  } else if (provider === "anthropic") {
+    return anthropic(modelName);
+  } else if (provider === "google") {
+    return google(modelName);
+  } else if (provider === "xai") {
+    // xAI uses OpenAI-compatible API
+    return openai(modelName, {
+      baseURL: "https://api.x.ai/v1",
+    });
+  }
+
+  throw new Error(`Unknown provider: ${provider}`);
 }
 
 /**
@@ -190,7 +193,6 @@ Respond with your decision and reasoning. Format your final decision clearly:
       { role: "user", content: gameContext },
     ],
     temperature: 0.7,
-    maxTokens: 500,
   });
 
   const duration = Date.now() - startTime;
@@ -217,7 +219,9 @@ export async function makeCardPlayDecision(
 
   const model = getModel(modelId);
   const gameContext = formatGameStateForAI(game, player);
-  const playerObj = game.players.find((p) => p.position === player)!;
+  const playerObj = game.players.find(
+    (p: { position: Position }) => p.position === player,
+  )!;
 
   const systemPrompt =
     customPrompt ||
@@ -240,7 +244,6 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades")`;
       { role: "user", content: gameContext },
     ],
     temperature: 0.7,
-    maxTokens: 500,
   });
 
   const duration = Date.now() - startTime;

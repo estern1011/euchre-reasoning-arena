@@ -5,26 +5,27 @@
 ### 1. Install Dependencies
 
 ```bash
-npm install
+bun install
 ```
 
-### 2. Configure Vercel AI Gateway
+### 2. Configure API Keys
 
-Copy `.env.example` to `.env` and add your Vercel AI Gateway token:
+Copy `.env.example` to `.env` and add your API keys:
 
 ```bash
 cp .env.example .env
 ```
 
-Required environment variable:
-- `VERCEL_AI_GATEWAY_TOKEN` - Single token for access to all AI providers (OpenAI, Anthropic, Google, xAI)
-
-Get your token from: https://vercel.com/docs/ai-gateway
+Required API keys (only configure the providers you want to use):
+- `OPENAI_API_KEY` - For GPT and o3 models (https://platform.openai.com/api-keys)
+- `ANTHROPIC_API_KEY` - For Claude models (https://console.anthropic.com/)
+- `GOOGLE_GENERATIVE_AI_API_KEY` - For Gemini models (https://makersuite.google.com/app/apikey)
+- `XAI_API_KEY` - For Grok models (https://console.x.ai/)
 
 ### 3. Start Development Server
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 Server runs on `http://localhost:3000`
@@ -317,17 +318,19 @@ With default fast & cheap models, approximate costs per game:
 - ~500 tokens input per decision
 - ~100 tokens output per decision
 - Total: ~4,000 input + ~800 output tokens
-- Cost: ~$0.0005
 
 **Playing 5 Tricks (15-20 decisions):**
 - ~800 tokens input per decision
 - ~100 tokens output per decision
 - Total: ~14,000 input + ~1,800 output tokens
-- Cost: ~$0.002
 
-**Total per game: ~$0.0025** (with cheapest models)
+**Cost per game with default models:**
+- Using `google/gemini-2.5-flash-lite`: ~**$0.0018** per game
+- Using `xai/grok-code-fast-1`: ~**$0.0036** per game
+- Using `google/gemini-2.5-flash`: ~**$0.0054** per game
+- Using `anthropic/claude-haiku-4.5`: ~**$0.018** per game
 
-Using all `google/gemini-2.5-flash-lite` would reduce cost to ~$0.0015 per game.
+**Recommended:** Use all Google Gemini models for lowest cost (~$0.002 per game).
 
 ---
 
@@ -369,7 +372,7 @@ Recommended limits:
 ### Running Tests
 
 ```bash
-npm test
+bun test
 ```
 
 Current coverage: 98.01% (177 passing tests)
@@ -377,17 +380,17 @@ Current coverage: 98.01% (177 passing tests)
 ### Type Checking
 
 ```bash
-npm run typecheck
+bun run typecheck
 ```
 
 ### Linting
 
 ```bash
-npm run lint
+bun run lint
 ```
 
 ### Build
 
 ```bash
-npm run build
+bun run build
 ```

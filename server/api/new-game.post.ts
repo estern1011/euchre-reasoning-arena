@@ -1,5 +1,5 @@
-import { createNewGame } from "~/lib/game/game";
-import type { GameState, Position } from "~/lib/game/types";
+import { createNewGame } from "../../lib/game/game";
+import type { GameState, Position } from "../../lib/game/types";
 
 /**
  * API endpoint to create a new game

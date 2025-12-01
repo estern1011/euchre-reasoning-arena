@@ -3,13 +3,13 @@ import {
   makeTrumpBid,
   playCard,
   getNextPlayer,
-} from "~/lib/game/game";
+} from "../../lib/game/game";
 import type {
   GameState,
   Position,
   Suit,
   TrumpBidAction,
-} from "~/lib/game/types";
+} from "../../lib/game/types";
 
 /**
  * API endpoint to advance the game by one round
@@ -82,7 +82,8 @@ export default defineEventHandler(
       const currentRoundBids =
         round === 1
           ? game.trumpSelection!.bids.filter(
-              (b) => b.action === "order_up" || b.action === "pass",
+              (b: { action: TrumpBidAction }) =>
+                b.action === "order_up" || b.action === "pass",
             )
           : game.trumpSelection!.bids.slice(4); // Round 2 bids
 
@@ -91,11 +92,9 @@ export default defineEventHandler(
 
         // Call AI model to make bid decision
         const playerObj = game.players.find(
-          (p) => p.position === currentBidder,
+          (p: { position: Position }) => p.position === currentBidder,
         )!;
-        const { makeTrumpBidDecision } = await import(
-          "~/server/services/ai-agent"
-        );
+        const { makeTrumpBidDecision } = await import("../services/ai-agent");
 
         const bidResult = await makeTrumpBidDecision(
           game,
@@ -154,11 +153,9 @@ export default defineEventHandler(
 
         // Call AI model to select card
         const playerObj = game.players.find(
-          (p) => p.position === currentPlayer,
+          (p: { position: Position }) => p.position === currentPlayer,
         )!;
-        const { makeCardPlayDecision } = await import(
-          "~/server/services/ai-agent"
-        );
+        const { makeCardPlayDecision } = await import("../services/ai-agent");
 
         const playResult = await makeCardPlayDecision(
           game,
@@ -180,7 +177,7 @@ export default defineEventHandler(
         game = playCard(
           game,
           currentPlayer,
-          selectedCard,
+          playResult.card,
           aiDecision.reasoning,
         );
       }
