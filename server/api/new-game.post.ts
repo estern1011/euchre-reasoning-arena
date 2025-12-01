@@ -19,10 +19,10 @@ export default defineEventHandler(async (event): Promise<NewGameResponse> => {
   const body = await readBody<NewGameRequest>(event);
 
   const modelIds = body.modelIds || [
-    "gpt-4o",
-    "claude-3-5-sonnet-20241022",
-    "gemini-2.0-flash-exp",
-    "gpt-4o-mini",
+    "gpt-5",
+    "claude-opus-4-5",
+    "gemini-3-pro",
+    "o3-mini",
   ];
   const dealer = body.dealer || "north";
 
