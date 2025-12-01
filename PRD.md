@@ -8,7 +8,7 @@
 
 ---
 
-## Progress Summary (Last Updated: Nov 30, 2025)
+## Progress Summary (Last Updated: Dec 1, 2025)
 
 ### ✅ Completed (Nov 30)
 **Game Engine Foundation**
@@ -23,11 +23,16 @@
 - Custom error types: `InvalidBidError`, `InvalidPlayError`, `InvalidGameStateError`
 
 **Test Coverage**
-- 165 tests across 5 test suites
-- 98.14% statement coverage
-- 94.76% branch coverage
-- 100% function coverage
+- 204 tests across 10 test suites
+- 100% statement / branch / function / line coverage (v8)
 - Test helpers: `createGameWithTrump()` for skipping trump selection
+- AI agent fallbacks covered (illegal card retry, single-card autopick, missing API key)
+
+**AI Gateway & API**
+- Vercel AI Gateway integration (single API key)
+- Endpoints: `/api/models`, `/api/new-game`, `/api/play-next-round`
+- AI agents play complete games via gateway; legal-move enforcement and retries
+- Default model set (Gemini, Grok, Claude, GPT-5) with pricing metadata
 
 **Infrastructure**
 - GitHub repository: `estern1011/euchre-reasoning-arena`
@@ -44,14 +49,15 @@
 - Clear JSDoc comments
 
 ### 🔄 In Progress
-- API routes for AI integration
 - Frontend UI components
+- Prompt editor & reasoning display
+- Deployment pipeline with AI gateway secrets
 
 ### 📋 Next Steps
-- `/api/play-trick` endpoint implementation
-- AI SDK integration (OpenAI, Anthropic, Google)
-- Prompt template system
-- Game board UI component
+- Wire frontend to API endpoints (new-game, play-next-round, models)
+- Prompt template editor & in-UI model selection
+- Deploy with gateway key (env) and smoke-test live
+- (Optional) quiet AI-agent warnings in tests via stubbed console
 
 ---
 
