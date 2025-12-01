@@ -3,6 +3,7 @@ import {
   makeTrumpBid,
   playCard,
   getNextPlayer,
+  isGameComplete,
 } from "../../lib/game/game";
 import type {
   GameState,
@@ -184,6 +185,16 @@ export default defineEventHandler(
 
       const lastTrick = game.completedTricks[game.completedTricks.length - 1];
       const roundSummary = `Trick ${game.completedTricks.length} complete. Winner: ${lastTrick.winner}`;
+
+      if (isGameComplete(game)) {
+        const finalState = { ...game, phase: "complete" as const };
+        return {
+          gameState: finalState,
+          phase: "game_complete",
+          decisions,
+          roundSummary: `Game complete. Final score: Team 0: ${finalState.scores[0]}, Team 1: ${finalState.scores[1]}`,
+        };
+      }
 
       return {
         gameState: game,

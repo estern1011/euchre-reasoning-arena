@@ -1,7 +1,5 @@
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
+import { createGateway } from "ai";
 import type {
   GameState,
   Position,
@@ -12,11 +10,12 @@ import type {
 import {
   formatTrumpSelectionForAI,
   formatGameStateForAI,
+  getValidCardsForPlay,
 } from "../../lib/game/game";
-import { cardToString } from "../../lib/game/card";
+import { cardToString, cardsEqual } from "../../lib/game/card";
 
 /**
- * AI Agent service for making game decisions
+ * AI Agent service for making game decisions via Vercel AI Gateway
  */
 
 export interface TrumpBidResult {
@@ -34,28 +33,26 @@ export interface CardPlayResult {
 }
 
 /**
- * Get the appropriate AI model provider
+ * Get the Vercel AI Gateway instance
+ */
+function getGateway() {
+  const apiKey = process.env.AI_GATEWAY_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI_GATEWAY_API_KEY environment variable is not set");
+  }
+
+  return createGateway({
+    apiKey,
+  });
+}
+
+/**
+ * Get the appropriate AI model from the gateway
  * Model IDs include provider prefix (e.g., "google/gemini-2.5-flash-lite")
  */
 function getModel(modelId: string) {
-  // Extract provider and model name from format "provider/model-name"
-  const [provider, ...modelParts] = modelId.split("/");
-  const modelName = modelParts.join("/");
-
-  if (provider === "openai") {
-    return openai(modelName);
-  } else if (provider === "anthropic") {
-    return anthropic(modelName);
-  } else if (provider === "google") {
-    return google(modelName);
-  } else if (provider === "xai") {
-    // xAI uses OpenAI-compatible API
-    return openai(modelName, {
-      baseURL: "https://api.x.ai/v1",
-    });
-  }
-
-  throw new Error(`Unknown provider: ${provider}`);
+  const gateway = getGateway();
+  return gateway(modelId);
 }
 
 /**
@@ -157,6 +154,10 @@ function parseCardPlay(response: string, validCards: Card[]): Card {
   return validCards[0];
 }
 
+function formatCardForPrompt(card: Card): string {
+  return `${card.rank.toUpperCase()} of ${card.suit}`;
+}
+
 /**
  * Make a trump bid decision using AI
  */
@@ -222,6 +223,32 @@ export async function makeCardPlayDecision(
   const playerObj = game.players.find(
     (p: { position: Position }) => p.position === player,
   )!;
+  const validCards = getValidCardsForPlay(game, player);
+
+  if (validCards.length === 0) {
+    console.warn(
+      `[AI-Agent] No legal cards computed for ${player} (${modelId}). Falling back to first card in hand.`,
+    );
+    const fallbackCard = playerObj.hand[0];
+    return {
+      card: fallbackCard,
+      reasoning:
+        "No legal cards detected; playing the first card in hand as a safeguard.",
+      duration: Date.now() - startTime,
+    };
+  }
+
+  // If only one legal card, auto-play without prompting the model
+  if (validCards.length === 1) {
+    return {
+      card: validCards[0],
+      reasoning:
+        "Only one legal card available; playing it automatically to follow suit.",
+      duration: Date.now() - startTime,
+    };
+  }
+
+  const validCardsList = validCards.map(formatCardForPrompt).join(", ");
 
   const systemPrompt =
     customPrompt ||
@@ -235,23 +262,62 @@ Key principles:
 - Count cards to track what's been played
 
 Respond with your reasoning and card selection. Clearly state which card you're playing at the end.
-Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades")`;
+Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must choose one of these legal cards: ${validCardsList}. Do not choose any other card.`;
 
-  const { text } = await generateText({
-    model,
-    messages: [
+  const attemptDecision = async (
+    retryNote?: string,
+  ): Promise<{ reasoning: string; card: Card }> => {
+    const messages = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: gameContext },
-    ],
-    temperature: 0.7,
-  });
+      {
+        role: "user",
+        content: `${gameContext}\n\nValid cards you may play: ${validCardsList}${retryNote ? `\n${retryNote}` : ""}`,
+      },
+    ];
+
+    const { text } = await generateText({
+      model,
+      messages,
+      temperature: 0.7,
+    });
+
+    const parsed = parseCardPlay(text, playerObj.hand);
+    return { reasoning: text, card: parsed };
+  };
+
+  // First attempt
+  let { reasoning, card } = await attemptDecision();
+
+  const isValidChoice = validCards.some((c) => cardsEqual(c, card));
+
+  // Retry once with a stricter prompt if the model chose an illegal card
+  if (!isValidChoice) {
+    const chosenCardStr = cardToString(card);
+    console.warn(
+      `[AI-Agent] Illegal card from ${player} (${modelId}). Chosen ${chosenCardStr} is not legal. Retrying with explicit valid card list.`,
+    );
+    const retry = await attemptDecision(
+      "Your previous selection was illegal. Choose exactly one card from the valid list above and nothing else.",
+    );
+    reasoning = retry.reasoning;
+    card = retry.card;
+
+    if (!validCards.some((c) => cardsEqual(c, card))) {
+      console.warn(
+        `[AI-Agent] Illegal card persisted after retry from ${player} (${modelId}). Falling back to first legal card ${cardToString(validCards[0])}.`,
+      );
+      card = validCards[0];
+      reasoning =
+        reasoning +
+        `\n\n[Fell back to first legal card: ${formatCardForPrompt(card)}]`;
+    }
+  }
 
   const duration = Date.now() - startTime;
-  const selectedCard = parseCardPlay(text, playerObj.hand);
 
   return {
-    card: selectedCard,
-    reasoning: text,
+    card,
+    reasoning,
     duration,
   };
 }

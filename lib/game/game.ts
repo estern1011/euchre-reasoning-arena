@@ -488,6 +488,45 @@ export function validatePlay(
 }
 
 /**
+ * Get all legal cards the player can play for the current trick
+ */
+export function getValidCardsForPlay(
+  game: GameState,
+  player: Position,
+): Card[] {
+  const playerObj = game.players.find((p) => p.position === player);
+  if (!playerObj) {
+    return [];
+  }
+
+  // If not in playing phase or no trump yet, allow any card from hand
+  if (game.phase !== "playing" || !game.trump) {
+    return playerObj.hand;
+  }
+
+  // If leading the trick, any card is legal
+  if (game.currentTrick.plays.length === 0) {
+    return playerObj.hand;
+  }
+
+  // Otherwise must follow suit if possible
+  const leadCard = game.currentTrick.plays[0].card;
+  const leadSuit = effectiveSuit(leadCard, game.trump);
+  const canFollow = playerObj.hand.some(
+    (c) => effectiveSuit(c, game.trump!) === leadSuit,
+  );
+
+  if (canFollow) {
+    return playerObj.hand.filter(
+      (c) => effectiveSuit(c, game.trump!) === leadSuit,
+    );
+  }
+
+  // No card of the lead suit; any card is legal
+  return playerObj.hand;
+}
+
+/**
  * Get the next player to play in the current trick
  * Skips partner if someone is going alone
  */
