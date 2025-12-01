@@ -41,7 +41,7 @@ describe("calculateScores", () => {
   it("awards 2 points to defenders when makers are euchred", () => {
     const game = createGameWithTrump(modelIds, "hearts");
     game.trumpCaller = "east"; // team1 makers
-    game.goingAlone = null;
+    game.goingAlone = undefined;
     const completed = [
       trick("south"),
       trick("south"),
