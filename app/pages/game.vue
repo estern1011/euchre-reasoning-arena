@@ -2,10 +2,10 @@
     <div class="game-container">
         <header class="game-header">
             <h1>EUCHRE REASONING ARENA</h1>
-            <UBadge color="primary" variant="subtle" size="lg">
+            <span class="live-badge">
                 <span class="live-dot"></span>
                 LIVE
-            </UBadge>
+            </span>
         </header>
 
         <div class="game-content">
@@ -49,7 +49,7 @@
 
                         <!-- West Position -->
                         <div class="player-position west">
-                            <button class="prompt-button">
+                            <button class="prompt-button" type="button">
                                 <svg
                                     class="gear-icon"
                                     viewBox="0 0 24 24"
@@ -61,7 +61,7 @@
                                         d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-6.364 0L3.515 15.879m12.728 0l-4.243-4.243m-6.364 0L3.515 8.121"
                                     ></path>
                                 </svg>
-                                <span>PROMPT</span>
+                                PROMPT
                             </button>
                             <div class="played-card">
                                 <Card
@@ -88,7 +88,7 @@
 
                         <!-- East Position -->
                         <div class="player-position east">
-                            <button class="prompt-button">
+                            <button class="prompt-button" type="button">
                                 <svg
                                     class="gear-icon"
                                     viewBox="0 0 24 24"
@@ -100,7 +100,7 @@
                                         d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-6.364 0L3.515 15.879m12.728 0l-4.243-4.243m-6.364 0L3.515 8.121"
                                     ></path>
                                 </svg>
-                                <span>PROMPT</span>
+                                PROMPT
                             </button>
                             <div class="played-card">
                                 <Card
@@ -117,7 +117,7 @@
 
                         <!-- South Position -->
                         <div class="player-position south">
-                            <button class="prompt-button">
+                            <button class="prompt-button" type="button">
                                 <svg
                                     class="gear-icon"
                                     viewBox="0 0 24 24"
@@ -129,7 +129,7 @@
                                         d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-6.364 0L3.515 15.879m12.728 0l-4.243-4.243m-6.364 0L3.515 8.121"
                                     ></path>
                                 </svg>
-                                <span>PROMPT</span>
+                                PROMPT
                             </button>
                             <div class="player-info">
                                 <div class="player-name">SOUTH</div>
@@ -143,25 +143,17 @@
 
                     <!-- Game Controls -->
                     <div class="game-controls">
-                        <UAlert
-                            v-if="error"
-                            color="red"
-                            variant="soft"
-                            :title="error"
-                            class="mb-4"
-                        />
-                        <UButton
-                            block
-                            size="xl"
-                            color="primary"
-                            variant="solid"
+                        <div v-if="error" class="alert error mb-4">
+                            {{ error }}
+                        </div>
+                        <button
+                            class="primary-button"
+                            type="button"
                             @click="playNextTrick"
-                            :loading="isLoading"
-                            :disabled="!gameState"
-                            class="play-next-button"
+                            :disabled="!gameState || isLoading"
                         >
-                            PLAY NEXT TRICK
-                        </UButton>
+                            <span style="letter-spacing: 0.125rem;">PLAY NEXT TRICK</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -439,6 +431,19 @@ onMounted(() => {
     animation: pulse 2s ease-in-out infinite;
 }
 
+.live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid #3b82f6;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.25rem;
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
 @keyframes pulse {
     0%,
     100% {
@@ -473,6 +478,76 @@ onMounted(() => {
     font-weight: bold;
     letter-spacing: 2px;
     border-bottom: 1px solid #333;
+}
+
+.prompt-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.7rem;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+    background: rgba(75, 85, 99, 0.3);
+    color: #cbd5e1;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.prompt-button:hover {
+    background: rgba(75, 85, 99, 0.5);
+    border-color: #6b7280;
+    color: #e5e7eb;
+}
+
+.prompt-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.primary-button {
+    width: 100%;
+    padding: 1rem;
+    font-family: "Courier New", monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    color: #fff;
+    background: linear-gradient(90deg, rgba(6, 182, 212, 0.25), rgba(6, 182, 212, 0.4));
+    border: 1px solid #06b6d4;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow:
+        0 0 20px rgba(6, 182, 212, 0.4),
+        inset 0 0 15px rgba(6, 182, 212, 0.2);
+}
+
+.primary-button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 0 30px rgba(6, 182, 212, 0.6),
+        inset 0 0 18px rgba(6, 182, 212, 0.25);
+}
+
+.primary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.alert {
+    padding: 0.85rem 1rem;
+    border-radius: 0.5rem;
+    font-family: "Courier New", monospace;
+    border: 1px solid;
+}
+
+.alert.error {
+    background: rgba(248, 113, 113, 0.08);
+    border-color: #f87171;
+    color: #fecdd3;
 }
 
 /* Game State Header */
@@ -577,26 +652,6 @@ onMounted(() => {
     font-size: 1.25rem;
     font-weight: bold;
     letter-spacing: 2px;
-}
-
-.prompt-button {
-    background: rgba(75, 85, 99, 0.3);
-    border: 1px solid #4b5563;
-    border-radius: 4px;
-    color: #9ca3af;
-    padding: 0.5rem 0.75rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-family: "Courier New", monospace;
-    font-size: 0.75rem;
-    transition: all 0.2s;
-}
-
-.prompt-button:hover {
-    background: rgba(75, 85, 99, 0.5);
-    border-color: #6b7280;
 }
 
 .gear-icon {
@@ -756,13 +811,5 @@ onMounted(() => {
     margin-bottom: 0.75rem;
     font-size: 0.875rem;
     text-align: center;
-}
-
-.play-next-button {
-    font-family: "Courier New", monospace !important;
-    font-size: 1.125rem !important;
-    font-weight: bold !important;
-    letter-spacing: 2px !important;
-    padding: 1rem !important;
 }
 </style>
