@@ -56,17 +56,21 @@ const suitClass = computed(() => {
     width: 80px;
     height: 112px;
     background: white;
-    border-radius: 6px;
-    border: 2px solid #333;
+    border-radius: 8px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
     position: relative;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    font-family: Arial, sans-serif;
-    transition: transform 0.2s;
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    transition: all 0.2s ease;
 }
 
 .playing-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.2),
+        0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .playing-card.red {
@@ -120,20 +124,31 @@ const suitClass = computed(() => {
 
 /* Card back */
 .card-back {
-    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-    border-color: #1e40af;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-color: rgba(163, 230, 53, 0.3);
+    box-shadow:
+        0 0 20px rgba(163, 230, 53, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .card-back-pattern {
     width: 100%;
     height: 100%;
-    background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.1) 10px,
-        rgba(255, 255, 255, 0.1) 20px
-    );
-    border-radius: 4px;
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 8px,
+            rgba(163, 230, 53, 0.08) 8px,
+            rgba(163, 230, 53, 0.08) 16px
+        ),
+        repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 8px,
+            rgba(163, 230, 53, 0.08) 8px,
+            rgba(163, 230, 53, 0.08) 16px
+        );
+    border-radius: 6px;
 }
 </style>

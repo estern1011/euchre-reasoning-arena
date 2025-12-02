@@ -1,7 +1,7 @@
 <template>
     <div class="game-container">
         <header class="game-header">
-            <h1>EUCHRE REASONING ARENA</h1>
+            <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
             <span class="live-badge">
                 <span class="live-dot"></span>
                 LIVE
@@ -11,32 +11,36 @@
         <div class="game-content">
             <!-- Left Panel: Arena -->
             <div class="arena-panel">
-                <div class="panel-header">ARENA</div>
+                <div class="panel-header">
+                    <span class="comment">// </span>arena
+                </div>
 
                 <!-- Game State Header -->
                 <div class="game-state-header">
                     <div class="state-info">
-                        <span class="phase"
-                            >PHASE: {{ currentPhase }} (TRICK
-                            {{ currentTrick }})</span
+                        <span class="state-item"
+                            ><span class="state-label">phase:</span> <span class="state-value">"{{ currentPhase.toLowerCase() }}"</span></span
                         >
-                        <span class="divider">|</span>
-                        <span class="trump"
-                            >TRUMP:
-                            <span class="trump-suit">{{
+                        <span class="divider">,</span>
+                        <span class="state-item"
+                            ><span class="state-label">trick:</span> <span class="state-value">{{ currentTrick }}</span></span
+                        >
+                        <span class="divider">,</span>
+                        <span class="state-item"
+                            ><span class="state-label">trump:</span> <span class="trump-suit">{{
                                 trumpSuit
                             }}</span></span
                         >
-                        <span class="divider">|</span>
-                        <span class="winner"
-                            >WINNER: {{ lastTrickWinner }}</span
+                        <span class="divider">,</span>
+                        <span class="state-item"
+                            ><span class="state-label">winner:</span> <span class="state-value">"{{ lastTrickWinner.toLowerCase() }}"</span></span
                         >
                     </div>
                 </div>
 
                 <!-- Table View -->
                 <div class="table-view">
-                    <div class="table-header">TABLE VIEW</div>
+                    <div class="table-header"><span class="keyword">const</span> table = {</div>
 
                     <div class="card-table">
                         <!-- North Position -->
@@ -152,19 +156,25 @@
                             @click="playNextTrick"
                             :disabled="!gameState || isLoading"
                         >
-                            <span style="letter-spacing: 0.125rem;">PLAY NEXT TRICK</span>
+                            <span class="button-text">playNextTrick()</span>
+                            <span class="button-arrow">→</span>
                         </button>
                     </div>
+                    <div class="closing-brace">}</div>
                 </div>
             </div>
 
             <!-- Right Panel: Intelligence -->
             <div class="intelligence-panel">
-                <div class="panel-header">INTELLIGENCE</div>
+                <div class="panel-header">
+                    <span class="comment">// </span>intelligence
+                </div>
 
                 <!-- Activity Log -->
                 <div class="activity-log">
-                    <div class="log-header">ACTIVITY LOG</div>
+                    <div class="log-header">
+                        <span class="keyword">const</span> activityLog = [
+                    </div>
                     <div class="log-entries">
                         <div
                             v-for="(entry, index) in activityLog"
@@ -181,7 +191,9 @@
 
                 <!-- Live Model Reasoning -->
                 <div class="live-reasoning">
-                    <div class="reasoning-header">LIVE MODEL REASONING</div>
+                    <div class="reasoning-header">
+                        <span class="keyword">const</span> reasoning = {
+                    </div>
 
                     <div class="reasoning-content">
                         <div
@@ -392,27 +404,36 @@ onMounted(() => {
 .game-container {
     min-height: 100vh;
     background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-    background-size: 60px 60px;
+        linear-gradient(90deg, rgba(163, 230, 53, 0.15) 1px, transparent 1px),
+        linear-gradient(rgba(163, 230, 53, 0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
     background-color: #000;
     color: #fff;
-    font-family: "Courier New", monospace;
+    font-family: "Courier New", Consolas, Monaco, monospace;
 }
 
 .game-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    border-bottom: 1px solid #333;
+    padding: 1.5rem 3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .game-header h1 {
     font-size: 1.25rem;
-    font-weight: bold;
-    letter-spacing: 2px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
     margin: 0;
+    color: #e5e7eb;
+}
+
+.bracket {
+    color: #6b7280;
+}
+
+.accent {
+    color: #a3e635;
 }
 
 .live-indicator {
@@ -435,13 +456,14 @@ onMounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid #3b82f6;
-    padding: 0.35rem 0.75rem;
-    border-radius: 0.25rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
     font-family: "Courier New", monospace;
-    font-weight: bold;
-    font-size: 0.9rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
 }
 
 @keyframes pulse {
@@ -465,19 +487,30 @@ onMounted(() => {
 /* Panel Styling */
 .arena-panel,
 .intelligence-panel {
-    border: 1px solid #333;
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .panel-header {
-    padding: 1rem 1.5rem;
-    font-size: 1.125rem;
-    font-weight: bold;
-    letter-spacing: 2px;
-    border-bottom: 1px solid #333;
+    padding: 1.5rem 2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #9ca3af;
+}
+
+.comment {
+    color: #6b7280;
+}
+
+.keyword {
+    color: #c084fc;
 }
 
 .prompt-button {
@@ -508,33 +541,52 @@ onMounted(() => {
 
 .primary-button {
     width: 100%;
-    padding: 1rem;
+    padding: 1.25rem 1.5rem;
     font-family: "Courier New", monospace;
-    font-size: 1.1rem;
-    font-weight: bold;
-    letter-spacing: 0.08em;
-    color: #fff;
-    background: linear-gradient(90deg, rgba(6, 182, 212, 0.25), rgba(6, 182, 212, 0.4));
-    border: 1px solid #06b6d4;
-    border-radius: 0.6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    color: #a3e635;
+    background: linear-gradient(135deg, rgba(163, 230, 53, 0.1), rgba(163, 230, 53, 0.05));
+    border: 2px solid rgba(163, 230, 53, 0.3);
+    border-radius: 12px;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    transition: all 0.2s ease;
     box-shadow:
-        0 0 20px rgba(6, 182, 212, 0.4),
-        inset 0 0 15px rgba(6, 182, 212, 0.2);
+        0 0 20px rgba(163, 230, 53, 0.2),
+        inset 0 0 20px rgba(163, 230, 53, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
 }
 
-.primary-button:hover {
-    transform: translateY(-1px);
+.primary-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(163, 230, 53, 0.5);
     box-shadow:
-        0 0 30px rgba(6, 182, 212, 0.6),
-        inset 0 0 18px rgba(6, 182, 212, 0.25);
+        0 0 30px rgba(163, 230, 53, 0.3),
+        inset 0 0 30px rgba(163, 230, 53, 0.08);
+    color: #fff;
 }
 
 .primary-button:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
     transform: none;
+}
+
+.button-text {
+    font-size: 1rem;
+}
+
+.button-arrow {
+    font-size: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.primary-button:hover:not(:disabled) .button-arrow {
+    transform: translateX(4px);
 }
 
 .alert {
@@ -552,24 +604,42 @@ onMounted(() => {
 
 /* Game State Header */
 .game-state-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px dashed #333;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.875rem;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .state-info {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     align-items: center;
+    flex-wrap: wrap;
+}
+
+.state-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.state-label {
+    color: #a3e635;
+    font-weight: 500;
+}
+
+.state-value {
+    color: #fbbf24;
 }
 
 .divider {
-    color: #666;
+    color: #6b7280;
 }
 
 .trump-suit {
     color: #ef4444;
-    font-size: 1.125rem;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 /* Table View */
@@ -579,10 +649,19 @@ onMounted(() => {
 }
 
 .table-header {
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    margin-bottom: 1.5rem;
     font-size: 0.875rem;
+    padding: 0 2rem;
+    color: #e5e7eb;
+}
+
+.closing-brace {
+    font-size: 0.875rem;
+    color: #e5e7eb;
+    padding: 1rem 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .card-table {
@@ -702,10 +781,11 @@ onMounted(() => {
 }
 
 .log-header {
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-bottom: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    margin-bottom: 1rem;
     font-size: 0.875rem;
+    color: #e5e7eb;
 }
 
 .log-entries {
@@ -726,10 +806,11 @@ onMounted(() => {
 }
 
 .reasoning-header {
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    margin-bottom: 1.5rem;
     font-size: 0.875rem;
+    color: #e5e7eb;
 }
 
 .reasoning-content {
@@ -746,8 +827,9 @@ onMounted(() => {
 }
 
 .model-reasoning.active {
-    border-color: #3b82f6;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    border-color: rgba(163, 230, 53, 0.3);
+    box-shadow: 0 0 20px rgba(163, 230, 53, 0.15);
+    background: rgba(163, 230, 53, 0.03);
 }
 
 .model-header {
@@ -768,7 +850,7 @@ onMounted(() => {
 }
 
 .indicator.active {
-    color: #3b82f6;
+    color: #a3e635;
     animation: pulse 2s ease-in-out infinite;
 }
 
@@ -798,8 +880,7 @@ onMounted(() => {
 
 /* Game Controls */
 .game-controls {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #333;
+    padding: 1.5rem 2rem;
 }
 
 .error-message {
