@@ -56,21 +56,17 @@ const suitClass = computed(() => {
     width: 80px;
     height: 112px;
     background: white;
-    border-radius: 8px;
-    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
     position: relative;
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.15),
-        0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 }
 
 .playing-card:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.2),
-        0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.25);
 }
 
 .playing-card.red {
@@ -125,10 +121,12 @@ const suitClass = computed(() => {
 /* Card back */
 .card-back {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-color: rgba(163, 230, 53, 0.3);
-    box-shadow:
-        0 0 20px rgba(163, 230, 53, 0.15),
-        0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: rgba(163, 230, 53, 0.5);
+    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.3);
+}
+
+.card-back:hover {
+    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.4);
 }
 
 .card-back-pattern {

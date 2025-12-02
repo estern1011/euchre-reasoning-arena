@@ -189,13 +189,37 @@ const startGame = () => {
 <style scoped>
 .arena-container {
     min-height: 100vh;
+    position: relative;
     background:
-        linear-gradient(90deg, rgba(163, 230, 53, 0.15) 1px, transparent 1px),
-        linear-gradient(rgba(163, 230, 53, 0.15) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-color: #000;
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+        linear-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px);
+    background-size: 20px 20px;
+    background-color: #0a0a0a;
     color: #fff;
     font-family: "Courier New", Consolas, Monaco, monospace;
+}
+
+.arena-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.arena-container > * {
+    position: relative;
+    z-index: 2;
 }
 
 .arena-header {
@@ -345,9 +369,9 @@ const startGame = () => {
 }
 
 .select-trigger {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    background: rgba(10, 10, 10, 0.8);
+    border: 2px solid rgba(163, 230, 53, 0.4);
+    border-radius: 0px;
     color: #fff;
     font-family: "Courier New", monospace;
     font-size: 0.875rem;
@@ -359,18 +383,23 @@ const startGame = () => {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
+    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.15);
 }
 
 .select-trigger:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(163, 230, 53, 0.3);
+    background: rgba(163, 230, 53, 0.05);
+    border-color: rgba(163, 230, 53, 0.6);
+    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.25);
+    transform: translate(-2px, -2px);
 }
 
 .select-trigger:focus-visible {
     outline: none;
     border-color: #a3e635;
-    box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.1);
+    box-shadow:
+        6px 6px 0px rgba(163, 230, 53, 0.3),
+        0 0 0 3px rgba(163, 230, 53, 0.2);
 }
 
 .select-icon {
@@ -380,13 +409,13 @@ const startGame = () => {
 
 .select-content {
     margin-top: 0.5rem;
-    background: #1e293b;
-    border: 1px solid rgba(163, 230, 53, 0.3);
-    border-radius: 8px;
+    background: #0a0a0a;
+    border: 3px solid rgba(163, 230, 53, 0.5);
+    border-radius: 0px;
     color: #fff;
     box-shadow:
-        0 20px 40px rgba(0, 0, 0, 0.9),
-        0 0 0 1px #1e293b;
+        8px 8px 0px rgba(163, 230, 53, 0.2),
+        0 20px 40px rgba(0, 0, 0, 0.9);
     overflow: hidden;
     z-index: 50;
     position: relative;
@@ -400,18 +429,21 @@ const startGame = () => {
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
-    border-radius: 6px;
+    border-radius: 0px;
     cursor: pointer;
     font-family: "Courier New", monospace;
     font-size: 0.875rem;
-    transition: all 0.15s ease;
+    transition: all 0.1s ease;
     color: #e5e7eb;
+    border-left: 3px solid transparent;
 }
 
 .select-item:hover,
 .select-item[data-highlighted] {
-    background: rgba(163, 230, 53, 0.2);
+    background: rgba(163, 230, 53, 0.15);
     color: #a3e635;
+    border-left-color: #a3e635;
+    transform: translateX(4px);
 }
 
 .live-badge {
@@ -429,12 +461,31 @@ const startGame = () => {
 }
 
 .card {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 3px solid rgba(163, 230, 53, 0.3);
+    border-radius: 0px;
     overflow: hidden;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    box-shadow:
+        8px 8px 0px rgba(163, 230, 53, 0.2),
+        0 0 40px rgba(0, 0, 0, 0.8);
+    position: relative;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(45deg,
+        rgba(163, 230, 53, 0.1) 0%,
+        transparent 50%,
+        rgba(192, 132, 252, 0.1) 100%
+    );
+    z-index: -1;
+    pointer-events: none;
 }
 
 .card-header,
@@ -461,33 +512,35 @@ const startGame = () => {
 .start-button-shell {
     position: relative;
     width: 100%;
-    background: linear-gradient(135deg, rgba(163, 230, 53, 0.1), rgba(163, 230, 53, 0.05));
-    border: 2px solid rgba(163, 230, 53, 0.3);
-    border-radius: 12px;
-    box-shadow:
-        0 0 20px rgba(163, 230, 53, 0.2),
-        inset 0 0 20px rgba(163, 230, 53, 0.05);
+    background: rgba(163, 230, 53, 0.08);
+    border: 3px solid rgba(163, 230, 53, 0.5);
+    border-radius: 0px;
+    box-shadow: 8px 8px 0px rgba(163, 230, 53, 0.3);
     transition:
-        box-shadow 0.3s ease,
-        transform 0.2s ease,
-        border-color 0.3s ease;
+        box-shadow 0.15s ease,
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        background 0.15s ease;
     overflow: visible;
 }
 
 .start-button-shell:hover {
-    border-color: rgba(163, 230, 53, 0.5);
-    box-shadow:
-        0 0 30px rgba(163, 230, 53, 0.3),
-        inset 0 0 30px rgba(163, 230, 53, 0.08);
-    transform: translateY(-2px);
+    background: rgba(163, 230, 53, 0.12);
+    border-color: rgba(163, 230, 53, 0.7);
+    box-shadow: 12px 12px 0px rgba(163, 230, 53, 0.4);
+    transform: translate(-4px, -4px);
+}
+
+.start-button-shell:active {
+    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.3);
+    transform: translate(4px, 4px);
 }
 
 .start-button-shell:focus-within {
     border-color: #a3e635;
     box-shadow:
-        0 0 40px rgba(163, 230, 53, 0.4),
-        inset 0 0 30px rgba(163, 230, 53, 0.1),
-        0 0 0 4px rgba(163, 230, 53, 0.1);
+        12px 12px 0px rgba(163, 230, 53, 0.5),
+        0 0 0 4px rgba(163, 230, 53, 0.2);
 }
 
 :global(.start-button) {

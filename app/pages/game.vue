@@ -403,13 +403,37 @@ onMounted(() => {
 <style scoped>
 .game-container {
     min-height: 100vh;
+    position: relative;
     background:
-        linear-gradient(90deg, rgba(163, 230, 53, 0.15) 1px, transparent 1px),
-        linear-gradient(rgba(163, 230, 53, 0.15) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-color: #000;
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+        linear-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px);
+    background-size: 20px 20px;
+    background-color: #0a0a0a;
     color: #fff;
     font-family: "Courier New", Consolas, Monaco, monospace;
+}
+
+.game-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.game-container > * {
+    position: relative;
+    z-index: 2;
 }
 
 .game-header {
@@ -457,13 +481,14 @@ onMounted(() => {
     align-items: center;
     gap: 0.5rem;
     background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    border: 2px solid rgba(59, 130, 246, 0.5);
     padding: 0.5rem 1rem;
-    border-radius: 6px;
+    border-radius: 0px;
     font-family: "Courier New", monospace;
     font-weight: 600;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
+    box-shadow: 4px 4px 0px rgba(59, 130, 246, 0.2);
 }
 
 @keyframes pulse {
@@ -479,25 +504,47 @@ onMounted(() => {
 .game-content {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 1rem;
-    padding: 1rem;
-    min-height: calc(100vh - 60px);
+    gap: 0.75rem;
+    padding: 0.75rem;
+    height: calc(100vh - 65px);
+    overflow: hidden;
 }
 
 /* Panel Styling */
 .arena-panel,
 .intelligence-panel {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(12px);
+    border: 3px solid rgba(163, 230, 53, 0.3);
+    border-radius: 0px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow:
+        8px 8px 0px rgba(163, 230, 53, 0.2),
+        0 0 40px rgba(0, 0, 0, 0.8);
+    position: relative;
+}
+
+.arena-panel::before,
+.intelligence-panel::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(45deg,
+        rgba(163, 230, 53, 0.1) 0%,
+        transparent 50%,
+        rgba(192, 132, 252, 0.1) 100%
+    );
+    z-index: -1;
+    pointer-events: none;
 }
 
 .panel-header {
-    padding: 1.5rem 2rem;
+    padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
     font-weight: 500;
     letter-spacing: 0.025em;
@@ -519,19 +566,27 @@ onMounted(() => {
     gap: 0.35rem;
     padding: 0.45rem 0.7rem;
     font-family: "Courier New", monospace;
-    font-size: 0.9rem;
-    background: rgba(75, 85, 99, 0.3);
-    color: #cbd5e1;
-    border: 1px solid #4b5563;
-    border-radius: 6px;
+    font-size: 0.75rem;
+    background: rgba(10, 10, 10, 0.8);
+    color: #9ca3af;
+    border: 2px solid rgba(107, 114, 128, 0.5);
+    border-radius: 0px;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    transition: all 0.15s ease;
+    box-shadow: 3px 3px 0px rgba(75, 85, 99, 0.3);
 }
 
 .prompt-button:hover {
-    background: rgba(75, 85, 99, 0.5);
-    border-color: #6b7280;
+    background: rgba(75, 85, 99, 0.3);
+    border-color: #9ca3af;
     color: #e5e7eb;
+    box-shadow: 4px 4px 0px rgba(75, 85, 99, 0.4);
+    transform: translate(-1px, -1px);
+}
+
+.prompt-button:active {
+    box-shadow: 1px 1px 0px rgba(75, 85, 99, 0.3);
+    transform: translate(2px, 2px);
 }
 
 .prompt-button:disabled {
@@ -547,14 +602,12 @@ onMounted(() => {
     font-weight: 600;
     letter-spacing: 0.025em;
     color: #a3e635;
-    background: linear-gradient(135deg, rgba(163, 230, 53, 0.1), rgba(163, 230, 53, 0.05));
-    border: 2px solid rgba(163, 230, 53, 0.3);
-    border-radius: 12px;
+    background: rgba(163, 230, 53, 0.08);
+    border: 3px solid rgba(163, 230, 53, 0.5);
+    border-radius: 0px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow:
-        0 0 20px rgba(163, 230, 53, 0.2),
-        inset 0 0 20px rgba(163, 230, 53, 0.05);
+    transition: all 0.15s ease;
+    box-shadow: 8px 8px 0px rgba(163, 230, 53, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -562,12 +615,16 @@ onMounted(() => {
 }
 
 .primary-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    border-color: rgba(163, 230, 53, 0.5);
-    box-shadow:
-        0 0 30px rgba(163, 230, 53, 0.3),
-        inset 0 0 30px rgba(163, 230, 53, 0.08);
+    background: rgba(163, 230, 53, 0.12);
+    border-color: rgba(163, 230, 53, 0.7);
+    box-shadow: 12px 12px 0px rgba(163, 230, 53, 0.4);
+    transform: translate(-4px, -4px);
     color: #fff;
+}
+
+.primary-button:active:not(:disabled) {
+    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.3);
+    transform: translate(4px, 4px);
 }
 
 .primary-button:disabled {
@@ -604,7 +661,7 @@ onMounted(() => {
 
 /* Game State Header */
 .game-state-header {
-    padding: 1.25rem 2rem;
+    padding: 0.75rem 1.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.875rem;
     background: rgba(0, 0, 0, 0.2);
@@ -645,15 +702,17 @@ onMounted(() => {
 /* Table View */
 .table-view {
     flex: 1;
-    padding: 1rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .table-header {
     font-weight: 500;
     letter-spacing: 0.025em;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     font-size: 0.875rem;
-    padding: 0 2rem;
+    padding: 0 1rem;
     color: #e5e7eb;
 }
 
@@ -666,18 +725,19 @@ onMounted(() => {
 
 .card-table {
     position: relative;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #444;
-    border-radius: 8px;
-    height: 500px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0px;
+    flex: 1;
     display: grid;
     grid-template-areas:
         ". north ."
         "west center east"
         ". south .";
-    grid-template-columns: 1fr 2fr 1fr;
-    grid-template-rows: 1fr 2fr 1fr;
-    padding: 1rem;
+    grid-template-columns: 130px 1fr 130px;
+    grid-template-rows: 80px 1fr 80px;
+    padding: 0.5rem;
+    gap: 0.5rem;
 }
 
 .player-position {
@@ -686,6 +746,35 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    position: relative;
+}
+
+.played-card {
+    position: absolute;
+}
+
+.player-position.north .played-card {
+    bottom: -70px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.player-position.south .played-card {
+    top: -70px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.player-position.west .played-card {
+    right: -85px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.player-position.east .played-card {
+    left: -85px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .player-position.north {
@@ -706,18 +795,49 @@ onMounted(() => {
 
 .center-area {
     grid-area: center;
-    display: flex;
+    display: grid;
+    grid-template-areas:
+        ". card-north ."
+        "card-west . card-east"
+        ". card-south .";
+    grid-template-columns: 90px 90px 90px;
+    grid-template-rows: 120px 120px 120px;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
+}
+
+.center-card {
+    grid-area: card-north;
 }
 
 .thinking-box {
     background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-    border: 2px solid #3b82f6;
-    border-radius: 8px;
-    padding: 2rem 3rem;
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+    border: 3px solid #3b82f6;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    box-shadow:
+        0 0 40px rgba(59, 130, 246, 0.6),
+        0 0 80px rgba(59, 130, 246, 0.4),
+        inset 0 0 30px rgba(59, 130, 246, 0.2);
     text-align: center;
+    position: relative;
+    animation: thinkingGlow 2s ease-in-out infinite;
+}
+
+@keyframes thinkingGlow {
+    0%, 100% {
+        box-shadow:
+            0 0 40px rgba(59, 130, 246, 0.6),
+            0 0 80px rgba(59, 130, 246, 0.4),
+            inset 0 0 30px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 0 60px rgba(59, 130, 246, 0.8),
+            0 0 120px rgba(59, 130, 246, 0.5),
+            inset 0 0 40px rgba(59, 130, 246, 0.3);
+    }
 }
 
 .position-label {
