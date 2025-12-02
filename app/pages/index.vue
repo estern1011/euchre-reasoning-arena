@@ -2,94 +2,77 @@
     <div class="arena-container">
         <header class="arena-header">
             <h1>EUCHRE REASONING ARENA</h1>
-            <div class="live-indicator">
+            <UBadge color="primary" variant="subtle" size="lg">
                 <span class="live-dot"></span>
                 LIVE
-            </div>
+            </UBadge>
         </header>
 
         <main class="content">
-            <div class="assignment-panel">
-                <h2 class="panel-title">MODEL ASSIGNMENT</h2>
+            <UCard class="assignment-panel">
+                <template #header>
+                    <h2 class="panel-title">MODEL ASSIGNMENT</h2>
+                </template>
 
                 <div class="model-grid">
                     <div class="model-row">
                         <label class="model-label">NORTH</label>
-                        <select v-model="models.north" class="model-select">
-                            <option value="anthropic/claude-haiku-4.5">
-                                Claude Haiku 4.5
-                            </option>
-                            <option value="google/gemini-2.5-flash">
-                                Gemini 2.5 Flash
-                            </option>
-                            <option value="openai/gpt-5-mini">
-                                GPT-5 Mini
-                            </option>
-                            <option value="xai/grok-4.1-fast-non-reasoning">
-                                Grok 4.1 Fast
-                            </option>
-                        </select>
+                        <USelectMenu
+                            v-model="models.north"
+                            :options="modelOptions"
+                            value-attribute="value"
+                            option-attribute="label"
+                            class="model-select-menu"
+                        />
                     </div>
 
                     <div class="model-row">
                         <label class="model-label">EAST</label>
-                        <select v-model="models.east" class="model-select">
-                            <option value="anthropic/claude-haiku-4.5">
-                                Claude Haiku 4.5
-                            </option>
-                            <option value="google/gemini-2.5-flash">
-                                Gemini 2.5 Flash
-                            </option>
-                            <option value="openai/gpt-5-mini">
-                                GPT-5 Mini
-                            </option>
-                            <option value="xai/grok-4.1-fast-non-reasoning">
-                                Grok 4.1 Fast
-                            </option>
-                        </select>
+                        <USelectMenu
+                            v-model="models.east"
+                            :options="modelOptions"
+                            value-attribute="value"
+                            option-attribute="label"
+                            class="model-select-menu"
+                        />
                     </div>
 
                     <div class="model-row">
                         <label class="model-label">SOUTH</label>
-                        <select v-model="models.south" class="model-select">
-                            <option value="anthropic/claude-haiku-4.5">
-                                Claude Haiku 4.5
-                            </option>
-                            <option value="google/gemini-2.5-flash">
-                                Gemini 2.5 Flash
-                            </option>
-                            <option value="openai/gpt-5-mini">
-                                GPT-5 Mini
-                            </option>
-                            <option value="xai/grok-4.1-fast-non-reasoning">
-                                Grok 4.1 Fast
-                            </option>
-                        </select>
+                        <USelectMenu
+                            v-model="models.south"
+                            :options="modelOptions"
+                            value-attribute="value"
+                            option-attribute="label"
+                            class="model-select-menu"
+                        />
                     </div>
 
                     <div class="model-row">
                         <label class="model-label">WEST</label>
-                        <select v-model="models.west" class="model-select">
-                            <option value="anthropic/claude-haiku-4.5">
-                                Claude Haiku 4.5
-                            </option>
-                            <option value="google/gemini-2.5-flash">
-                                Gemini 2.5 Flash
-                            </option>
-                            <option value="openai/gpt-5-mini">
-                                GPT-5 Mini
-                            </option>
-                            <option value="xai/grok-4.1-fast-non-reasoning">
-                                Grok 4.1 Fast
-                            </option>
-                        </select>
+                        <USelectMenu
+                            v-model="models.west"
+                            :options="modelOptions"
+                            value-attribute="value"
+                            option-attribute="label"
+                            class="model-select-menu"
+                        />
                     </div>
                 </div>
 
-                <button class="start-button" @click="startGame">
-                    START GAME
-                </button>
-            </div>
+                <template #footer>
+                    <UButton
+                        block
+                        size="xl"
+                        color="primary"
+                        variant="solid"
+                        @click="startGame"
+                        class="start-button"
+                    >
+                        START GAME
+                    </UButton>
+                </template>
+            </UCard>
         </main>
     </div>
 </template>
@@ -104,9 +87,24 @@ const models = ref({
     west: "xai/grok-4.1-fast-non-reasoning",
 });
 
+const modelOptions = [
+    { value: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
+    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "openai/gpt-5-mini", label: "GPT-5 Mini" },
+    { value: "xai/grok-4.1-fast-non-reasoning", label: "Grok 4.1 Fast" },
+];
+
 const startGame = () => {
-    console.log("Starting game with models:", models.value);
-    // TODO: Navigate to game page or start game logic
+    // Navigate to game page with model selections
+    navigateTo({
+        path: "/game",
+        query: {
+            north: models.value.north,
+            east: models.value.east,
+            south: models.value.south,
+            west: models.value.west,
+        },
+    });
 };
 </script>
 
@@ -114,9 +112,9 @@ const startGame = () => {
 .arena-container {
     min-height: 100vh;
     background:
-        linear-gradient(90deg, rgba(50, 50, 50, 0.1) 1px, transparent 1px),
-        linear-gradient(rgba(50, 50, 50, 0.1) 1px, transparent 1px);
-    background-size: 50px 50px;
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
     background-color: #000;
     color: #fff;
     font-family: "Courier New", monospace;
@@ -137,19 +135,13 @@ const startGame = () => {
     margin: 0;
 }
 
-.live-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    letter-spacing: 1px;
-}
-
 .live-dot {
+    display: inline-block;
     width: 8px;
     height: 8px;
-    background: #3b82f6;
+    background: currentColor;
     border-radius: 50%;
+    margin-right: 0.5rem;
     animation: pulse 2s ease-in-out infinite;
 }
 
@@ -172,12 +164,8 @@ const startGame = () => {
 }
 
 .assignment-panel {
-    border: 2px solid #444;
-    border-radius: 4px;
-    padding: 3rem;
     max-width: 800px;
     width: 100%;
-    background: rgba(0, 0, 0, 0.5);
 }
 
 .panel-title {
@@ -185,14 +173,14 @@ const startGame = () => {
     font-weight: bold;
     letter-spacing: 3px;
     text-align: center;
-    margin: 0 0 3rem 0;
+    margin: 0;
 }
 
 .model-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem 3rem;
-    margin-bottom: 3rem;
+    padding: 2rem 0;
 }
 
 .model-row {
@@ -208,56 +196,29 @@ const startGame = () => {
     color: #e5e5e5;
 }
 
-.model-select {
-    background: #1a1a1a;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: #fff;
-    font-family: "Courier New", monospace;
-    font-size: 1rem;
-    padding: 0.875rem 1rem;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    padding-right: 3rem;
-    transition: border-color 0.2s;
-}
-
-.model-select:hover {
-    border-color: #666;
-}
-
-.model-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
 .start-button {
-    width: 100%;
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-    border: 2px solid #3b82f6;
-    border-radius: 4px;
-    color: #fff;
-    font-family: "Courier New", monospace;
-    font-size: 1.5rem;
-    font-weight: bold;
-    letter-spacing: 3px;
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    font-family: "Courier New", monospace !important;
+    font-size: 1.5rem !important;
+    font-weight: bold !important;
+    letter-spacing: 3px !important;
+    padding: 1.25rem !important;
 }
 
-.start-button:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
-    transform: translateY(-2px);
+/* Override Nuxt UI Select Menu styling */
+:deep(.model-select-menu button) {
+    background: #1a1a1a !important;
+    border: 1px solid #444 !important;
+    color: #fff !important;
+    font-family: "Courier New", monospace !important;
+    padding: 0.875rem 1rem !important;
 }
 
-.start-button:active {
-    transform: translateY(0);
+:deep(.model-select-menu button:hover) {
+    border-color: #666 !important;
+}
+
+:deep(.model-select-menu button:focus) {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
 }
 </style>
