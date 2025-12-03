@@ -192,7 +192,16 @@ NUXT_DEV_HTTPS=false
 ## Current Status
 
 **Mode 1 (Simulation):** ✅ Complete - 4 AI models play with visible reasoning
+- ✅ SSE streaming with token-by-token AI reasoning
+- ✅ Pinia state management for model selection
+- ✅ Illegal move handling with retry logic
+- ✅ Live reasoning persistence (visible until next player thinks)
+- ✅ Improved trump bid parsing
+- ✅ Player hands and turned-up card display
+- ✅ Re-themed Card component with hover effects and neon glow
+- 🚧 **Next:** Visual card displays, loading states, game animations
+
 **Mode 2 (Experimentation):** 📋 Planned - Prompt editing capabilities
 **Mode 3 (Evaluation):** 📋 Planned - Rating/comparison system
 
-The project is currently focused on polishing Mode 1 and preparing for deployment.
+The project is currently focused on enhancing Mode 1 visuals and UX.
