@@ -216,7 +216,6 @@ Respond with your decision and reasoning. Format your final decision clearly:
       { role: "system", content: systemPrompt },
       { role: "user", content: gameContext },
     ],
-    temperature: 0.7,
   });
 
   const duration = Date.now() - startTime;
@@ -301,7 +300,6 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
     const { text } = await generateText({
       model,
       messages,
-      temperature: 0.7,
     });
 
     const parsed = parseCardPlay(text, playerObj.hand);
@@ -382,7 +380,6 @@ Respond with your decision and reasoning. Format your final decision clearly:
       { role: "system", content: systemPrompt },
       { role: "user", content: gameContext },
     ],
-    temperature: 0.7,
   });
 
   let fullText = "";
@@ -474,7 +471,6 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
     const { textStream } = await streamText({
       model,
       messages,
-      temperature: 0.7,
     });
 
     let fullText = "";

@@ -309,10 +309,13 @@ euchre-reasoning-arena/
 │   ├── components/
 │   │   └── Card.vue                   # Card component
 │   │
-│   └── composables/                   # (Planned for refactor)
+│   └── composables/                   # Vue composition functions
 │       ├── useGameState.ts
-│       ├── useSSE.ts
-│       └── useGameFlow.ts
+│       ├── useGameStreaming.ts        # SSE streaming for real-time AI reasoning
+│       ├── useGameFlow.ts
+│       ├── usePlayerInfo.ts
+│       ├── useCardDisplay.ts
+│       └── useErrorHandling.ts
 │
 ├── package.json
 ├── nuxt.config.ts

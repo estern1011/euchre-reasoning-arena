@@ -17,6 +17,44 @@ body {
     font-family: "Courier New", monospace;
 }
 
+/* ModelSelector dropdown - Global styles for portaled content */
+.model-select-content {
+    position: relative;
+    z-index: 50;
+    background: #0a0a0a;
+    border: 3px solid rgba(163, 230, 53, 0.5);
+    border-radius: 0;
+    color: #fff;
+    box-shadow:
+        8px 8px 0px rgba(163, 230, 53, 0.2),
+        0 20px 40px rgba(0, 0, 0, 0.9);
+    overflow: hidden;
+}
+
+.model-select-viewport {
+    padding: 0.5rem;
+}
+
+.model-select-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-family: "Courier New", monospace;
+    font-size: 0.875rem;
+    transition: all 0.1s ease;
+    color: #e5e7eb;
+    border-left: 3px solid transparent;
+}
+
+.model-select-item:hover,
+.model-select-item[data-highlighted] {
+    background: rgba(163, 230, 53, 0.15);
+    color: #a3e635;
+    border-left-color: #a3e635;
+    transform: translateX(4px);
+}
+
 /* Nuxt UI Overrides for Dark Theme */
 .dark {
     --color-primary-50: #eff6ff;
