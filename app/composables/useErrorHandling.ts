@@ -89,13 +89,14 @@ export function useErrorHandling() {
 
     // Determine error type
     const errorMessage = lastError?.message || "Unknown error occurred";
+    const lowerMessage = errorMessage.toLowerCase();
     let errorType: ErrorType = "unknown";
 
-    if (errorMessage.includes("timeout")) {
+    if (lowerMessage.includes("timeout") || lowerMessage.includes("timed out")) {
       errorType = "timeout";
-    } else if (errorMessage.includes("fetch") || errorMessage.includes("network")) {
+    } else if (lowerMessage.includes("fetch") || lowerMessage.includes("network")) {
       errorType = "connection";
-    } else if (errorMessage.includes("illegal")) {
+    } else if (lowerMessage.includes("illegal")) {
       errorType = "illegal_move";
     } else {
       errorType = "api_error";
