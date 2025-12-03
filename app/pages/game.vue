@@ -54,6 +54,9 @@
                                 <div class="model-name">{{ formattedModelsByPosition.north }}</div>
                                 <div class="status">WAITING</div>
                             </div>
+                            <div v-if="playerHands.north.length > 0" class="hand-display">
+                                {{ playerHands.north.map(formatCard).join(', ') }}
+                            </div>
                         </div>
 
                         <!-- West Position -->
@@ -83,6 +86,9 @@
                                 <div class="model-name">{{ formattedModelsByPosition.west }}</div>
                                 <div class="status">{{ isCurrentPlayer('west') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
+                            <div v-if="playerHands.west.length > 0" class="hand-display">
+                                {{ playerHands.west.map(formatCard).join(', ') }}
+                            </div>
                         </div>
 
                         <!-- Center - Played Cards Area -->
@@ -92,6 +98,10 @@
                                     :suit="playedCards.center.suit"
                                     :rank="playedCards.center.rank"
                                 />
+                            </div>
+                            <div v-if="turnedUpCard" class="turned-up-card">
+                                <div class="card-label">Turned up:</div>
+                                <div class="card-value">{{ formatCard(turnedUpCard) }}</div>
                             </div>
                         </div>
 
@@ -122,6 +132,9 @@
                                 <div class="model-name">{{ formattedModelsByPosition.east }}</div>
                                 <div class="status">{{ isCurrentPlayer('east') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
+                            <div v-if="playerHands.east.length > 0" class="hand-display">
+                                {{ playerHands.east.map(formatCard).join(', ') }}
+                            </div>
                         </div>
 
                         <!-- South Position -->
@@ -144,6 +157,9 @@
                                 <div class="player-name">SOUTH</div>
                                 <div class="model-name">{{ formattedModelsByPosition.south }}</div>
                                 <div class="status">{{ isCurrentPlayer('south') ? '● THINKING' : 'WAITING' }}</div>
+                            </div>
+                            <div v-if="playerHands.south.length > 0" class="hand-display">
+                                {{ playerHands.south.map(formatCard).join(', ') }}
                             </div>
                         </div>
                     </div>
@@ -295,6 +311,33 @@ const lastTrickWinner = computed(() => {
     if (tricks.length === 0) return "N/A";
     return tricks[tricks.length - 1]?.winner?.toUpperCase() || "N/A";
 });
+
+// Player hands
+const playerHands = computed(() => {
+    if (!gameState.value) return { north: [], east: [], south: [], west: [] };
+    const hands: Record<string, any[]> = { north: [], east: [], south: [], west: [] };
+    gameState.value.players.forEach(player => {
+        hands[player.position] = player.hand;
+    });
+    return hands;
+});
+
+// Turned-up card during trump selection
+const turnedUpCard = computed(() => {
+    return gameState.value?.trumpSelection?.turnedUpCard || null;
+});
+
+// Helper to format card display
+const formatCard = (card: any) => {
+    if (!card) return '';
+    const suitSymbols: Record<string, string> = {
+        hearts: '♥',
+        diamonds: '♦',
+        clubs: '♣',
+        spades: '♠',
+    };
+    return `${card.rank}${suitSymbols[card.suit] || card.suit}`;
+};
 
 // Error message for display
 const errorMessage = computed(() => {
@@ -963,6 +1006,41 @@ onMounted(() => {
 .status {
     color: #6b7280;
     font-size: 0.7rem;
+}
+
+.hand-display {
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    color: #a3e635;
+    text-align: center;
+    font-family: "Courier New", monospace;
+    padding: 0.25rem 0.5rem;
+    background: rgba(163, 230, 53, 0.05);
+    border: 1px solid rgba(163, 230, 53, 0.2);
+    border-radius: 2px;
+}
+
+.turned-up-card {
+    text-align: center;
+    font-size: 0.875rem;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border: 2px solid rgba(251, 191, 36, 0.3);
+    padding: 0.75rem;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+.turned-up-card .card-label {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-bottom: 0.25rem;
+}
+
+.turned-up-card .card-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #fbbf24;
 }
 
 /* Intelligence Panel */
