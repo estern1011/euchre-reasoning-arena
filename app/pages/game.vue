@@ -16,97 +16,37 @@
                 </div>
 
                 <!-- Game State Header -->
-                <div class="game-state-header">
-                    <div class="state-info">
-                        <span class="state-item"
-                            ><span class="state-label">next_phase:</span> <span class="state-value">"{{ currentPhase.toLowerCase() }}"</span></span
-                        >
-                        <span class="divider">,</span>
-                        <span class="state-item"
-                            ><span class="state-label">trick:</span> <span class="state-value">{{ currentTrick }}</span></span
-                        >
-                        <span class="divider">,</span>
-                        <span class="state-item"
-                            ><span class="state-label">trump:</span> <span class="trump-suit">{{
-                                trumpSuit
-                            }}</span></span
-                        >
-                        <span class="divider">,</span>
-                        <span class="state-item"
-                            ><span class="state-label">winner:</span> <span class="state-value">"{{ lastTrickWinner.toLowerCase() }}"</span></span
-                        >
-                    </div>
-                    <button
-                        class="play-next-button"
-                        type="button"
-                        @click="handlePlayNextRound"
-                        :disabled="!gameState || isLoading"
-                    >
-                        <span class="button-text">playNextRound()</span>
-                        <span class="button-arrow">→</span>
-                    </button>
-                </div>
+                <GameStateHeader
+                    :current-phase="currentPhase"
+                    :current-trick="currentTrick"
+                    :trump-suit="trumpSuit"
+                    :last-trick-winner="lastTrickWinner"
+                    :disabled="!gameState || isLoading"
+                    @play-next="handlePlayNextRound"
+                />
 
                 <!-- Table View -->
                 <div class="table-view">
                     <div class="table-header"><span class="keyword">const</span> table = {</div>
 
                     <div class="card-table">
-                        <!-- North Position -->
-                        <div class="player-position north" :class="{ 'is-thinking': isCurrentPlayer('north') }">
-                            <div class="player-info">
-                                <div class="player-name">NORTH</div>
-                                <div class="model-name">{{ formattedModelsByPosition.north }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('north') && isStreamingActive }">
-                                    <span v-if="isCurrentPlayer('north') && isStreamingActive" class="thinking-indicator">
-                                        <span class="thinking-dot"></span>
-                                        THINKING
-                                    </span>
-                                    <span v-else>WAITING</span>
-                                </div>
-                            </div>
-                            <div v-if="playerHands.north.length > 0" class="hand-cards">
-                                <Card
-                                    v-for="(card, index) in playerHands.north"
-                                    :key="`north-${index}`"
-                                    :suit="card.suit"
-                                    :rank="card.rank"
-                                    :faceDown="false"
-                                    size="sm"
-                                />
-                            </div>
-                        </div>
+                        <!-- Player Positions -->
+                        <PlayerPosition
+                            position="north"
+                            :model-name="formattedModelsByPosition.north"
+                            :hand="playerHands.north"
+                            :is-current-player="isCurrentPlayer('north')"
+                            :is-streaming="isStreamingActive"
+                        />
 
-                        <!-- West Position -->
-                        <div class="player-position west" :class="{ 'is-thinking': isCurrentPlayer('west') }">
-                            <div v-if="playedCards.west" class="played-card">
-                                <Card
-                                    :suit="playedCards.west.suit"
-                                    :rank="playedCards.west.rank"
-                                />
-                            </div>
-                            <div class="player-info">
-                                <div class="player-name">WEST</div>
-                                <div class="model-name">{{ formattedModelsByPosition.west }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('west') && isStreamingActive }">
-                                    <span v-if="isCurrentPlayer('west') && isStreamingActive" class="thinking-indicator">
-                                        <span class="thinking-dot"></span>
-                                        THINKING
-                                    </span>
-                                    <span v-else>WAITING</span>
-                                </div>
-                            </div>
-                            <div v-if="playerHands.west.length > 0" class="hand-cards">
-                                <Card
-                                    v-for="(card, index) in playerHands.west"
-                                    :key="`west-${index}`"
-                                    :suit="card.suit"
-                                    :rank="card.rank"
-                                    :faceDown="false"
-                                    size="sm"
-                                />
-                            </div>
-                        </div>
+                        <PlayerPosition
+                            position="west"
+                            :model-name="formattedModelsByPosition.west"
+                            :hand="playerHands.west"
+                            :played-card="playedCards.west"
+                            :is-current-player="isCurrentPlayer('west')"
+                            :is-streaming="isStreamingActive"
+                        />
 
                         <!-- Center - Played Cards Area -->
                         <div class="center-area">
@@ -126,61 +66,22 @@
                             </div>
                         </div>
 
-                        <!-- East Position -->
-                        <div class="player-position east" :class="{ 'is-thinking': isCurrentPlayer('east') }">
-                            <div v-if="playedCards.east" class="played-card">
-                                <Card
-                                    :suit="playedCards.east.suit"
-                                    :rank="playedCards.east.rank"
-                                />
-                            </div>
-                            <div class="player-info">
-                                <div class="player-name">EAST</div>
-                                <div class="model-name">{{ formattedModelsByPosition.east }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('east') && isStreamingActive }">
-                                    <span v-if="isCurrentPlayer('east') && isStreamingActive" class="thinking-indicator">
-                                        <span class="thinking-dot"></span>
-                                        THINKING
-                                    </span>
-                                    <span v-else>WAITING</span>
-                                </div>
-                            </div>
-                            <div v-if="playerHands.east.length > 0" class="hand-cards">
-                                <Card
-                                    v-for="(card, index) in playerHands.east"
-                                    :key="`east-${index}`"
-                                    :suit="card.suit"
-                                    :rank="card.rank"
-                                    :faceDown="false"
-                                    size="sm"
-                                />
-                            </div>
-                        </div>
+                        <PlayerPosition
+                            position="east"
+                            :model-name="formattedModelsByPosition.east"
+                            :hand="playerHands.east"
+                            :played-card="playedCards.east"
+                            :is-current-player="isCurrentPlayer('east')"
+                            :is-streaming="isStreamingActive"
+                        />
 
-                        <!-- South Position -->
-                        <div class="player-position south" :class="{ 'is-thinking': isCurrentPlayer('south') }">
-                            <div v-if="playerHands.south.length > 0" class="hand-cards">
-                                <Card
-                                    v-for="(card, index) in playerHands.south"
-                                    :key="`south-${index}`"
-                                    :suit="card.suit"
-                                    :rank="card.rank"
-                                    :faceDown="false"
-                                    size="sm"
-                                />
-                            </div>
-                            <div class="player-info">
-                                <div class="player-name">SOUTH</div>
-                                <div class="model-name">{{ formattedModelsByPosition.south }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('south') && isStreamingActive }">
-                                    <span v-if="isCurrentPlayer('south') && isStreamingActive" class="thinking-indicator">
-                                        <span class="thinking-dot"></span>
-                                        THINKING
-                                    </span>
-                                    <span v-else>WAITING</span>
-                                </div>
-                            </div>
-                        </div>
+                        <PlayerPosition
+                            position="south"
+                            :model-name="formattedModelsByPosition.south"
+                            :hand="playerHands.south"
+                            :is-current-player="isCurrentPlayer('south')"
+                            :is-streaming="isStreamingActive"
+                        />
                     </div>
 
                     <!-- Game Controls -->
@@ -200,42 +101,13 @@
                 </div>
 
                 <!-- Activity Log -->
-                <div class="activity-log">
-                    <div class="log-header">
-                        <span class="keyword">const</span> activityLog = [
-                    </div>
-                    <div class="log-entries">
-                        <div
-                            v-for="(entry, index) in activityLog"
-                            :key="index"
-                            class="log-entry"
-                        >
-                            {{ entry }}
-                        </div>
-                        <div v-if="activityLog.length === 0" class="log-entry">
-                            Waiting for game to start...
-                        </div>
-                    </div>
-                </div>
+                <ActivityLog :entries="activityLog" />
 
                 <!-- Real-Time Streaming Reasoning -->
-                <div v-if="currentThinkingPlayer && streamingReasoning[currentThinkingPlayer]" class="streaming-reasoning">
-                    <div class="streaming-header">
-                        <span class="keyword">const</span> liveThinking = {
-                    </div>
-                    <div class="streaming-content">
-                        <div class="streaming-box">
-                            <div class="streaming-player">
-                                <span class="player-label">{{ currentThinkingPlayer.toUpperCase() }}</span>
-                                <span class="streaming-indicator">● LIVE</span>
-                            </div>
-                            <div class="streaming-text">
-                                {{ streamingReasoning[currentThinkingPlayer] }}<span class="cursor">▋</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="closing-brace">}</div>
-                </div>
+                <StreamingReasoning
+                    :player="currentThinkingPlayer"
+                    :reasoning="currentThinkingPlayer ? streamingReasoning[currentThinkingPlayer] : ''"
+                />
 
                 <!-- Reasoning History Button -->
                 <div class="history-section">
@@ -264,6 +136,10 @@
 import { ref, onMounted, computed, onUnmounted } from "vue";
 import Card from "~/components/Card.vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
+import GameStateHeader from "~/components/GameStateHeader.vue";
+import PlayerPosition from "~/components/PlayerPosition.vue";
+import ActivityLog from "~/components/ActivityLog.vue";
+import StreamingReasoning from "~/components/StreamingReasoning.vue";
 import { useGameState } from "~/composables/useGameState";
 import { useGameFlow } from "~/composables/useGameFlow";
 import { useCardDisplay } from "~/composables/useCardDisplay";
@@ -789,77 +665,6 @@ onMounted(() => {
     color: #fecdd3;
 }
 
-/* Game State Header */
-.game-state-header {
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 0.875rem;
-    background: rgba(0, 0, 0, 0.2);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-}
-
-.play-next-button {
-    background: rgba(163, 230, 53, 0.1);
-    border: 2px solid rgba(163, 230, 53, 0.3);
-    color: #a3e635;
-    padding: 0.5rem 1rem;
-    border-radius: 2px;
-    font-family: "Courier New", monospace;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-}
-
-.play-next-button:hover:not(:disabled) {
-    background: rgba(163, 230, 53, 0.15);
-    border-color: rgba(163, 230, 53, 0.5);
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.2);
-}
-
-.play-next-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.state-info {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.state-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.state-label {
-    color: #a3e635;
-    font-weight: 500;
-}
-
-.state-value {
-    color: #fbbf24;
-}
-
-.divider {
-    color: #6b7280;
-}
-
-.trump-suit {
-    color: #ef4444;
-    font-size: 1rem;
-    font-weight: 600;
-}
-
 /* Table View */
 .table-view {
     flex: 1;
@@ -901,89 +706,6 @@ onMounted(() => {
     gap: 0.25rem;
     height: calc(100vh - 200px);
     overflow: hidden;
-}
-
-.player-position {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(0.1rem, 0.4vh, 0.25rem);
-    position: relative;
-    padding: clamp(0.1rem, 0.4vh, 0.25rem);
-}
-
-.player-position.north,
-.player-position.south {
-    flex-direction: column;
-}
-
-.player-position.west,
-.player-position.east {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.player-position.west {
-    justify-content: flex-start;
-}
-
-.player-position.east {
-    justify-content: flex-end;
-    flex-direction: row-reverse;
-}
-
-.player-position.west .player-info,
-.player-position.east .player-info {
-    flex-shrink: 0;
-    min-width: 0;
-    max-width: 140px;
-}
-
-.played-card {
-    position: absolute;
-}
-
-.player-position.north .played-card {
-    bottom: -70px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.player-position.south .played-card {
-    top: -70px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.player-position.west .played-card {
-    right: -85px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.player-position.east .played-card {
-    left: -85px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.player-position.north {
-    grid-area: north;
-}
-
-.player-position.west {
-    grid-area: west;
-}
-
-.player-position.east {
-    grid-area: east;
-}
-
-.player-position.south {
-    grid-area: south;
 }
 
 .center-area {
@@ -1055,106 +777,6 @@ onMounted(() => {
     border-radius: 4px;
 }
 
-.player-info {
-    text-align: center;
-    font-size: clamp(0.6rem, 1.2vh, 0.75rem);
-    min-width: 0;
-}
-
-.player-name {
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
-    font-size: clamp(0.55rem, 1.1vh, 0.7rem);
-}
-
-.model-name {
-    color: #9ca3af;
-    margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    hyphens: auto;
-    max-width: 100%;
-    min-width: 0;
-    font-size: clamp(0.5rem, 1vh, 0.65rem);
-    line-height: 1.2;
-}
-
-.status {
-    color: #6b7280;
-    font-size: clamp(0.5rem, 0.9vh, 0.6rem);
-}
-
-.status.thinking {
-    color: #a3e635;
-}
-
-.thinking-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.thinking-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: #a3e635;
-    border-radius: 50%;
-    animation: pulse-glow 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-glow {
-    0%, 100% {
-        opacity: 1;
-        box-shadow: 0 0 4px #a3e635;
-    }
-    50% {
-        opacity: 0.4;
-        box-shadow: 0 0 8px #a3e635;
-    }
-}
-
-.player-position.is-thinking {
-    background: rgba(163, 230, 53, 0.03);
-    border-color: rgba(163, 230, 53, 0.3);
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.1);
-}
-
-.hand-display {
-    margin-top: 0.5rem;
-    font-size: 0.7rem;
-    color: #a3e635;
-    text-align: center;
-    font-family: "Courier New", monospace;
-    padding: 0.25rem 0.5rem;
-    background: rgba(163, 230, 53, 0.05);
-    border: 1px solid rgba(163, 230, 53, 0.2);
-    border-radius: 2px;
-}
-
-.hand-cards {
-    display: flex;
-    gap: clamp(1px, 0.3vh, 2px);
-    justify-content: center;
-    flex-wrap: nowrap;
-}
-
-.player-position.north .hand-cards,
-.player-position.south .hand-cards {
-    flex-direction: row;
-    margin-top: 0;
-}
-
-.player-position.west .hand-cards,
-.player-position.east .hand-cards {
-    flex-direction: column;
-    align-items: center;
-    margin-top: 0;
-    gap: clamp(1px, 0.3vh, 2px);
-}
-
 .turned-up-card {
     text-align: center;
     font-size: 0.875rem;
@@ -1201,118 +823,6 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 80px);
-}
-
-.activity-log {
-    border-bottom: 1px solid #333;
-    padding: 1rem;
-}
-
-.log-header {
-    font-weight: 500;
-    letter-spacing: 0.025em;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-    color: #e5e7eb;
-}
-
-.log-entries {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    max-height: 200px;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-}
-
-.log-entry {
-    color: #d1d5db;
-}
-
-/* Streaming Reasoning */
-.streaming-reasoning {
-    padding: 1rem;
-    border-bottom: 1px solid #374151;
-}
-
-.streaming-header {
-    font-weight: 500;
-    letter-spacing: 0.025em;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-    color: #e5e7eb;
-}
-
-.streaming-content {
-    margin-bottom: 0.5rem;
-}
-
-.streaming-box {
-    border: 2px solid rgba(163, 230, 53, 0.5);
-    border-radius: 4px;
-    padding: 1rem;
-    background: rgba(163, 230, 53, 0.05);
-    box-shadow: 0 0 30px rgba(163, 230, 53, 0.2);
-    animation: pulse-border 2s ease-in-out infinite;
-}
-
-@keyframes pulse-border {
-    0%, 100% {
-        border-color: rgba(163, 230, 53, 0.5);
-        box-shadow: 0 0 30px rgba(163, 230, 53, 0.2);
-    }
-    50% {
-        border-color: rgba(163, 230, 53, 0.8);
-        box-shadow: 0 0 40px rgba(163, 230, 53, 0.3);
-    }
-}
-
-.streaming-player {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-}
-
-.player-label {
-    font-weight: bold;
-    letter-spacing: 1px;
-    color: #a3e635;
-    font-size: 0.875rem;
-}
-
-.streaming-indicator {
-    color: #a3e635;
-    font-size: 0.75rem;
-    font-weight: 600;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-.streaming-text {
-    font-size: 0.875rem;
-    line-height: 1.6;
-    color: #e5e7eb;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-family: "Courier New", Consolas, Monaco, monospace;
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-}
-
-.cursor {
-    color: #a3e635;
-    animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-    0%, 50% {
-        opacity: 1;
-    }
-    51%, 100% {
-        opacity: 0;
-    }
 }
 
 .history-section {
