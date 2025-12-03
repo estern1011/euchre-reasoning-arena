@@ -25,7 +25,7 @@
                     <div class="model-grid">
                         <div class="model-row">
                             <label class="model-label">north:</label>
-                            <SelectRoot v-model="models.north">
+                            <SelectRoot v-model="gameStore.modelIds.north">
                                 <SelectTrigger class="select-trigger">
                                     <SelectValue class="select-value" />
                                     <SelectIcon class="select-icon">▼</SelectIcon>
@@ -50,7 +50,7 @@
 
                         <div class="model-row">
                             <label class="model-label">east:</label>
-                            <SelectRoot v-model="models.east">
+                            <SelectRoot v-model="gameStore.modelIds.east">
                                 <SelectTrigger class="select-trigger">
                                     <SelectValue class="select-value" />
                                     <SelectIcon class="select-icon">▼</SelectIcon>
@@ -75,7 +75,7 @@
 
                         <div class="model-row">
                             <label class="model-label">south:</label>
-                            <SelectRoot v-model="models.south">
+                            <SelectRoot v-model="gameStore.modelIds.south">
                                 <SelectTrigger class="select-trigger">
                                     <SelectValue class="select-value" />
                                     <SelectIcon class="select-icon">▼</SelectIcon>
@@ -100,7 +100,7 @@
 
                         <div class="model-row model-row-last">
                             <label class="model-label">west:</label>
-                            <SelectRoot v-model="models.west">
+                            <SelectRoot v-model="gameStore.modelIds.west">
                                 <SelectTrigger class="select-trigger">
                                     <SelectValue class="select-value" />
                                     <SelectIcon class="select-icon">▼</SelectIcon>
@@ -157,14 +157,9 @@ import {
     SelectValue,
     SelectViewport,
 } from "radix-vue";
-import { ref } from "vue";
+import { useGameStore } from '~/stores/game'
 
-const models = ref({
-    north: "anthropic/claude-haiku-4.5",
-    east: "google/gemini-2.5-flash",
-    south: "openai/gpt-5-mini",
-    west: "xai/grok-4.1-fast-non-reasoning",
-});
+const gameStore = useGameStore()
 
 const modelOptions = [
     { value: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
@@ -174,15 +169,8 @@ const modelOptions = [
 ];
 
 const startGame = () => {
-    navigateTo({
-        path: "/game",
-        query: {
-            north: models.value.north,
-            east: models.value.east,
-            south: models.value.south,
-            west: models.value.west,
-        },
-    });
+    // Model IDs are already in the store, just navigate
+    navigateTo("/game");
 };
 </script>
 

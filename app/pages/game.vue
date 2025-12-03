@@ -243,6 +243,7 @@ import { useGameFlow } from "~/composables/useGameFlow";
 import { useCardDisplay } from "~/composables/useCardDisplay";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useErrorHandling } from "~/composables/useErrorHandling";
+import { useGameStore } from "~/stores/game";
 
 // Composables
 const { gameState, trump, scores, setGameState } = useGameState();
@@ -259,14 +260,9 @@ const { currentError, getUserFriendlyMessage } = useErrorHandling();
 // Local ref for currentRoundDecisions (writable for SSE streaming)
 const currentRoundDecisions = ref<any[]>([]);
 
-// Get model assignments from route or use defaults
-const route = useRoute();
-const modelIdsArray = [
-    route.query.north || "anthropic/claude-haiku-4.5",
-    route.query.east || "google/gemini-2.5-flash",
-    route.query.south || "openai/gpt-5-mini",
-    route.query.west || "xai/grok-4.1-fast-non-reasoning",
-] as [string, string, string, string];
+// Get model assignments from Pinia store
+const gameStore = useGameStore();
+const modelIdsArray = computed(() => gameStore.modelIdsArray);
 
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
@@ -309,7 +305,7 @@ const errorMessage = computed(() => {
 // Handle game initialization
 const handleInitializeGame = async () => {
     try {
-        await initializeGame(modelIdsArray);
+        await initializeGame(modelIdsArray.value);
         activityLog.value.push("Game initialized successfully");
     } catch (e) {
         console.error("Failed to initialize game:", e);
