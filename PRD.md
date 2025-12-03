@@ -4,8 +4,8 @@
 **Repository:** `estern1011/euchre-reasoning-arena`
 **Timeline:** 2 weeks (Nov 30 - Dec 13, 2025)
 **Target:** AI Gateway Game Hackathon - Model Eval Game Category
-**Status:** v1.3 - Mode 1 (Simulation) Complete! 🎉
-**Last Updated:** Dec 2, 2025 (Evening)
+**Status:** v1.5 - Mode 1 Polish Phase 🎨
+**Last Updated:** Dec 3, 2025 (Afternoon)
 
 ---
 
@@ -15,7 +15,8 @@
 
 #### Backend Infrastructure
 - **Game Engine** - Full Euchre implementation with trump selection, bidding, card play
-- **Test Suite** - 204 tests with 100% coverage (statement/branch/function/line)
+- **Test Suite** - 217 tests with 100% coverage (statement/branch/function/line)
+  - Added 13 new tests for illegal move handling
 - **AI Gateway Integration** - Using Vercel AI SDK with `streamText()` for token-by-token streaming
 - **API Endpoints:**
   - `/api/new-game` - Initialize new game with model selection
@@ -25,9 +26,13 @@
 - **SSE Streaming Implementation** - Real-time AI reasoning tokens via Server-Sent Events
   - Uses `ReadableStream` + `sendStream()` for browser compatibility
   - Proper SSE format (`data: {...}\n\n`)
-  - Event types: `player_thinking`, `reasoning_token`, `decision_made`, `round_complete`
+  - Event types: `player_thinking`, `reasoning_token`, `decision_made`, `round_complete`, `illegal_attempt`
   - Streaming verified with 80+ reasoning tokens per player
   - **Critical Fix:** Switched from `createEventStream()` to `ReadableStream` for fetch() compatibility
+- **Illegal Move Handling** - AI gets one retry before fallback to legal card
+  - Tracks illegal attempts in `CardPlayResult.illegalAttempt`
+  - Emits `illegal_attempt` SSE events
+  - Displays in activity log and reasoning modal
 
 #### Frontend UI
 - **Landing Page** - Model selection with code-style aesthetic
@@ -36,11 +41,30 @@
   - Model badges and status indicators
   - LIVE badge, phase display, score tracking
   - **Real-time SSE streaming** - AI reasoning displayed token-by-token ✅
+  - **Live reasoning persistence** - Reasoning stays visible until next player thinks ✅
   - Activity log updates as decisions are made ✅
   - Game state updates after each round ✅
+  - **Player hands display** - All 4 positions show cards ✅
+  - **Turned-up card display** - Visible during trump selection ✅
   - Pixelated code-style design throughout
+- **Card Component** - Re-themed with enhanced visuals
+  - Selectable and selected states
+  - Hover effects with scale, lift, and neon glow
+  - Redesigned card back with nested borders
+  - Lime green (#a3e635) accent color matching code theme
+- **Responsive Layout** - Fully responsive design ✅
+  - Horizontal: Model names wrap, grid columns scale with viewport width
+  - Vertical: Cards, fonts, spacing scale with viewport height using CSS clamp()
+  - No scrolling required (works from 500px to 1100px+ height)
+  - All player info visible including south position
 
-#### Mode 1: Simulation (Watch) - **COMPLETE!** 🎉
+#### State Management
+- **Pinia Store** - Replaced URL params with proper state management
+  - `stores/game.ts` - Central game state, model IDs, getters
+  - Reactive model selection persisting across pages
+  - Clean navigation without query params
+
+#### Mode 1: Simulation (Watch) - **CORE COMPLETE!** 🎉
 - ✅ 4 AI models play Euchre with visible reasoning
 - ✅ Real-time token-by-token AI thought process streaming
 - ✅ Manual trick advancement via "playNextRound()" button
@@ -49,6 +73,15 @@
 - ✅ Game state persists across rounds
 - ✅ Activity log shows all player actions
 - ✅ Using AI Gateway with Claude Haiku, Gemini Flash, GPT-5 Mini, Grok Fast
+- ✅ Illegal move handling with retry and activity log
+- ✅ Improved trump bid parsing (handles "PASS" vs "ORDER_UP" correctly)
+- ✅ Live reasoning persistence
+- ✅ Player hands and turned-up card visible (all cards face-up)
+- ✅ Fully responsive layout (horizontal and vertical)
+- ✅ Model name wrapping for long names
+- ✅ playNextRound button moved to header
+- ✅ THINKING status only shows during active streaming
+- 🚧 **Needs:** Played cards display, improved thinking panel, better spacing
 
 #### CI/CD & Infrastructure
 - GitHub Actions pipeline
@@ -58,16 +91,25 @@
 
 ### 🔄 In Progress
 
-**Nothing!** Mode 1 is complete and working beautifully!
+**Polish Mode 1 - Visual Enhancements** (Branch: `polish-mode-1`)
+
+Current focus: Improving card visualization and game state display
 
 ### 📋 Immediate Next Steps
 
-1. **Polish Mode 1** (Priority 1)
-   - Display reasoning tokens in real-time (currently received but not shown in UI)
+1. **Mode 1 Visual Enhancements** (Priority 1 - IN PROGRESS)
+   - Optimize horizontal space usage
+   - Show played cards in center area during tricks
+   - Enhance live thinking panel (constant size, better UX)
+   - Reposition THINKING indicator appropriately
+   - Improve card spacing in hands
+   - Add visual indicator when player sits out (partner went alone)
+
+2. **Polish Mode 1 - Remaining** (Priority 2)
    - Add game completion modal with final scores
-   - Improve "THINKING" indicator to show which player is active
-   - Add error handling UI for failed streams
+   - Improve error handling UI for failed streams
    - Test full 5-trick game completion
+   - Smooth animations and transitions
 
 2. **Deployment** (Priority 2)
    - Set up AI_GATEWAY_API_KEY environment variable
@@ -94,10 +136,13 @@
 
 **Updated Schedule:**
 - **Dec 2:** ~~Fix SSE frontend~~ ✅ **DONE!** ~~complete Mode 1~~ ✅ **DONE!**
-- **Dec 3:** Polish Mode 1, deploy to Vercel, test live
-- **Dec 4-5:** Mode 2 (Prompt Editor) - Stretch goal
-- **Dec 6-7:** Mode 3 (Rating System) - Stretch goal
-- **Dec 8-10:** Polish, comprehensive testing, UI improvements
+- **Dec 3 (TODAY):** ✅ Pinia migration, illegal moves, live reasoning, hands display, Card component
+  - 🚧 **Current:** Visual card displays with Card components (hands, center, turned-up)
+  - 🚧 **Next:** Loading states, animations, polish
+- **Dec 3-4:** Complete Mode 1 polish, deploy to Vercel, test live
+- **Dec 5-6:** Mode 2 (Prompt Editor) - Stretch goal
+- **Dec 7-8:** Mode 3 (Rating System) - Stretch goal
+- **Dec 9-10:** Comprehensive testing, UI improvements
 - **Dec 11:** Demo video production
 - **Dec 12:** Final testing & submission prep
 - **Dec 13:** Buffer day / submission

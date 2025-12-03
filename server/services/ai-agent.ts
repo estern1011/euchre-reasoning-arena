@@ -30,6 +30,11 @@ export interface CardPlayResult {
   card: Card;
   reasoning: string;
   duration: number;
+  illegalAttempt?: {
+    card: Card;
+    reasoning: string;
+  };
+  isFallback?: boolean;
 }
 
 /**
@@ -71,9 +76,25 @@ function parseTrumpBid(
 
   // Round 1: order up or pass
   if (round === 1) {
+    // Look for explicit action at the end or in structured format
+    // Check for "PASS" as final decision first (more specific)
     if (
-      lowerResponse.includes("order up") ||
-      lowerResponse.includes("order it up")
+      /\bpass\b(?!.*\border.*up\b)/i.test(response) || // "pass" not followed by "order up"
+      response.trim().toLowerCase().endsWith("pass") ||
+      /\b(action|decision|choice):\s*pass\b/i.test(response)
+    ) {
+      return {
+        action: "pass",
+        goingAlone: false,
+        reasoning: response,
+        duration: 0,
+      };
+    }
+
+    // Check for ORDER_UP as explicit action
+    if (
+      /\b(order\s*up|order\s*it\s*up)\b/i.test(response) &&
+      !/\b(don't|do not|should not|shouldn't)\s*(order.*up)/i.test(response)
     ) {
       return {
         action: "order_up",
@@ -82,6 +103,8 @@ function parseTrumpBid(
         duration: 0, // Set by caller
       };
     }
+
+    // Default to pass if unclear
     return {
       action: "pass",
       goingAlone: false,
@@ -468,10 +491,14 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
   let { reasoning, card } = await attemptDecisionStreaming();
 
   const isValidChoice = validCards.some((c) => cardsEqual(c, card));
+  let illegalAttempt: { card: Card; reasoning: string } | undefined;
+  let isFallback = false;
 
   // Retry once if illegal
   if (!isValidChoice) {
     const chosenCardStr = cardToString(card);
+    illegalAttempt = { card, reasoning };
+
     console.warn(
       `[AI-Agent] Illegal card from ${player} (${modelId}). Chosen ${chosenCardStr} is not legal. Retrying with explicit valid card list.`,
     );
@@ -486,6 +513,7 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
         `[AI-Agent] Illegal card persisted after retry from ${player} (${modelId}). Falling back to first legal card ${cardToString(validCards[0])}.`,
       );
       card = validCards[0];
+      isFallback = true;
       reasoning =
         reasoning +
         `\n\n[Fell back to first legal card: ${formatCardForPrompt(card)}]`;
@@ -498,5 +526,7 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
     card,
     reasoning,
     duration,
+    illegalAttempt,
+    isFallback,
   };
 }
