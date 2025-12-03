@@ -18,6 +18,9 @@ logs
 .fleet
 .idea
 
+# Playwright MCP screenshots (local testing only)
+.playwright-mcp
+
 # Local env files
 .env
 .env.*
