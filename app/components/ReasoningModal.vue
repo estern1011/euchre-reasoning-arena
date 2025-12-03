@@ -21,7 +21,7 @@
                             <div class="model-id">{{ decision.modelId }}</div>
                             <div class="action">
                                 <template v-if="'card' in decision">
-                                    PLAYED {{ decision.card.rank }}{{ getSuitSymbol(decision.card.suit) }}
+                                    PLAYED {{ decision.card.rank }}{{ formatSuit(decision.card.suit) }}
                                     <span v-if="decision.isFallback" class="fallback-badge">FALLBACK</span>
                                 </template>
                                 <template v-else>
@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         <div v-if="decision.illegalAttempt" class="illegal-attempt-notice">
-                            ⚠️ Illegal attempt: {{ decision.illegalAttempt.card.rank }}{{ getSuitSymbol(decision.illegalAttempt.card.suit) }}
+                            ⚠️ Illegal attempt: {{ decision.illegalAttempt.card.rank }}{{ formatSuit(decision.illegalAttempt.card.suit) }}
                             <template v-if="decision.isFallback"> (retry also failed)</template>
                         </div>
                         <div class="reasoning-text">
@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { formatSuit } from '../../lib/game/formatting';
 
 interface Props {
     isOpen: boolean
@@ -66,16 +66,6 @@ const emit = defineEmits<{
 
 const close = () => {
     emit('close')
-}
-
-const getSuitSymbol = (suit: string) => {
-    const symbols: Record<string, string> = {
-        hearts: '♥',
-        diamonds: '♦',
-        clubs: '♣',
-        spades: '♠',
-    }
-    return symbols[suit] || suit
 }
 </script>
 

@@ -13,11 +13,7 @@
 
 <script setup lang="ts">
 import Card from "~/components/Card.vue";
-
-interface CardType {
-    suit: string;
-    rank: string;
-}
+import type { Card as CardType } from "~/types/game";
 
 interface Props {
     cards: CardType[];

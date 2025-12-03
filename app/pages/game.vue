@@ -15,15 +15,19 @@
                     <span class="comment">// </span>arena
                 </div>
 
-                <!-- Game State Header -->
-                <GameStateHeader
-                    :current-phase="currentPhase"
-                    :current-trick="currentTrick"
-                    :trump-suit="trumpSuit"
-                    :last-trick-winner="lastTrickWinner"
-                    :disabled="!gameState || isLoading"
-                    @play-next="handlePlayNextRound"
-                />
+                <!-- Game State Display & Controls -->
+                <div class="game-state-header">
+                    <GameStateDisplay
+                        :current-phase="currentPhase"
+                        :current-trick="currentTrick"
+                        :trump-suit="trumpSuit"
+                        :last-trick-winner="lastTrickWinner"
+                    />
+                    <GameControls
+                        :disabled="!gameState || isLoading"
+                        @play-next="handlePlayNextRound"
+                    />
+                </div>
 
                 <!-- Table View -->
                 <div class="table-view">
@@ -35,7 +39,7 @@
                         :formatted-models="formattedModelsByPosition"
                         :turned-up-card="turnedUpCard"
                         :current-player="currentPlayer"
-                        :is-streaming="isStreamingActive"
+                        :is-streaming="isStreaming"
                     />
 
                     <!-- Game Controls -->
@@ -60,7 +64,7 @@
                 <!-- Real-Time Streaming Reasoning -->
                 <StreamingReasoning
                     :player="currentThinkingPlayer"
-                    :reasoning="currentThinkingPlayer ? streamingReasoning[currentThinkingPlayer] : ''"
+                    :reasoning="currentThinkingPlayer ? (streamingReasoning[currentThinkingPlayer] ?? '') : ''"
                 />
 
                 <!-- Reasoning History Button -->
@@ -89,7 +93,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
-import GameStateHeader from "~/components/GameStateHeader.vue";
+import GameStateDisplay from "~/components/GameStateDisplay.vue";
+import GameControls from "~/components/GameControls.vue";
 import GameBoard from "~/components/GameBoard.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
@@ -99,6 +104,16 @@ import { useCardDisplay } from "~/composables/useCardDisplay";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useErrorHandling } from "~/composables/useErrorHandling";
 import { useGameStore } from "~/stores/game";
+import { useGameStreaming } from "~/composables/useGameStreaming";
+import type { Position } from "~/types/game";
+import { formatSuit } from "../../lib/game/formatting";
+import {
+    formatCardPlayEntry,
+    formatTrumpBidEntry,
+    formatIllegalAttemptEntry,
+    formatRoundSummaryEntry,
+    formatErrorEntry,
+} from "~/utils/activityLog";
 
 // Composables
 const { gameState, trump, scores, setGameState } = useGameState();
@@ -136,13 +151,7 @@ const currentTrick = computed(() => {
 
 const trumpSuit = computed(() => {
     if (!trump.value) return "?";
-    const symbols: Record<string, string> = {
-        hearts: "♥",
-        diamonds: "♦",
-        clubs: "♣",
-        spades: "♠",
-    };
-    return symbols[trump.value] || trump.value;
+    return formatSuit(trump.value);
 });
 
 const lastTrickWinner = computed(() => {
@@ -154,7 +163,7 @@ const lastTrickWinner = computed(() => {
 // Player hands
 const playerHands = computed(() => {
     if (!gameState.value) return { north: [], east: [], south: [], west: [] };
-    const hands: Record<string, any[]> = { north: [], east: [], south: [], west: [] };
+    const hands = { north: [], east: [], south: [], west: [] } as Record<Position, typeof gameState.value.players[0]['hand']>;
     gameState.value.players.forEach(player => {
         hands[player.position] = player.hand;
     });
@@ -165,18 +174,6 @@ const playerHands = computed(() => {
 const turnedUpCard = computed(() => {
     return gameState.value?.trumpSelection?.turnedUpCard || null;
 });
-
-// Helper to format card display
-const formatCard = (card: any) => {
-    if (!card) return '';
-    const suitSymbols: Record<string, string> = {
-        hearts: '♥',
-        diamonds: '♦',
-        clubs: '♣',
-        spades: '♠',
-    };
-    return `${card.rank}${suitSymbols[card.suit] || card.suit}`;
-};
 
 // Error message for display
 const errorMessage = computed(() => {
@@ -195,151 +192,82 @@ const handleInitializeGame = async () => {
 };
 
 // Local state for SSE streaming
-const isStreamingActive = ref(false);
-const streamingReasoning = ref<Record<string, string>>({});  // Real-time reasoning tokens per player
-const currentThinkingPlayer = ref<string | null>(null);  // Track which player is currently thinking
+const { isStreaming, streamGameRound } = useGameStreaming();
+const streamingReasoning = ref<Record<Position, string>>({} as Record<Position, string>);
+const currentThinkingPlayer = ref<Position | null>(null);
 const showReasoningModal = ref(false);
-const allDecisions = ref<any[]>([]);  // All decisions across all rounds
+const allDecisions = ref<any[]>([]);
 
 // Handle playing next round with SSE streaming
 const handlePlayNextRound = async () => {
-    if (!gameState.value || isStreamingActive.value) return;
+    if (!gameState.value || isStreaming.value) return;
 
-    isStreamingActive.value = true;
-    currentRoundDecisions.value = [];  // Clear previous round's decisions
-    // Don't clear streamingReasoning or currentThinkingPlayer - keep last player's thoughts visible
+    currentRoundDecisions.value = [];
 
     try {
-        // Use fetch with streaming response
-        const response = await fetch('/api/stream-next-round', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameState: gameState.value }),
-        });
+        for await (const message of streamGameRound(gameState.value)) {
+            switch (message.type) {
+                case 'player_thinking':
+                    currentThinkingPlayer.value = message.player!;
+                    streamingReasoning.value[message.player!] = '';
+                    break;
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) {
-            throw new Error('No response body');
-        }
-
-        // Buffer for incomplete SSE messages
-        let buffer = '';
-
-        // Read the stream
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            // Decode and parse SSE messages
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-
-            // Keep the last incomplete line in the buffer
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-                if (!line.trim() || !line.startsWith('data: ')) continue;
-
-                try {
-                    // Extract JSON from SSE format: "data: {...}"
-                    const jsonStr = line.substring(6); // Remove "data: " prefix
-                    const message = JSON.parse(jsonStr);
-
-                    switch (message.type) {
-                        case 'player_thinking':
-                            // Player started thinking - clear their reasoning and set as current
-                            currentThinkingPlayer.value = message.player;
-                            // Clear reasoning for THIS player only (not all players)
+                case 'reasoning_token':
+                    if (message.player && message.token) {
+                        if (!streamingReasoning.value[message.player]) {
                             streamingReasoning.value[message.player] = '';
-                            break;
-
-                        case 'reasoning_token':
-                            // Real-time token streaming
-                            if (message.player && message.token) {
-                                // Accumulate tokens for the player
-                                if (!streamingReasoning.value[message.player]) {
-                                    streamingReasoning.value[message.player] = '';
-                                }
-                                streamingReasoning.value[message.player] += message.token;
-                            }
-                            break;
-
-                        case 'illegal_attempt':
-                            // Show illegal attempt in activity log
-                            const illegalStep = activityLog.value.length + 1;
-                            const illegalPlayer = message.player.toUpperCase();
-                            const attemptedCard = `${message.attemptedCard.rank}${message.attemptedCard.suit === "hearts" ? "♥" : message.attemptedCard.suit === "diamonds" ? "♦" : message.attemptedCard.suit === "clubs" ? "♣" : "♠"}`;
-
-                            if (message.isFallback) {
-                                activityLog.value.push(
-                                    `${String(illegalStep).padStart(2, "0")} | [${illegalPlayer}] ⚠️ ILLEGAL → Chose ${attemptedCard}, retry failed, using fallback`
-                                );
-                            } else {
-                                activityLog.value.push(
-                                    `${String(illegalStep).padStart(2, "0")} | [${illegalPlayer}] ⚠️ RETRY → Chose ${attemptedCard} (illegal), retrying...`
-                                );
-                            }
-                            break;
-
-                        case 'decision_made':
-                            // Add decision to log
-                            const step = activityLog.value.length + 1;
-                            const player = message.player.toUpperCase();
-
-                            if (message.card) {
-                                const card = `${message.card.rank}${message.card.suit === "hearts" ? "♥" : message.card.suit === "diamonds" ? "♦" : message.card.suit === "clubs" ? "♣" : "♠"}`;
-                                activityLog.value.push(
-                                    `${String(step).padStart(2, "0")} | [${player}] ACTION: PLAYED ${card}`,
-                                );
-                            } else {
-                                activityLog.value.push(
-                                    `${String(step).padStart(2, "0")} | [${player}] ACTION: ${message.action.toUpperCase()}`,
-                                );
-                            }
-
-                            // Add decision to the current round decisions array
-                            // If reasoning is empty but we have streamed reasoning, use that
-                            const decisionWithReasoning = {
-                                ...message,
-                                reasoning: message.reasoning || streamingReasoning.value[message.player] || 'No reasoning provided'
-                            };
-                            currentRoundDecisions.value.push(decisionWithReasoning);
-                            allDecisions.value.push(decisionWithReasoning);
-                            break;
-
-                        case 'round_complete':
-                            // Update game state
-                            setGameState(message.gameState);
-                            activityLog.value.push(message.roundSummary);
-                            // Don't clear currentThinkingPlayer - keep last reasoning visible
-                            isStreamingActive.value = false;
-                            return;
-
-                        case 'error':
-                            console.error('SSE error:', message.message);
-                            // Don't clear currentThinkingPlayer on error - keep last reasoning visible
-                            isStreamingActive.value = false;
-                            throw new Error(message.message);
+                        }
+                        streamingReasoning.value[message.player] += message.token;
                     }
-                } catch (parseError) {
-                    console.error('SSE Parse Error:', parseError);
-                }
+                    break;
+
+                case 'illegal_attempt':
+                    const illegalStep = activityLog.value.length + 1;
+                    activityLog.value.push(
+                        formatIllegalAttemptEntry(
+                            illegalStep,
+                            message.player!,
+                            message.attemptedCard!,
+                            message.isFallback || false
+                        )
+                    );
+                    break;
+
+                case 'decision_made':
+                    const step = activityLog.value.length + 1;
+                    
+                    if (message.card) {
+                        activityLog.value.push(
+                            formatCardPlayEntry(step, message.player!, message.card)
+                        );
+                    } else {
+                        activityLog.value.push(
+                            formatTrumpBidEntry(step, message.player!, message.action!)
+                        );
+                    }
+
+                    const decisionWithReasoning = {
+                        ...message,
+                        reasoning: message.reasoning || streamingReasoning.value[message.player!] || 'No reasoning provided'
+                    };
+                    currentRoundDecisions.value.push(decisionWithReasoning);
+                    allDecisions.value.push(decisionWithReasoning);
+                    break;
+
+                case 'round_complete':
+                    setGameState(message.gameState!);
+                    activityLog.value.push(formatRoundSummaryEntry(message.roundSummary!));
+                    return;
+
+                case 'error':
+                    console.error('SSE error:', message.message);
+                    throw new Error(message.message);
             }
         }
     } catch (error) {
         console.error('Streaming Error:', error);
-        // Don't clear currentThinkingPlayer on error - keep last reasoning visible
-        isStreamingActive.value = false;
-
-        // Set a user-friendly error message
         const errorMsg = error instanceof Error ? error.message : 'An unknown error occurred';
-        activityLog.value.push(`ERROR: ${errorMsg}`);
+        activityLog.value.push(formatErrorEntry(errorMsg));
     }
 };
 
@@ -640,6 +568,17 @@ onMounted(() => {
     color: #e5e7eb;
     padding: 1rem 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.game-state-header {
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.875rem;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
 }
 
 /* Intelligence Panel */

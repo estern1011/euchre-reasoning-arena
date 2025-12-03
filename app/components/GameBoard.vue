@@ -80,11 +80,7 @@
 import Card from "~/components/Card.vue";
 import PlayerInfo from "~/components/PlayerInfo.vue";
 import PlayerHand from "~/components/PlayerHand.vue";
-
-interface CardType {
-    suit: string;
-    rank: string;
-}
+import type { Card as CardType, Position } from "~/types/game";
 
 interface PlayerHands {
     north: CardType[];
@@ -113,13 +109,13 @@ interface Props {
     playedCards: PlayedCards;
     formattedModels: FormattedModels;
     turnedUpCard?: CardType | null;
-    currentPlayer: string | null;
+    currentPlayer: Position | null;
     isStreaming: boolean;
 }
 
 const props = defineProps<Props>();
 
-const isCurrentPlayer = (position: string) => {
+const isCurrentPlayer = (position: Position) => {
     return props.currentPlayer === position;
 };
 </script>

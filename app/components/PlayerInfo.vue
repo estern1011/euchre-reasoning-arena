@@ -13,8 +13,10 @@
 </template>
 
 <script setup lang="ts">
+import type { Position } from "~/types/game";
+
 interface Props {
-    position: string;
+    position: Position;
     modelName: string;
     isThinking: boolean;
 }

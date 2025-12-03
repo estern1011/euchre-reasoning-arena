@@ -19,8 +19,10 @@
 </template>
 
 <script setup lang="ts">
+import type { Position } from "~/types/game";
+
 interface Props {
-    player: string | null;
+    player: Position | null;
     reasoning: string;
 }
 
