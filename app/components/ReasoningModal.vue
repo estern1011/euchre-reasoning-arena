@@ -22,11 +22,16 @@
                             <div class="action">
                                 <template v-if="'card' in decision">
                                     PLAYED {{ decision.card.rank }}{{ getSuitSymbol(decision.card.suit) }}
+                                    <span v-if="decision.isFallback" class="fallback-badge">FALLBACK</span>
                                 </template>
                                 <template v-else>
                                     {{ decision.action.toUpperCase() }}
                                 </template>
                             </div>
+                        </div>
+                        <div v-if="decision.illegalAttempt" class="illegal-attempt-notice">
+                            ⚠️ Illegal attempt: {{ decision.illegalAttempt.card.rank }}{{ getSuitSymbol(decision.illegalAttempt.card.suit) }}
+                            <template v-if="decision.isFallback"> (retry also failed)</template>
                         </div>
                         <div class="reasoning-text">
                             {{ decision.reasoning }}
@@ -231,6 +236,28 @@ const getSuitSymbol = (suit: string) => {
 .action {
     color: #d1d5db;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fallback-badge {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.illegal-attempt-notice {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: #fbbf24;
 }
 
 .reasoning-text {

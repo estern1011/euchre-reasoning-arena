@@ -165,12 +165,24 @@ export default defineEventHandler(async (event) => {
               }
             );
 
+            // Send illegal attempt event if one occurred
+            if (playResult.illegalAttempt) {
+              sendEvent("illegal_attempt", {
+                player: currentPlayer,
+                modelId: playerObj.modelId,
+                attemptedCard: playResult.illegalAttempt.card,
+                isFallback: playResult.isFallback,
+              });
+            }
+
             sendEvent("decision_made", {
               player: currentPlayer,
               modelId: playerObj.modelId,
               card: playResult.card,
               reasoning: playResult.reasoning,
               duration: playResult.duration,
+              illegalAttempt: playResult.illegalAttempt,
+              isFallback: playResult.isFallback,
             });
 
             const aiDecision = {

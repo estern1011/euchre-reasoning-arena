@@ -30,6 +30,11 @@ export interface CardPlayResult {
   card: Card;
   reasoning: string;
   duration: number;
+  illegalAttempt?: {
+    card: Card;
+    reasoning: string;
+  };
+  isFallback?: boolean;
 }
 
 /**
@@ -468,10 +473,14 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
   let { reasoning, card } = await attemptDecisionStreaming();
 
   const isValidChoice = validCards.some((c) => cardsEqual(c, card));
+  let illegalAttempt: { card: Card; reasoning: string } | undefined;
+  let isFallback = false;
 
   // Retry once if illegal
   if (!isValidChoice) {
     const chosenCardStr = cardToString(card);
+    illegalAttempt = { card, reasoning };
+
     console.warn(
       `[AI-Agent] Illegal card from ${player} (${modelId}). Chosen ${chosenCardStr} is not legal. Retrying with explicit valid card list.`,
     );
@@ -486,6 +495,7 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
         `[AI-Agent] Illegal card persisted after retry from ${player} (${modelId}). Falling back to first legal card ${cardToString(validCards[0])}.`,
       );
       card = validCards[0];
+      isFallback = true;
       reasoning =
         reasoning +
         `\n\n[Fell back to first legal card: ${formatCardForPrompt(card)}]`;
@@ -498,5 +508,7 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
     card,
     reasoning,
     duration,
+    illegalAttempt,
+    isFallback,
   };
 }

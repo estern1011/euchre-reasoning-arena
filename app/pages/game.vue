@@ -395,6 +395,23 @@ const handlePlayNextRound = async () => {
                             }
                             break;
 
+                        case 'illegal_attempt':
+                            // Show illegal attempt in activity log
+                            const illegalStep = activityLog.value.length + 1;
+                            const illegalPlayer = message.player.toUpperCase();
+                            const attemptedCard = `${message.attemptedCard.rank}${message.attemptedCard.suit === "hearts" ? "♥" : message.attemptedCard.suit === "diamonds" ? "♦" : message.attemptedCard.suit === "clubs" ? "♣" : "♠"}`;
+
+                            if (message.isFallback) {
+                                activityLog.value.push(
+                                    `${String(illegalStep).padStart(2, "0")} | [${illegalPlayer}] ⚠️ ILLEGAL → Chose ${attemptedCard}, retry failed, using fallback`
+                                );
+                            } else {
+                                activityLog.value.push(
+                                    `${String(illegalStep).padStart(2, "0")} | [${illegalPlayer}] ⚠️ RETRY → Chose ${attemptedCard} (illegal), retrying...`
+                                );
+                            }
+                            break;
+
                         case 'decision_made':
                             // Add decision to log
                             const step = activityLog.value.length + 1;
