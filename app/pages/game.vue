@@ -44,15 +44,17 @@
 
                     <div class="card-table">
                         <!-- North Position -->
-                        <div class="player-position north">
-                            <div v-if="isCurrentPlayer('north')" class="thinking-box">
-                                <div class="position-label">NORTH</div>
-                                <div class="thinking-text">THINKING...</div>
-                            </div>
-                            <div v-else class="player-info">
+                        <div class="player-position north" :class="{ 'is-thinking': isCurrentPlayer('north') }">
+                            <div class="player-info">
                                 <div class="player-name">NORTH</div>
                                 <div class="model-name">{{ formattedModelsByPosition.north }}</div>
-                                <div class="status">WAITING</div>
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('north') }">
+                                    <span v-if="isCurrentPlayer('north')" class="thinking-indicator">
+                                        <span class="thinking-dot"></span>
+                                        THINKING
+                                    </span>
+                                    <span v-else>WAITING</span>
+                                </div>
                             </div>
                             <div v-if="playerHands.north.length > 0" class="hand-cards">
                                 <Card
@@ -67,7 +69,7 @@
                         </div>
 
                         <!-- West Position -->
-                        <div class="player-position west">
+                        <div class="player-position west" :class="{ 'is-thinking': isCurrentPlayer('west') }">
                             <button class="prompt-button" type="button">
                                 <svg
                                     class="gear-icon"
@@ -91,7 +93,13 @@
                             <div class="player-info">
                                 <div class="player-name">WEST</div>
                                 <div class="model-name">{{ formattedModelsByPosition.west }}</div>
-                                <div class="status">{{ isCurrentPlayer('west') ? '● THINKING' : 'WAITING' }}</div>
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('west') }">
+                                    <span v-if="isCurrentPlayer('west')" class="thinking-indicator">
+                                        <span class="thinking-dot"></span>
+                                        THINKING
+                                    </span>
+                                    <span v-else>WAITING</span>
+                                </div>
                             </div>
                             <div v-if="playerHands.west.length > 0" class="hand-cards">
                                 <Card
@@ -124,7 +132,7 @@
                         </div>
 
                         <!-- East Position -->
-                        <div class="player-position east">
+                        <div class="player-position east" :class="{ 'is-thinking': isCurrentPlayer('east') }">
                             <button class="prompt-button" type="button">
                                 <svg
                                     class="gear-icon"
@@ -148,7 +156,13 @@
                             <div class="player-info">
                                 <div class="player-name">EAST</div>
                                 <div class="model-name">{{ formattedModelsByPosition.east }}</div>
-                                <div class="status">{{ isCurrentPlayer('east') ? '● THINKING' : 'WAITING' }}</div>
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('east') }">
+                                    <span v-if="isCurrentPlayer('east')" class="thinking-indicator">
+                                        <span class="thinking-dot"></span>
+                                        THINKING
+                                    </span>
+                                    <span v-else>WAITING</span>
+                                </div>
                             </div>
                             <div v-if="playerHands.east.length > 0" class="hand-cards">
                                 <Card
@@ -163,7 +177,7 @@
                         </div>
 
                         <!-- South Position -->
-                        <div class="player-position south">
+                        <div class="player-position south" :class="{ 'is-thinking': isCurrentPlayer('south') }">
                             <button class="prompt-button" type="button">
                                 <svg
                                     class="gear-icon"
@@ -181,7 +195,13 @@
                             <div class="player-info">
                                 <div class="player-name">SOUTH</div>
                                 <div class="model-name">{{ formattedModelsByPosition.south }}</div>
-                                <div class="status">{{ isCurrentPlayer('south') ? '● THINKING' : 'WAITING' }}</div>
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('south') }">
+                                    <span v-if="isCurrentPlayer('south')" class="thinking-indicator">
+                                        <span class="thinking-dot"></span>
+                                        THINKING
+                                    </span>
+                                    <span v-else>WAITING</span>
+                                </div>
                             </div>
                             <div v-if="playerHands.south.length > 0" class="hand-cards">
                                 <Card
@@ -1038,6 +1058,42 @@ onMounted(() => {
 .status {
     color: #6b7280;
     font-size: 0.7rem;
+}
+
+.status.thinking {
+    color: #a3e635;
+}
+
+.thinking-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.thinking-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #a3e635;
+    border-radius: 50%;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 4px #a3e635;
+    }
+    50% {
+        opacity: 0.4;
+        box-shadow: 0 0 8px #a3e635;
+    }
+}
+
+.player-position.is-thinking {
+    background: rgba(163, 230, 53, 0.03);
+    border-color: rgba(163, 230, 53, 0.3);
+    box-shadow: 0 0 20px rgba(163, 230, 53, 0.1);
 }
 
 .hand-display {
