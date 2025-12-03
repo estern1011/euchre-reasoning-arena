@@ -4,8 +4,8 @@
 **Repository:** `estern1011/euchre-reasoning-arena`
 **Timeline:** 2 weeks (Nov 30 - Dec 13, 2025)
 **Target:** AI Gateway Game Hackathon - Model Eval Game Category
-**Status:** v1.4 - Mode 1 Polish Phase 🎨
-**Last Updated:** Dec 3, 2025 (Morning)
+**Status:** v1.5 - Mode 1 Polish Phase 🎨
+**Last Updated:** Dec 3, 2025 (Afternoon)
 
 ---
 
@@ -52,6 +52,11 @@
   - Hover effects with scale, lift, and neon glow
   - Redesigned card back with nested borders
   - Lime green (#a3e635) accent color matching code theme
+- **Responsive Layout** - Fully responsive design ✅
+  - Horizontal: Model names wrap, grid columns scale with viewport width
+  - Vertical: Cards, fonts, spacing scale with viewport height using CSS clamp()
+  - No scrolling required (works from 500px to 1100px+ height)
+  - All player info visible including south position
 
 #### State Management
 - **Pinia Store** - Replaced URL params with proper state management
@@ -71,8 +76,12 @@
 - ✅ Illegal move handling with retry and activity log
 - ✅ Improved trump bid parsing (handles "PASS" vs "ORDER_UP" correctly)
 - ✅ Live reasoning persistence
-- ✅ Player hands and turned-up card visible
-- 🚧 **Needs:** Visual card displays, loading states, animations
+- ✅ Player hands and turned-up card visible (all cards face-up)
+- ✅ Fully responsive layout (horizontal and vertical)
+- ✅ Model name wrapping for long names
+- ✅ playNextRound button moved to header
+- ✅ THINKING status only shows during active streaming
+- 🚧 **Needs:** Played cards display, improved thinking panel, better spacing
 
 #### CI/CD & Infrastructure
 - GitHub Actions pipeline
@@ -88,13 +97,13 @@ Current focus: Improving card visualization and game state display
 
 ### 📋 Immediate Next Steps
 
-1. **Visual Card Displays** (Priority 1 - IN PROGRESS)
-   - Replace text hand displays with actual Card components
-   - Show face-down cards for opponent hands
-   - Display turned-up card as Card component
-   - Show played cards in center as Card components positioned N/E/S/W
-   - Add loading/thinking states with visual feedback
-   - Card play animations (move from hand to center)
+1. **Mode 1 Visual Enhancements** (Priority 1 - IN PROGRESS)
+   - Optimize horizontal space usage
+   - Show played cards in center area during tricks
+   - Enhance live thinking panel (constant size, better UX)
+   - Reposition THINKING indicator appropriately
+   - Improve card spacing in hands
+   - Add visual indicator when player sits out (partner went alone)
 
 2. **Polish Mode 1 - Remaining** (Priority 2)
    - Add game completion modal with final scores

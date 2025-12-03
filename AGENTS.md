@@ -191,15 +191,25 @@ NUXT_DEV_HTTPS=false
 
 ## Current Status
 
-**Mode 1 (Simulation):** ✅ Complete - 4 AI models play with visible reasoning
+**Mode 1 (Simulation):** 🚧 In Progress - 4 AI models play with visible reasoning
 - ✅ SSE streaming with token-by-token AI reasoning
 - ✅ Pinia state management for model selection
 - ✅ Illegal move handling with retry logic
 - ✅ Live reasoning persistence (visible until next player thinks)
 - ✅ Improved trump bid parsing
-- ✅ Player hands and turned-up card display
+- ✅ Player hands and turned-up card display (face-up cards for all players)
 - ✅ Re-themed Card component with hover effects and neon glow
-- 🚧 **Next:** Visual card displays, loading states, game animations
+- ✅ Fully responsive layout (horizontal and vertical scaling with CSS clamp/vh/vw)
+- ✅ Model name wrapping for long names
+- ✅ Moved playNextRound button to header for visibility
+- ✅ Fixed THINKING status to only show during active streaming
+- 🚧 **Next Steps:**
+  - Improve horizontal space usage
+  - Show cards being played in center area
+  - Enhance live thinking panel (constant size, better UX)
+  - Reposition THINKING indicator appropriately
+  - Better card spacing in hands
+  - Visual indicator when player sits out (partner went alone)
 
 **Mode 2 (Experimentation):** 📋 Planned - Prompt editing capabilities
 **Mode 3 (Evaluation):** 📋 Planned - Rating/comparison system

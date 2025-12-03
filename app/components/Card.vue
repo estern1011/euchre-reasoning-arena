@@ -124,13 +124,13 @@ const handleClick = () => {
 }
 
 .playing-card.size-sm {
-    width: 60px;
-    height: 84px;
+    width: clamp(35px, 5vh, 60px);
+    height: clamp(49px, 7vh, 84px);
 }
 
 .playing-card.size-md {
-    width: 80px;
-    height: 112px;
+    width: clamp(50px, 7vh, 80px);
+    height: clamp(70px, 9.8vh, 112px);
 }
 
 .playing-card.size-lg {
@@ -196,11 +196,11 @@ const handleClick = () => {
 }
 
 .size-sm .rank {
-    font-size: 12px;
+    font-size: clamp(8px, 1.8vh, 12px);
 }
 
 .size-sm .suit {
-    font-size: 10px;
+    font-size: clamp(7px, 1.5vh, 10px);
 }
 
 .size-lg .rank {
@@ -232,11 +232,11 @@ const handleClick = () => {
 }
 
 .size-sm .suit-large {
-    font-size: 28px;
+    font-size: clamp(20px, 4vh, 28px);
 }
 
 .size-sm .rank-large {
-    font-size: 20px;
+    font-size: clamp(14px, 2.8vh, 20px);
 }
 
 .size-lg .suit-large {

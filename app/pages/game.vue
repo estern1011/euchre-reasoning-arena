@@ -19,7 +19,7 @@
                 <div class="game-state-header">
                     <div class="state-info">
                         <span class="state-item"
-                            ><span class="state-label">phase:</span> <span class="state-value">"{{ currentPhase.toLowerCase() }}"</span></span
+                            ><span class="state-label">next_phase:</span> <span class="state-value">"{{ currentPhase.toLowerCase() }}"</span></span
                         >
                         <span class="divider">,</span>
                         <span class="state-item"
@@ -36,6 +36,15 @@
                             ><span class="state-label">winner:</span> <span class="state-value">"{{ lastTrickWinner.toLowerCase() }}"</span></span
                         >
                     </div>
+                    <button
+                        class="play-next-button"
+                        type="button"
+                        @click="handlePlayNextRound"
+                        :disabled="!gameState || isLoading"
+                    >
+                        <span class="button-text">playNextRound()</span>
+                        <span class="button-arrow">→</span>
+                    </button>
                 </div>
 
                 <!-- Table View -->
@@ -48,8 +57,8 @@
                             <div class="player-info">
                                 <div class="player-name">NORTH</div>
                                 <div class="model-name">{{ formattedModelsByPosition.north }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('north') }">
-                                    <span v-if="isCurrentPlayer('north')" class="thinking-indicator">
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('north') && isStreamingActive }">
+                                    <span v-if="isCurrentPlayer('north') && isStreamingActive" class="thinking-indicator">
                                         <span class="thinking-dot"></span>
                                         THINKING
                                     </span>
@@ -62,7 +71,7 @@
                                     :key="`north-${index}`"
                                     :suit="card.suit"
                                     :rank="card.rank"
-                                    :faceDown="true"
+                                    :faceDown="false"
                                     size="sm"
                                 />
                             </div>
@@ -70,20 +79,6 @@
 
                         <!-- West Position -->
                         <div class="player-position west" :class="{ 'is-thinking': isCurrentPlayer('west') }">
-                            <button class="prompt-button" type="button">
-                                <svg
-                                    class="gear-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                >
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path
-                                        d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-6.364 0L3.515 15.879m12.728 0l-4.243-4.243m-6.364 0L3.515 8.121"
-                                    ></path>
-                                </svg>
-                                PROMPT
-                            </button>
                             <div v-if="playedCards.west" class="played-card">
                                 <Card
                                     :suit="playedCards.west.suit"
@@ -93,8 +88,8 @@
                             <div class="player-info">
                                 <div class="player-name">WEST</div>
                                 <div class="model-name">{{ formattedModelsByPosition.west }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('west') }">
-                                    <span v-if="isCurrentPlayer('west')" class="thinking-indicator">
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('west') && isStreamingActive }">
+                                    <span v-if="isCurrentPlayer('west') && isStreamingActive" class="thinking-indicator">
                                         <span class="thinking-dot"></span>
                                         THINKING
                                     </span>
@@ -107,7 +102,7 @@
                                     :key="`west-${index}`"
                                     :suit="card.suit"
                                     :rank="card.rank"
-                                    :faceDown="true"
+                                    :faceDown="false"
                                     size="sm"
                                 />
                             </div>
@@ -122,7 +117,7 @@
                                 />
                             </div>
                             <div v-if="turnedUpCard" class="turned-up-card-display">
-                                <div class="card-label">Turned up:</div>
+                                <div class="card-label">// turned_up</div>
                                 <Card
                                     :suit="turnedUpCard.suit"
                                     :rank="turnedUpCard.rank"
@@ -133,20 +128,6 @@
 
                         <!-- East Position -->
                         <div class="player-position east" :class="{ 'is-thinking': isCurrentPlayer('east') }">
-                            <button class="prompt-button" type="button">
-                                <svg
-                                    class="gear-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                >
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path
-                                        d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-6.364 0L3.515 15.879m12.728 0l-4.243-4.243m-6.364 0L3.515 8.121"
-                                    ></path>
-                                </svg>
-                                PROMPT
-                            </button>
                             <div v-if="playedCards.east" class="played-card">
                                 <Card
                                     :suit="playedCards.east.suit"
@@ -156,8 +137,8 @@
                             <div class="player-info">
                                 <div class="player-name">EAST</div>
                                 <div class="model-name">{{ formattedModelsByPosition.east }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('east') }">
-                                    <span v-if="isCurrentPlayer('east')" class="thinking-indicator">
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('east') && isStreamingActive }">
+                                    <span v-if="isCurrentPlayer('east') && isStreamingActive" class="thinking-indicator">
                                         <span class="thinking-dot"></span>
                                         THINKING
                                     </span>
@@ -170,7 +151,7 @@
                                     :key="`east-${index}`"
                                     :suit="card.suit"
                                     :rank="card.rank"
-                                    :faceDown="true"
+                                    :faceDown="false"
                                     size="sm"
                                 />
                             </div>
@@ -178,40 +159,26 @@
 
                         <!-- South Position -->
                         <div class="player-position south" :class="{ 'is-thinking': isCurrentPlayer('south') }">
-                            <button class="prompt-button" type="button">
-                                <svg
-                                    class="gear-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                >
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path
-                                        d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243m-6.364 0L3.515 15.879m12.728 0l-4.243-4.243m-6.364 0L3.515 8.121"
-                                    ></path>
-                                </svg>
-                                PROMPT
-                            </button>
-                            <div class="player-info">
-                                <div class="player-name">SOUTH</div>
-                                <div class="model-name">{{ formattedModelsByPosition.south }}</div>
-                                <div class="status" :class="{ 'thinking': isCurrentPlayer('south') }">
-                                    <span v-if="isCurrentPlayer('south')" class="thinking-indicator">
-                                        <span class="thinking-dot"></span>
-                                        THINKING
-                                    </span>
-                                    <span v-else>WAITING</span>
-                                </div>
-                            </div>
                             <div v-if="playerHands.south.length > 0" class="hand-cards">
                                 <Card
                                     v-for="(card, index) in playerHands.south"
                                     :key="`south-${index}`"
                                     :suit="card.suit"
                                     :rank="card.rank"
-                                    :faceDown="true"
+                                    :faceDown="false"
                                     size="sm"
                                 />
+                            </div>
+                            <div class="player-info">
+                                <div class="player-name">SOUTH</div>
+                                <div class="model-name">{{ formattedModelsByPosition.south }}</div>
+                                <div class="status" :class="{ 'thinking': isCurrentPlayer('south') && isStreamingActive }">
+                                    <span v-if="isCurrentPlayer('south') && isStreamingActive" class="thinking-indicator">
+                                        <span class="thinking-dot"></span>
+                                        THINKING
+                                    </span>
+                                    <span v-else>WAITING</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -221,15 +188,6 @@
                         <div v-if="errorMessage" class="alert error mb-4">
                             {{ errorMessage }}
                         </div>
-                        <button
-                            class="primary-button"
-                            type="button"
-                            @click="handlePlayNextRound"
-                            :disabled="!gameState || isLoading"
-                        >
-                            <span class="button-text">playNextRound()</span>
-                            <span class="button-arrow">→</span>
-                        </button>
                     </div>
                     <div class="closing-brace">}</div>
                 </div>
@@ -837,6 +795,37 @@ onMounted(() => {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.875rem;
     background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.play-next-button {
+    background: rgba(163, 230, 53, 0.1);
+    border: 2px solid rgba(163, 230, 53, 0.3);
+    color: #a3e635;
+    padding: 0.5rem 1rem;
+    border-radius: 2px;
+    font-family: "Courier New", monospace;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.play-next-button:hover:not(:disabled) {
+    background: rgba(163, 230, 53, 0.15);
+    border-color: rgba(163, 230, 53, 0.5);
+    box-shadow: 0 0 20px rgba(163, 230, 53, 0.2);
+}
+
+.play-next-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .state-info {
@@ -906,10 +895,12 @@ onMounted(() => {
         ". north ."
         "west center east"
         ". south .";
-    grid-template-columns: 130px 1fr 130px;
-    grid-template-rows: 80px 1fr 80px;
-    padding: 0.5rem;
-    gap: 0.5rem;
+    grid-template-columns: clamp(150px, 15vw, 200px) 1fr clamp(150px, 15vw, 200px);
+    grid-template-rows: auto 1fr auto;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    height: calc(100vh - 200px);
+    overflow: hidden;
 }
 
 .player-position {
@@ -917,8 +908,38 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: clamp(0.1rem, 0.4vh, 0.25rem);
     position: relative;
+    padding: clamp(0.1rem, 0.4vh, 0.25rem);
+}
+
+.player-position.north,
+.player-position.south {
+    flex-direction: column;
+}
+
+.player-position.west,
+.player-position.east {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.player-position.west {
+    justify-content: flex-start;
+}
+
+.player-position.east {
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+.player-position.west .player-info,
+.player-position.east .player-info {
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 140px;
 }
 
 .played-card {
@@ -967,16 +988,11 @@ onMounted(() => {
 
 .center-area {
     grid-area: center;
-    display: grid;
-    grid-template-areas:
-        ". card-north ."
-        "card-west . card-east"
-        ". card-south .";
-    grid-template-columns: 90px 90px 90px;
-    grid-template-rows: 120px 120px 120px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 1rem;
 }
 
 .center-card {
@@ -1041,23 +1057,33 @@ onMounted(() => {
 
 .player-info {
     text-align: center;
-    font-size: 0.75rem;
+    font-size: clamp(0.6rem, 1.2vh, 0.75rem);
+    min-width: 0;
 }
 
 .player-name {
     font-weight: bold;
     letter-spacing: 1px;
-    margin-bottom: 0.25rem;
+    margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
+    font-size: clamp(0.55rem, 1.1vh, 0.7rem);
 }
 
 .model-name {
     color: #9ca3af;
-    margin-bottom: 0.25rem;
+    margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    max-width: 100%;
+    min-width: 0;
+    font-size: clamp(0.5rem, 1vh, 0.65rem);
+    line-height: 1.2;
 }
 
 .status {
     color: #6b7280;
-    font-size: 0.7rem;
+    font-size: clamp(0.5rem, 0.9vh, 0.6rem);
 }
 
 .status.thinking {
@@ -1110,11 +1136,23 @@ onMounted(() => {
 
 .hand-cards {
     display: flex;
-    gap: 4px;
+    gap: clamp(1px, 0.3vh, 2px);
     justify-content: center;
-    margin-top: 0.5rem;
-    padding: 0.5rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+}
+
+.player-position.north .hand-cards,
+.player-position.south .hand-cards {
+    flex-direction: row;
+    margin-top: 0;
+}
+
+.player-position.west .hand-cards,
+.player-position.east .hand-cards {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0;
+    gap: clamp(1px, 0.3vh, 2px);
 }
 
 .turned-up-card {
@@ -1145,18 +1183,17 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    padding: 1rem;
-    background: rgba(251, 191, 36, 0.05);
-    border: 2px solid rgba(251, 191, 36, 0.2);
-    border-radius: 4px;
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+    padding: 0.75rem;
+    background: rgba(163, 230, 53, 0.03);
+    border: 1px solid rgba(163, 230, 53, 0.2);
+    border-radius: 2px;
 }
 
 .turned-up-card-display .card-label {
-    font-size: 0.7rem;
-    color: #fbbf24;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    font-size: 0.65rem;
+    color: #6b7280;
+    font-family: "Courier New", monospace;
+    letter-spacing: 0.5px;
 }
 
 /* Intelligence Panel */
