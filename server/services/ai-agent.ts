@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { createGateway, generateText } from "ai";
+import { createGateway, generateText, streamText } from "ai";
 import type {
   GameState,
   Position,
@@ -297,6 +297,185 @@ Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must
       `[AI-Agent] Illegal card from ${player} (${modelId}). Chosen ${chosenCardStr} is not legal. Retrying with explicit valid card list.`,
     );
     const retry = await attemptDecision(
+      "Your previous selection was illegal. Choose exactly one card from the valid list above and nothing else.",
+    );
+    reasoning = retry.reasoning;
+    card = retry.card;
+
+    if (!validCards.some((c) => cardsEqual(c, card))) {
+      console.warn(
+        `[AI-Agent] Illegal card persisted after retry from ${player} (${modelId}). Falling back to first legal card ${cardToString(validCards[0])}.`,
+      );
+      card = validCards[0];
+      reasoning =
+        reasoning +
+        `\n\n[Fell back to first legal card: ${formatCardForPrompt(card)}]`;
+    }
+  }
+
+  const duration = Date.now() - startTime;
+
+  return {
+    card,
+    reasoning,
+    duration,
+  };
+}
+
+/**
+ * Make a trump bid decision with streaming support
+ * @param onToken - Callback called for each token as it streams
+ */
+export async function makeTrumpBidDecisionStreaming(
+  game: GameState,
+  player: Position,
+  modelId: string,
+  onToken: (token: string) => void,
+  customPrompt?: string,
+): Promise<TrumpBidResult> {
+  const startTime = Date.now();
+
+  const model = getModel(modelId);
+  const gameContext = formatTrumpSelectionForAI(game, player);
+
+  const systemPrompt =
+    customPrompt ||
+    `You are an expert Euchre player. Analyze the game state carefully and make the best trump bidding decision.
+
+Key principles:
+- Order up or call trump when you have a strong hand (3+ trump cards, or multiple high cards)
+- Consider going alone only with an exceptional hand (4+ trump including bowers, or near-guaranteed 5 tricks)
+- Be conservative as dealer in round 2 - you must call, so choose wisely
+- Think about your partner's position and team strategy
+
+Respond with your decision and reasoning. Format your final decision clearly:
+- For ordering up: Say "ORDER UP" (add "GOING ALONE" if applicable)
+- For calling trump: Say "CALL [SUIT]" (add "GOING ALONE" if applicable)
+- For passing: Say "PASS"`;
+
+  const { textStream } = await streamText({
+    model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: gameContext },
+    ],
+    temperature: 0.7,
+  });
+
+  let fullText = "";
+  for await (const token of textStream) {
+    fullText += token;
+    onToken(token);
+  }
+
+  const duration = Date.now() - startTime;
+  const result = parseTrumpBid(
+    fullText,
+    game.trumpSelection!.round,
+    game.trumpSelection!.turnedUpCard.suit,
+  );
+
+  result.duration = duration;
+  return result;
+}
+
+/**
+ * Make a card play decision with streaming support
+ * @param onToken - Callback called for each token as it streams
+ */
+export async function makeCardPlayDecisionStreaming(
+  game: GameState,
+  player: Position,
+  modelId: string,
+  onToken: (token: string) => void,
+  customPrompt?: string,
+): Promise<CardPlayResult> {
+  const startTime = Date.now();
+
+  const model = getModel(modelId);
+  const gameContext = formatGameStateForAI(game, player);
+  const playerObj = game.players.find(
+    (p: { position: Position }) => p.position === player,
+  )!;
+  const validCards = getValidCardsForPlay(game, player);
+
+  if (validCards.length === 0) {
+    console.warn(
+      `[AI-Agent] No legal cards computed for ${player} (${modelId}). Falling back to first card in hand.`,
+    );
+    const fallbackCard = playerObj.hand[0];
+    return {
+      card: fallbackCard,
+      reasoning:
+        "No legal cards detected; playing the first card in hand as a safeguard.",
+      duration: Date.now() - startTime,
+    };
+  }
+
+  if (validCards.length === 1) {
+    return {
+      card: validCards[0],
+      reasoning:
+        "Only one legal card available; playing it automatically to follow suit.",
+      duration: Date.now() - startTime,
+    };
+  }
+
+  const validCardsList = validCards.map(formatCardForPrompt).join(", ");
+
+  const systemPrompt =
+    customPrompt ||
+    `You are an expert Euchre player. Analyze the game state and select the best card to play.
+
+Key principles:
+- Follow suit if you can (required)
+- Lead with trump to draw out opponent trump
+- Save high trump (bowers, aces) for critical moments
+- Support your partner's strong plays
+- Count cards to track what's been played
+
+Respond with your reasoning and card selection. Clearly state which card you're playing at the end.
+Format: "[RANK] of [SUIT]" (e.g., "Ace of Hearts" or "Jack of Spades"). You must choose one of these legal cards: ${validCardsList}. Do not choose any other card.`;
+
+  const attemptDecisionStreaming = async (
+    retryNote?: string,
+  ): Promise<{ reasoning: string; card: Card }> => {
+    const messages: { role: "system" | "user"; content: string }[] = [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: `${gameContext}\n\nValid cards you may play: ${validCardsList}${retryNote ? `\n${retryNote}` : ""}`,
+      },
+    ];
+
+    const { textStream } = await streamText({
+      model,
+      messages,
+      temperature: 0.7,
+    });
+
+    let fullText = "";
+    for await (const token of textStream) {
+      fullText += token;
+      onToken(token);
+    }
+
+    const parsed = parseCardPlay(fullText, playerObj.hand);
+    return { reasoning: fullText, card: parsed };
+  };
+
+  // First attempt
+  let { reasoning, card } = await attemptDecisionStreaming();
+
+  const isValidChoice = validCards.some((c) => cardsEqual(c, card));
+
+  // Retry once if illegal
+  if (!isValidChoice) {
+    const chosenCardStr = cardToString(card);
+    console.warn(
+      `[AI-Agent] Illegal card from ${player} (${modelId}). Chosen ${chosenCardStr} is not legal. Retrying with explicit valid card list.`,
+    );
+    const retry = await attemptDecisionStreaming(
       "Your previous selection was illegal. Choose exactly one card from the valid list above and nothing else.",
     );
     reasoning = retry.reasoning;

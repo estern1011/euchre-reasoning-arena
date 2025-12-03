@@ -45,9 +45,14 @@
                     <div class="card-table">
                         <!-- North Position -->
                         <div class="player-position north">
-                            <div class="thinking-box">
+                            <div v-if="isCurrentPlayer('north')" class="thinking-box">
                                 <div class="position-label">NORTH</div>
                                 <div class="thinking-text">THINKING...</div>
+                            </div>
+                            <div v-else class="player-info">
+                                <div class="player-name">NORTH</div>
+                                <div class="model-name">{{ formattedModelsByPosition.north }}</div>
+                                <div class="status">WAITING</div>
                             </div>
                         </div>
 
@@ -67,7 +72,7 @@
                                 </svg>
                                 PROMPT
                             </button>
-                            <div class="played-card">
+                            <div v-if="playedCards.west" class="played-card">
                                 <Card
                                     :suit="playedCards.west.suit"
                                     :rank="playedCards.west.rank"
@@ -75,14 +80,14 @@
                             </div>
                             <div class="player-info">
                                 <div class="player-name">WEST</div>
-                                <div class="model-name">FAST-MODEL-V2</div>
-                                <div class="status">STATUS</div>
+                                <div class="model-name">{{ formattedModelsByPosition.west }}</div>
+                                <div class="status">{{ isCurrentPlayer('west') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
                         </div>
 
                         <!-- Center - Played Cards Area -->
                         <div class="center-area">
-                            <div class="center-card">
+                            <div v-if="playedCards.center" class="center-card">
                                 <Card
                                     :suit="playedCards.center.suit"
                                     :rank="playedCards.center.rank"
@@ -106,7 +111,7 @@
                                 </svg>
                                 PROMPT
                             </button>
-                            <div class="played-card">
+                            <div v-if="playedCards.east" class="played-card">
                                 <Card
                                     :suit="playedCards.east.suit"
                                     :rank="playedCards.east.rank"
@@ -114,8 +119,8 @@
                             </div>
                             <div class="player-info">
                                 <div class="player-name">EAST</div>
-                                <div class="model-name">FAST-MODEL-V2</div>
-                                <div class="status">STATUS</div>
+                                <div class="model-name">{{ formattedModelsByPosition.east }}</div>
+                                <div class="status">{{ isCurrentPlayer('east') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
                         </div>
 
@@ -137,26 +142,24 @@
                             </button>
                             <div class="player-info">
                                 <div class="player-name">SOUTH</div>
-                                <div class="model-name">
-                                    EXPERIMENTAL-CLAUDE-3
-                                </div>
-                                <div class="status">STATUS</div>
+                                <div class="model-name">{{ formattedModelsByPosition.south }}</div>
+                                <div class="status">{{ isCurrentPlayer('south') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Game Controls -->
                     <div class="game-controls">
-                        <div v-if="error" class="alert error mb-4">
-                            {{ error }}
+                        <div v-if="errorMessage" class="alert error mb-4">
+                            {{ errorMessage }}
                         </div>
                         <button
                             class="primary-button"
                             type="button"
-                            @click="playNextTrick"
+                            @click="handlePlayNextRound"
                             :disabled="!gameState || isLoading"
                         >
-                            <span class="button-text">playNextTrick()</span>
+                            <span class="button-text">playNextRound()</span>
                             <span class="button-arrow">→</span>
                         </button>
                     </div>
@@ -197,11 +200,11 @@
 
                     <div class="reasoning-content">
                         <div
-                            v-for="(decision, index) in decisions"
+                            v-for="(decision, index) in currentRoundDecisions"
                             :key="index"
                             :class="[
                                 'model-reasoning',
-                                { active: index === decisions.length - 1 },
+                                { active: index === currentRoundDecisions.length - 1 },
                             ]"
                         >
                             <div class="model-header">
@@ -213,7 +216,7 @@
                                         'indicator',
                                         {
                                             active:
-                                                index === decisions.length - 1,
+                                                index === currentRoundDecisions.length - 1,
                                         },
                                     ]"
                                     >●</span
@@ -250,13 +253,12 @@
                             </div>
                         </div>
                         <div
-                            v-if="decisions.length === 0"
+                            v-if="currentRoundDecisions.length === 0"
                             class="model-reasoning"
                         >
                             <div class="reasoning-text">
                                 <p>
-                                    No reasoning available yet. Click "Play Next
-                                    Trick" to start.
+                                    No reasoning available yet. Click "Play Next Round" to start.
                                 </p>
                             </div>
                         </div>
@@ -268,24 +270,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import Card from "~/components/Card.vue";
+import { useGameState } from "~/composables/useGameState";
+import { useGameFlow } from "~/composables/useGameFlow";
+import { useCardDisplay } from "~/composables/useCardDisplay";
+import { usePlayerInfo } from "~/composables/usePlayerInfo";
+import { useErrorHandling } from "~/composables/useErrorHandling";
+import { useSSE } from "~/composables/useSSE";
 
-// Game state from API
-const gameState = ref<any>(null);
-const decisions = ref<any[]>([]);
-const activityLog = ref<string[]>([]);
-const isLoading = ref(false);
-const error = ref<string | null>(null);
+// Composables
+const { gameState, trump, scores, setGameState } = useGameState();
+const {
+    initializeGame,
+    playNextRound,
+    isLoading,
+    currentRoundDecisions,
+    roundSummary: currentRoundSummary,
+} = useGameFlow();
+const { playedCards } = useCardDisplay();
+const { formattedModelsByPosition, currentPlayer, isCurrentPlayer } = usePlayerInfo();
+const { currentError, getUserFriendlyMessage } = useErrorHandling();
+const { connect, disconnect, streamingReasoning, getPlayerReasoning } = useSSE();
 
 // Get model assignments from route or use defaults
 const route = useRoute();
-const modelIds = ref([
+const modelIdsArray = [
     route.query.north || "anthropic/claude-haiku-4.5",
     route.query.east || "google/gemini-2.5-flash",
     route.query.south || "openai/gpt-5-mini",
     route.query.west || "xai/grok-4.1-fast-non-reasoning",
-]);
+] as [string, string, string, string];
+
+// Activity log for tracking game events
+const activityLog = ref<string[]>([]);
 
 // Computed values for display
 const currentPhase = computed(() => {
@@ -300,14 +318,14 @@ const currentTrick = computed(() => {
 });
 
 const trumpSuit = computed(() => {
-    if (!gameState.value?.trump) return "?";
+    if (!trump.value) return "?";
     const symbols: Record<string, string> = {
         hearts: "♥",
         diamonds: "♦",
         clubs: "♣",
         spades: "♠",
     };
-    return symbols[gameState.value.trump] || gameState.value.trump;
+    return symbols[trump.value] || trump.value;
 });
 
 const lastTrickWinner = computed(() => {
@@ -316,87 +334,128 @@ const lastTrickWinner = computed(() => {
     return tricks[tricks.length - 1]?.winner?.toUpperCase() || "N/A";
 });
 
-// Sample cards for demonstration (will be replaced with actual game state)
-const playedCards = ref({
-    west: { suit: "clubs" as const, rank: "9" as const },
-    east: { suit: "hearts" as const, rank: "Q" as const },
-    south: { suit: "hearts" as const, rank: "J" as const },
-    center: { suit: "hearts" as const, rank: "J" as const },
+// Error message for display
+const errorMessage = computed(() => {
+    if (!currentError.value) return null;
+    return getUserFriendlyMessage(currentError.value);
 });
 
-// Initialize game
-const initializeGame = async () => {
-    isLoading.value = true;
-    error.value = null;
-
+// Handle game initialization
+const handleInitializeGame = async () => {
     try {
-        const response = await $fetch("/api/new-game", {
-            method: "POST",
-            body: {
-                modelIds: modelIds.value,
-            },
-        });
-
-        gameState.value = response.gameState;
-        activityLog.value.push(`Game started - ${response.message}`);
-    } catch (e: any) {
-        error.value = e.message || "Failed to initialize game";
+        await initializeGame(modelIdsArray);
+        activityLog.value.push("Game initialized successfully");
+    } catch (e) {
         console.error("Failed to initialize game:", e);
-    } finally {
-        isLoading.value = false;
     }
 };
 
-// Play next round (trick or trump selection)
-const playNextTrick = async () => {
-    if (!gameState.value || isLoading.value) return;
+// Local state for SSE streaming
+const isStreamingActive = ref(false);
+const streamDecisions = ref<any[]>([]);
 
-    isLoading.value = true;
-    error.value = null;
+// Handle playing next round with SSE streaming
+const handlePlayNextRound = async () => {
+    if (!gameState.value || isStreamingActive.value) return;
+
+    isStreamingActive.value = true;
+    streamDecisions.value = [];
 
     try {
-        const response = await $fetch("/api/play-next-round", {
-            method: "POST",
-            body: {
-                gameState: gameState.value,
-                modelIds: modelIds.value,
-            },
+        // Use fetch with streaming response
+        const response = await fetch('/api/stream-next-round', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameState: gameState.value }),
         });
 
-        gameState.value = response.gameState;
-        decisions.value = response.decisions;
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // Add decisions to activity log
-        response.decisions.forEach((decision: any, index: number) => {
-            const step = activityLog.value.length + 1;
-            const player = decision.player.toUpperCase();
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
 
-            if ("card" in decision) {
-                // Card play
-                const card = `${decision.card.rank}${decision.card.suit === "hearts" ? "♥" : decision.card.suit === "diamonds" ? "♦" : decision.card.suit === "clubs" ? "♣" : "♠"}`;
-                activityLog.value.push(
-                    `${String(step).padStart(2, "0")} | [${player}] ACTION: PLAYED ${card}`,
-                );
-            } else {
-                // Trump bid
-                activityLog.value.push(
-                    `${String(step).padStart(2, "0")} | [${player}] ACTION: ${decision.action.toUpperCase()}`,
-                );
+        if (!reader) {
+            throw new Error('No response body');
+        }
+
+        // Read the stream
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            // Decode and parse SSE messages
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (!line.trim() || !line.startsWith('data: ')) continue;
+
+                try {
+                    // Extract JSON from SSE format: "data: {...}"
+                    const jsonStr = line.substring(6); // Remove "data: " prefix
+                    const message = JSON.parse(jsonStr);
+
+                    switch (message.type) {
+                        case 'player_thinking':
+                            // Player is thinking
+                            break;
+
+                        case 'reasoning_token':
+                            // Real-time token streaming - could display here
+                            break;
+
+                        case 'decision_made':
+                            // Add decision to log
+                            const step = activityLog.value.length + 1;
+                            const player = message.player.toUpperCase();
+
+                            if (message.card) {
+                                const card = `${message.card.rank}${message.card.suit === "hearts" ? "♥" : message.card.suit === "diamonds" ? "♦" : message.card.suit === "clubs" ? "♣" : "♠"}`;
+                                activityLog.value.push(
+                                    `${String(step).padStart(2, "0")} | [${player}] ACTION: PLAYED ${card}`,
+                                );
+                            } else {
+                                activityLog.value.push(
+                                    `${String(step).padStart(2, "0")} | [${player}] ACTION: ${message.action.toUpperCase()}`,
+                                );
+                            }
+
+                            streamDecisions.value.push(message);
+                            break;
+
+                        case 'round_complete':
+                            // Update game state
+                            setGameState(message.gameState);
+                            activityLog.value.push(message.roundSummary);
+                            isStreamingActive.value = false;
+                            return;
+
+                        case 'error':
+                            console.error('SSE error:', message.message);
+                            isStreamingActive.value = false;
+                            return;
+                    }
+                } catch (parseError) {
+                    console.error('SSE Parse Error:', parseError);
+                }
             }
-        });
-
-        activityLog.value.push(response.roundSummary);
-    } catch (e: any) {
-        error.value = e.message || "Failed to play next round";
-        console.error("Failed to play next round:", e);
-    } finally {
-        isLoading.value = false;
+        }
+    } catch (error) {
+        console.error('Streaming Error:', error);
+        isStreamingActive.value = false;
     }
 };
+
+// Cleanup on unmount
+onUnmounted(() => {
+    disconnect();
+});
 
 // Initialize game on mount
 onMounted(() => {
-    initializeGame();
+    handleInitializeGame();
 });
 </script>
 
