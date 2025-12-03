@@ -192,6 +192,25 @@
                     </div>
                 </div>
 
+                <!-- Real-Time Streaming Reasoning -->
+                <div v-if="currentThinkingPlayer && streamingReasoning[currentThinkingPlayer]" class="streaming-reasoning">
+                    <div class="streaming-header">
+                        <span class="keyword">const</span> liveThinking = {
+                    </div>
+                    <div class="streaming-content">
+                        <div class="streaming-box">
+                            <div class="streaming-player">
+                                <span class="player-label">{{ currentThinkingPlayer.toUpperCase() }}</span>
+                                <span class="streaming-indicator">● LIVE</span>
+                            </div>
+                            <div class="streaming-text">
+                                {{ streamingReasoning[currentThinkingPlayer] }}<span class="cursor">▋</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="closing-brace">}</div>
+                </div>
+
                 <!-- Live Model Reasoning -->
                 <div class="live-reasoning">
                     <div class="reasoning-header">
@@ -277,7 +296,6 @@ import { useGameFlow } from "~/composables/useGameFlow";
 import { useCardDisplay } from "~/composables/useCardDisplay";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useErrorHandling } from "~/composables/useErrorHandling";
-import { useSSE } from "~/composables/useSSE";
 
 // Composables
 const { gameState, trump, scores, setGameState } = useGameState();
@@ -291,7 +309,6 @@ const {
 const { playedCards } = useCardDisplay();
 const { formattedModelsByPosition, currentPlayer, isCurrentPlayer } = usePlayerInfo();
 const { currentError, getUserFriendlyMessage } = useErrorHandling();
-const { connect, disconnect, streamingReasoning, getPlayerReasoning } = useSSE();
 
 // Get model assignments from route or use defaults
 const route = useRoute();
@@ -353,6 +370,8 @@ const handleInitializeGame = async () => {
 // Local state for SSE streaming
 const isStreamingActive = ref(false);
 const streamDecisions = ref<any[]>([]);
+const streamingReasoning = ref<Record<string, string>>({});  // Real-time reasoning tokens per player
+const currentThinkingPlayer = ref<string | null>(null);  // Track which player is currently thinking
 
 // Handle playing next round with SSE streaming
 const handlePlayNextRound = async () => {
@@ -360,6 +379,8 @@ const handlePlayNextRound = async () => {
 
     isStreamingActive.value = true;
     streamDecisions.value = [];
+    streamingReasoning.value = {};  // Clear reasoning for new round
+    currentThinkingPlayer.value = null;
 
     try {
         // Use fetch with streaming response
@@ -399,11 +420,23 @@ const handlePlayNextRound = async () => {
 
                     switch (message.type) {
                         case 'player_thinking':
-                            // Player is thinking
+                            // Player started thinking
+                            currentThinkingPlayer.value = message.player;
+                            // Initialize empty reasoning for this player
+                            if (!streamingReasoning.value[message.player]) {
+                                streamingReasoning.value[message.player] = '';
+                            }
                             break;
 
                         case 'reasoning_token':
-                            // Real-time token streaming - could display here
+                            // Real-time token streaming
+                            if (message.player && message.token) {
+                                // Accumulate tokens for the player
+                                if (!streamingReasoning.value[message.player]) {
+                                    streamingReasoning.value[message.player] = '';
+                                }
+                                streamingReasoning.value[message.player] += message.token;
+                            }
                             break;
 
                         case 'decision_made':
@@ -450,7 +483,7 @@ const handlePlayNextRound = async () => {
 
 // Cleanup on unmount
 onUnmounted(() => {
-    disconnect();
+    // Cleanup if needed
 });
 
 // Initialize game on mount
@@ -976,6 +1009,88 @@ onMounted(() => {
 
 .log-entry {
     color: #d1d5db;
+}
+
+/* Streaming Reasoning */
+.streaming-reasoning {
+    padding: 1rem;
+    border-bottom: 1px solid #374151;
+}
+
+.streaming-header {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #e5e7eb;
+}
+
+.streaming-content {
+    margin-bottom: 0.5rem;
+}
+
+.streaming-box {
+    border: 2px solid rgba(163, 230, 53, 0.5);
+    border-radius: 4px;
+    padding: 1rem;
+    background: rgba(163, 230, 53, 0.05);
+    box-shadow: 0 0 30px rgba(163, 230, 53, 0.2);
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: rgba(163, 230, 53, 0.5);
+        box-shadow: 0 0 30px rgba(163, 230, 53, 0.2);
+    }
+    50% {
+        border-color: rgba(163, 230, 53, 0.8);
+        box-shadow: 0 0 40px rgba(163, 230, 53, 0.3);
+    }
+}
+
+.streaming-player {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.player-label {
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #a3e635;
+    font-size: 0.875rem;
+}
+
+.streaming-indicator {
+    color: #a3e635;
+    font-size: 0.75rem;
+    font-weight: 600;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.streaming-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #e5e7eb;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: "Courier New", Consolas, Monaco, monospace;
+}
+
+.cursor {
+    color: #a3e635;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0;
+    }
 }
 
 .live-reasoning {
