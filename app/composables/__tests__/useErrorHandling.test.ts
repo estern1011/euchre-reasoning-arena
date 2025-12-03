@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useErrorHandling } from "../useErrorHandling";
 import type { ErrorType } from "../useErrorHandling";
 
 describe("useErrorHandling", () => {
   beforeEach(() => {
-    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -220,18 +219,11 @@ describe("useErrorHandling", () => {
     });
 
     it("should timeout if function takes too long", async () => {
-      vi.useFakeTimers();
       const { executeWithTimeout } = useErrorHandling();
       
-      const slowFn = () => new Promise((resolve) => setTimeout(() => resolve("done"), 2000));
+      const slowFn = () => new Promise((resolve) => setTimeout(() => resolve("done"), 200));
       
-      const promise = executeWithTimeout(slowFn, 1000);
-      
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      await expect(promise).rejects.toThrow("timed out");
-      
-      vi.useRealTimers();
+      await expect(executeWithTimeout(slowFn, 10)).rejects.toThrow("timed out");
     });
 
     it("should return result before timeout", async () => {
@@ -267,111 +259,66 @@ describe("useErrorHandling", () => {
     });
 
     it("should retry on failure", async () => {
-      vi.useFakeTimers();
       const { withRetry } = useErrorHandling();
       const fn = vi.fn()
         .mockRejectedValueOnce(new Error("Fail 1"))
         .mockResolvedValue("success");
       
-      const promise = withRetry(fn, 3, 5000);
-      
-      // Wait for first failure and backoff
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      const result = await promise;
+      const result = await withRetry(fn, 3, 5000);
       
       expect(result).toBe("success");
       expect(fn).toHaveBeenCalledTimes(2);
-      
-      vi.useRealTimers();
     });
 
     it("should use exponential backoff", async () => {
-      vi.useFakeTimers();
       const { withRetry } = useErrorHandling();
       const fn = vi.fn()
         .mockRejectedValueOnce(new Error("Fail 1"))
         .mockRejectedValueOnce(new Error("Fail 2"))
         .mockResolvedValue("success");
       
-      const promise = withRetry(fn, 3, 5000);
-      
-      // First retry after 1s
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      // Second retry after 2s more
-      await vi.advanceTimersByTimeAsync(2000);
-      
-      const result = await promise;
+      const startTime = Date.now();
+      const result = await withRetry(fn, 3, 5000);
+      const elapsed = Date.now() - startTime;
       
       expect(result).toBe("success");
       expect(fn).toHaveBeenCalledTimes(3);
-      
-      vi.useRealTimers();
+      // Should have waited at least 1s + 2s = 3s for exponential backoff
+      expect(elapsed).toBeGreaterThanOrEqual(2900);
     });
 
     it("should throw after max retries", async () => {
-      vi.useFakeTimers();
       const { withRetry, currentError } = useErrorHandling();
       const fn = vi.fn().mockRejectedValue(new Error("Always fails"));
       
-      const promise = withRetry(fn, 2, 5000);
-      
-      // Advance through all retries
-      await vi.advanceTimersByTimeAsync(1000); // First retry
-      await vi.advanceTimersByTimeAsync(2000); // Second retry
-      
-      await expect(promise).rejects.toThrow("Always fails");
+      await expect(withRetry(fn, 2, 5000)).rejects.toThrow("Always fails");
       expect(fn).toHaveBeenCalledTimes(3); // Initial + 2 retries
       expect(currentError.value).not.toBeNull();
-      
-      vi.useRealTimers();
     });
 
     it("should detect timeout errors", async () => {
-      vi.useFakeTimers();
       const { withRetry, currentError } = useErrorHandling();
       const fn = vi.fn().mockRejectedValue(new Error("Operation timed out"));
       
-      const promise = withRetry(fn, 1, 5000);
-      
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      await expect(promise).rejects.toThrow();
+      await expect(withRetry(fn, 1, 5000)).rejects.toThrow();
       expect(currentError.value?.type).toBe("timeout");
-      
-      vi.useRealTimers();
     });
 
     it("should detect connection errors", async () => {
-      vi.useFakeTimers();
       const { withRetry, currentError } = useErrorHandling();
       const fn = vi.fn().mockRejectedValue(new Error("fetch failed"));
       
-      const promise = withRetry(fn, 1, 5000);
-      
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      await expect(promise).rejects.toThrow();
+      await expect(withRetry(fn, 1, 5000)).rejects.toThrow();
       expect(currentError.value?.type).toBe("connection");
-      
-      vi.useRealTimers();
     });
 
     it("should detect illegal move errors", async () => {
-      vi.useFakeTimers();
       const { withRetry, currentError } = useErrorHandling();
       const fn = vi.fn().mockRejectedValue(new Error("illegal card played"));
       
-      const promise = withRetry(fn, 1, 5000);
-      
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      await expect(promise).rejects.toThrow();
+      await expect(withRetry(fn, 1, 5000)).rejects.toThrow();
       expect(currentError.value?.type).toBe("illegal_move");
       expect(currentError.value?.retryable).toBe(false); // Illegal moves shouldn't retry
-      
-      vi.useRealTimers();
     });
 
     it("should clear error on success", async () => {
@@ -387,7 +334,6 @@ describe("useErrorHandling", () => {
     });
 
     it("should set isRetrying during retries", async () => {
-      vi.useFakeTimers();
       const { withRetry, isRetrying } = useErrorHandling();
       const fn = vi.fn()
         .mockRejectedValueOnce(new Error("Fail"))
@@ -395,34 +341,17 @@ describe("useErrorHandling", () => {
       
       expect(isRetrying.value).toBe(false);
       
-      const promise = withRetry(fn, 3, 5000);
-      
-      // During first attempt, not retrying yet
-      await Promise.resolve();
-      
-      // After failure, should be retrying
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      await promise;
+      await withRetry(fn, 3, 5000);
       
       // After success, should not be retrying
       expect(isRetrying.value).toBe(false);
-      
-      vi.useRealTimers();
     });
 
     it("should handle non-Error objects", async () => {
-      vi.useFakeTimers();
       const { withRetry } = useErrorHandling();
       const fn = vi.fn().mockRejectedValue("string error");
       
-      const promise = withRetry(fn, 1, 5000);
-      
-      await vi.advanceTimersByTimeAsync(1000);
-      
-      await expect(promise).rejects.toThrow();
-      
-      vi.useRealTimers();
+      await expect(withRetry(fn, 1, 5000)).rejects.toThrow();
     });
   });
 
