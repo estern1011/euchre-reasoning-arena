@@ -325,8 +325,7 @@ const handlePlayNextRound = async () => {
 
     isStreamingActive.value = true;
     currentRoundDecisions.value = [];  // Clear previous round's decisions
-    streamingReasoning.value = {};  // Clear reasoning for new round
-    currentThinkingPlayer.value = null;
+    // Don't clear streamingReasoning or currentThinkingPlayer - keep last player's thoughts visible
 
     try {
         // Use fetch with streaming response
@@ -372,12 +371,10 @@ const handlePlayNextRound = async () => {
 
                     switch (message.type) {
                         case 'player_thinking':
-                            // Player started thinking
+                            // Player started thinking - clear their reasoning and set as current
                             currentThinkingPlayer.value = message.player;
-                            // Initialize empty reasoning for this player
-                            if (!streamingReasoning.value[message.player]) {
-                                streamingReasoning.value[message.player] = '';
-                            }
+                            // Clear reasoning for THIS player only (not all players)
+                            streamingReasoning.value[message.player] = '';
                             break;
 
                         case 'reasoning_token':
@@ -438,13 +435,13 @@ const handlePlayNextRound = async () => {
                             // Update game state
                             setGameState(message.gameState);
                             activityLog.value.push(message.roundSummary);
-                            currentThinkingPlayer.value = null;
+                            // Don't clear currentThinkingPlayer - keep last reasoning visible
                             isStreamingActive.value = false;
                             return;
 
                         case 'error':
                             console.error('SSE error:', message.message);
-                            currentThinkingPlayer.value = null;
+                            // Don't clear currentThinkingPlayer on error - keep last reasoning visible
                             isStreamingActive.value = false;
                             throw new Error(message.message);
                     }
@@ -455,7 +452,7 @@ const handlePlayNextRound = async () => {
         }
     } catch (error) {
         console.error('Streaming Error:', error);
-        currentThinkingPlayer.value = null;
+        // Don't clear currentThinkingPlayer on error - keep last reasoning visible
         isStreamingActive.value = false;
 
         // Set a user-friendly error message

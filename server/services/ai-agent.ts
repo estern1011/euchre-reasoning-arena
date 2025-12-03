@@ -76,9 +76,25 @@ function parseTrumpBid(
 
   // Round 1: order up or pass
   if (round === 1) {
+    // Look for explicit action at the end or in structured format
+    // Check for "PASS" as final decision first (more specific)
     if (
-      lowerResponse.includes("order up") ||
-      lowerResponse.includes("order it up")
+      /\bpass\b(?!.*\border.*up\b)/i.test(response) || // "pass" not followed by "order up"
+      response.trim().toLowerCase().endsWith("pass") ||
+      /\b(action|decision|choice):\s*pass\b/i.test(response)
+    ) {
+      return {
+        action: "pass",
+        goingAlone: false,
+        reasoning: response,
+        duration: 0,
+      };
+    }
+
+    // Check for ORDER_UP as explicit action
+    if (
+      /\b(order\s*up|order\s*it\s*up)\b/i.test(response) &&
+      !/\b(don't|do not|should not|shouldn't)\s*(order.*up)/i.test(response)
     ) {
       return {
         action: "order_up",
@@ -87,6 +103,8 @@ function parseTrumpBid(
         duration: 0, // Set by caller
       };
     }
+
+    // Default to pass if unclear
     return {
       action: "pass",
       goingAlone: false,
