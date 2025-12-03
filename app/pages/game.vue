@@ -211,86 +211,33 @@
                     <div class="closing-brace">}</div>
                 </div>
 
-                <!-- Live Model Reasoning -->
-                <div class="live-reasoning">
-                    <div class="reasoning-header">
-                        <span class="keyword">const</span> reasoning = {
-                    </div>
-
-                    <div class="reasoning-content">
-                        <div
-                            v-for="(decision, index) in currentRoundDecisions"
-                            :key="index"
-                            :class="[
-                                'model-reasoning',
-                                { active: index === currentRoundDecisions.length - 1 },
-                            ]"
-                        >
-                            <div class="model-header">
-                                <span class="model-position">{{
-                                    decision.player.toUpperCase()
-                                }}</span>
-                                <span
-                                    :class="[
-                                        'indicator',
-                                        {
-                                            active:
-                                                index === currentRoundDecisions.length - 1,
-                                        },
-                                    ]"
-                                    >●</span
-                                >
-                            </div>
-                            <div class="model-details">
-                                <div class="model-id">
-                                    MODEL: {{ decision.modelId }} | DURATION:
-                                    {{ (decision.duration / 1000).toFixed(2) }}s
-                                </div>
-                                <div class="action">
-                                    <template v-if="'card' in decision">
-                                        ACTION: PLAYED {{ decision.card.rank
-                                        }}{{
-                                            decision.card.suit === "hearts"
-                                                ? "♥"
-                                                : decision.card.suit ===
-                                                    "diamonds"
-                                                  ? "♦"
-                                                  : decision.card.suit ===
-                                                      "clubs"
-                                                    ? "♣"
-                                                    : "♠"
-                                        }}
-                                    </template>
-                                    <template v-else>
-                                        ACTION:
-                                        {{ decision.action.toUpperCase() }}
-                                    </template>
-                                </div>
-                            </div>
-                            <div class="reasoning-text">
-                                <p>{{ decision.reasoning }}</p>
-                            </div>
-                        </div>
-                        <div
-                            v-if="currentRoundDecisions.length === 0"
-                            class="model-reasoning"
-                        >
-                            <div class="reasoning-text">
-                                <p>
-                                    No reasoning available yet. Click "Play Next Round" to start.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Reasoning History Button -->
+                <div class="history-section">
+                    <button
+                        class="history-button"
+                        type="button"
+                        @click="showReasoningModal = true"
+                    >
+                        <span class="button-text">viewHistory()</span>
+                        <span class="badge">{{ allDecisions.length }}</span>
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Reasoning Modal -->
+        <ReasoningModal
+            :is-open="showReasoningModal"
+            :decisions="allDecisions"
+            @close="showReasoningModal = false"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted } from "vue";
 import Card from "~/components/Card.vue";
+import ReasoningModal from "~/components/ReasoningModal.vue";
 import { useGameState } from "~/composables/useGameState";
 import { useGameFlow } from "~/composables/useGameFlow";
 import { useCardDisplay } from "~/composables/useCardDisplay";
@@ -303,12 +250,14 @@ const {
     initializeGame,
     playNextRound,
     isLoading,
-    currentRoundDecisions,
     roundSummary: currentRoundSummary,
 } = useGameFlow();
 const { playedCards } = useCardDisplay();
 const { formattedModelsByPosition, currentPlayer, isCurrentPlayer } = usePlayerInfo();
 const { currentError, getUserFriendlyMessage } = useErrorHandling();
+
+// Local ref for currentRoundDecisions (writable for SSE streaming)
+const currentRoundDecisions = ref<any[]>([]);
 
 // Get model assignments from route or use defaults
 const route = useRoute();
@@ -369,16 +318,17 @@ const handleInitializeGame = async () => {
 
 // Local state for SSE streaming
 const isStreamingActive = ref(false);
-const streamDecisions = ref<any[]>([]);
 const streamingReasoning = ref<Record<string, string>>({});  // Real-time reasoning tokens per player
 const currentThinkingPlayer = ref<string | null>(null);  // Track which player is currently thinking
+const showReasoningModal = ref(false);
+const allDecisions = ref<any[]>([]);  // All decisions across all rounds
 
 // Handle playing next round with SSE streaming
 const handlePlayNextRound = async () => {
     if (!gameState.value || isStreamingActive.value) return;
 
     isStreamingActive.value = true;
-    streamDecisions.value = [];
+    currentRoundDecisions.value = [];  // Clear previous round's decisions
     streamingReasoning.value = {};  // Clear reasoning for new round
     currentThinkingPlayer.value = null;
 
@@ -401,14 +351,20 @@ const handlePlayNextRound = async () => {
             throw new Error('No response body');
         }
 
+        // Buffer for incomplete SSE messages
+        let buffer = '';
+
         // Read the stream
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
             // Decode and parse SSE messages
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+
+            // Keep the last incomplete line in the buffer
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
                 if (!line.trim() || !line.startsWith('data: ')) continue;
@@ -455,20 +411,29 @@ const handlePlayNextRound = async () => {
                                 );
                             }
 
-                            streamDecisions.value.push(message);
+                            // Add decision to the current round decisions array
+                            // If reasoning is empty but we have streamed reasoning, use that
+                            const decisionWithReasoning = {
+                                ...message,
+                                reasoning: message.reasoning || streamingReasoning.value[message.player] || 'No reasoning provided'
+                            };
+                            currentRoundDecisions.value.push(decisionWithReasoning);
+                            allDecisions.value.push(decisionWithReasoning);
                             break;
 
                         case 'round_complete':
                             // Update game state
                             setGameState(message.gameState);
                             activityLog.value.push(message.roundSummary);
+                            currentThinkingPlayer.value = null;
                             isStreamingActive.value = false;
                             return;
 
                         case 'error':
                             console.error('SSE error:', message.message);
+                            currentThinkingPlayer.value = null;
                             isStreamingActive.value = false;
-                            return;
+                            throw new Error(message.message);
                     }
                 } catch (parseError) {
                     console.error('SSE Parse Error:', parseError);
@@ -477,7 +442,12 @@ const handlePlayNextRound = async () => {
         }
     } catch (error) {
         console.error('Streaming Error:', error);
+        currentThinkingPlayer.value = null;
         isStreamingActive.value = false;
+
+        // Set a user-friendly error message
+        const errorMsg = error instanceof Error ? error.message : 'An unknown error occurred';
+        activityLog.value.push(`ERROR: ${errorMsg}`);
     }
 };
 
@@ -494,7 +464,8 @@ onMounted(() => {
 
 <style scoped>
 .game-container {
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     position: relative;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
@@ -503,6 +474,8 @@ onMounted(() => {
     background-color: #0a0a0a;
     color: #fff;
     font-family: "Courier New", Consolas, Monaco, monospace;
+    display: flex;
+    flex-direction: column;
 }
 
 .game-container::before {
@@ -534,6 +507,7 @@ onMounted(() => {
     align-items: center;
     padding: 1.5rem 3rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 .game-header h1 {
@@ -598,7 +572,8 @@ onMounted(() => {
     grid-template-columns: 2fr 1fr;
     gap: 0.75rem;
     padding: 0.75rem;
-    height: calc(100vh - 65px);
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -1005,6 +980,9 @@ onMounted(() => {
     flex-direction: column;
     gap: 0.5rem;
     font-size: 0.875rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
 }
 
 .log-entry {
@@ -1077,6 +1055,9 @@ onMounted(() => {
     white-space: pre-wrap;
     word-wrap: break-word;
     font-family: "Courier New", Consolas, Monaco, monospace;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
 }
 
 .cursor {
@@ -1093,83 +1074,58 @@ onMounted(() => {
     }
 }
 
-.live-reasoning {
+.history-section {
     flex: 1;
     padding: 1rem;
-    overflow-y: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 2rem;
 }
 
-.reasoning-header {
-    font-weight: 500;
+.history-button {
+    width: 100%;
+    max-width: 300px;
+    padding: 1rem 1.5rem;
+    font-family: "Courier New", monospace;
+    font-size: 0.9375rem;
+    font-weight: 600;
     letter-spacing: 0.025em;
-    margin-bottom: 1.5rem;
-    font-size: 0.875rem;
-    color: #e5e7eb;
-}
-
-.reasoning-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.model-reasoning {
-    border: 1px solid #374151;
-    border-radius: 4px;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.model-reasoning.active {
-    border-color: rgba(163, 230, 53, 0.3);
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.15);
-    background: rgba(163, 230, 53, 0.03);
-}
-
-.model-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.model-position {
-    font-weight: bold;
-    letter-spacing: 1px;
-}
-
-.indicator {
-    color: #6b7280;
-    font-size: 1.5rem;
-}
-
-.indicator.active {
     color: #a3e635;
-    animation: pulse 2s ease-in-out infinite;
+    background: rgba(163, 230, 53, 0.08);
+    border: 2px solid rgba(163, 230, 53, 0.4);
+    border-radius: 0px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 
-.model-details {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    margin-bottom: 0.75rem;
+.history-button:hover {
+    background: rgba(163, 230, 53, 0.15);
+    border-color: rgba(163, 230, 53, 0.6);
+    box-shadow: 8px 8px 0px rgba(163, 230, 53, 0.35);
+    transform: translate(-2px, -2px);
+    color: #fff;
 }
 
-.model-id {
-    margin-bottom: 0.25rem;
+.history-button:active {
+    box-shadow: 3px 3px 0px rgba(163, 230, 53, 0.25);
+    transform: translate(3px, 3px);
 }
 
-.action {
-    color: #d1d5db;
-}
-
-.reasoning-text {
+.history-button .badge {
+    background: rgba(163, 230, 53, 0.2);
+    border: 1px solid rgba(163, 230, 53, 0.4);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
     font-size: 0.875rem;
-    line-height: 1.5;
-    color: #e5e7eb;
-}
-
-.reasoning-text p {
-    margin-bottom: 0.5rem;
+    font-weight: bold;
+    min-width: 32px;
+    text-align: center;
 }
 
 /* Game Controls */
