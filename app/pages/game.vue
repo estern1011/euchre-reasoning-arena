@@ -29,60 +29,14 @@
                 <div class="table-view">
                     <div class="table-header"><span class="keyword">const</span> table = {</div>
 
-                    <div class="card-table">
-                        <!-- Player Positions -->
-                        <PlayerPosition
-                            position="north"
-                            :model-name="formattedModelsByPosition.north"
-                            :hand="playerHands.north"
-                            :is-current-player="isCurrentPlayer('north')"
-                            :is-streaming="isStreamingActive"
-                        />
-
-                        <PlayerPosition
-                            position="west"
-                            :model-name="formattedModelsByPosition.west"
-                            :hand="playerHands.west"
-                            :played-card="playedCards.west"
-                            :is-current-player="isCurrentPlayer('west')"
-                            :is-streaming="isStreamingActive"
-                        />
-
-                        <!-- Center - Played Cards Area -->
-                        <div class="center-area">
-                            <div v-if="playedCards.center" class="center-card">
-                                <Card
-                                    :suit="playedCards.center.suit"
-                                    :rank="playedCards.center.rank"
-                                />
-                            </div>
-                            <div v-if="turnedUpCard" class="turned-up-card-display">
-                                <div class="card-label">// turned_up</div>
-                                <Card
-                                    :suit="turnedUpCard.suit"
-                                    :rank="turnedUpCard.rank"
-                                    size="md"
-                                />
-                            </div>
-                        </div>
-
-                        <PlayerPosition
-                            position="east"
-                            :model-name="formattedModelsByPosition.east"
-                            :hand="playerHands.east"
-                            :played-card="playedCards.east"
-                            :is-current-player="isCurrentPlayer('east')"
-                            :is-streaming="isStreamingActive"
-                        />
-
-                        <PlayerPosition
-                            position="south"
-                            :model-name="formattedModelsByPosition.south"
-                            :hand="playerHands.south"
-                            :is-current-player="isCurrentPlayer('south')"
-                            :is-streaming="isStreamingActive"
-                        />
-                    </div>
+                    <GameBoard
+                        :player-hands="playerHands"
+                        :played-cards="playedCards"
+                        :formatted-models="formattedModelsByPosition"
+                        :turned-up-card="turnedUpCard"
+                        :current-player="currentPlayer"
+                        :is-streaming="isStreamingActive"
+                    />
 
                     <!-- Game Controls -->
                     <div class="game-controls">
@@ -134,10 +88,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted } from "vue";
-import Card from "~/components/Card.vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
 import GameStateHeader from "~/components/GameStateHeader.vue";
-import PlayerPosition from "~/components/PlayerPosition.vue";
+import GameBoard from "~/components/GameBoard.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
 import { useGameState } from "~/composables/useGameState";
@@ -687,135 +640,6 @@ onMounted(() => {
     color: #e5e7eb;
     padding: 1rem 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.card-table {
-    position: relative;
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0px;
-    flex: 1;
-    display: grid;
-    grid-template-areas:
-        ". north ."
-        "west center east"
-        ". south .";
-    grid-template-columns: clamp(150px, 15vw, 200px) 1fr clamp(150px, 15vw, 200px);
-    grid-template-rows: auto 1fr auto;
-    padding: 0.25rem;
-    gap: 0.25rem;
-    height: calc(100vh - 200px);
-    overflow: hidden;
-}
-
-.center-area {
-    grid-area: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.center-card {
-    grid-area: card-north;
-}
-
-.thinking-box {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-    border: 3px solid #3b82f6;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    box-shadow:
-        0 0 40px rgba(59, 130, 246, 0.6),
-        0 0 80px rgba(59, 130, 246, 0.4),
-        inset 0 0 30px rgba(59, 130, 246, 0.2);
-    text-align: center;
-    position: relative;
-    animation: thinkingGlow 2s ease-in-out infinite;
-}
-
-@keyframes thinkingGlow {
-    0%, 100% {
-        box-shadow:
-            0 0 40px rgba(59, 130, 246, 0.6),
-            0 0 80px rgba(59, 130, 246, 0.4),
-            inset 0 0 30px rgba(59, 130, 246, 0.2);
-    }
-    50% {
-        box-shadow:
-            0 0 60px rgba(59, 130, 246, 0.8),
-            0 0 120px rgba(59, 130, 246, 0.5),
-            inset 0 0 40px rgba(59, 130, 246, 0.3);
-    }
-}
-
-.position-label {
-    color: #93c5fd;
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    margin-bottom: 0.5rem;
-}
-
-.thinking-text {
-    font-size: 1.25rem;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-
-.gear-icon {
-    width: 16px;
-    height: 16px;
-    stroke-width: 2;
-}
-
-.card-placeholder {
-    width: 80px;
-    height: 112px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #444;
-    border-radius: 4px;
-}
-
-.turned-up-card {
-    text-align: center;
-    font-size: 0.875rem;
-    color: #fbbf24;
-    background: rgba(251, 191, 36, 0.1);
-    border: 2px solid rgba(251, 191, 36, 0.3);
-    padding: 0.75rem;
-    border-radius: 4px;
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
-}
-
-.turned-up-card .card-label {
-    font-size: 0.7rem;
-    color: #9ca3af;
-    margin-bottom: 0.25rem;
-}
-
-.turned-up-card .card-value {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #fbbf24;
-}
-
-.turned-up-card-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: rgba(163, 230, 53, 0.03);
-    border: 1px solid rgba(163, 230, 53, 0.2);
-    border-radius: 2px;
-}
-
-.turned-up-card-display .card-label {
-    font-size: 0.65rem;
-    color: #6b7280;
-    font-family: "Courier New", monospace;
-    letter-spacing: 0.5px;
 }
 
 /* Intelligence Panel */
