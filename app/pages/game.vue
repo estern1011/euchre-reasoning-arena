@@ -54,8 +54,15 @@
                                 <div class="model-name">{{ formattedModelsByPosition.north }}</div>
                                 <div class="status">WAITING</div>
                             </div>
-                            <div v-if="playerHands.north.length > 0" class="hand-display">
-                                {{ playerHands.north.map(formatCard).join(', ') }}
+                            <div v-if="playerHands.north.length > 0" class="hand-cards">
+                                <Card
+                                    v-for="(card, index) in playerHands.north"
+                                    :key="`north-${index}`"
+                                    :suit="card.suit"
+                                    :rank="card.rank"
+                                    :faceDown="true"
+                                    size="sm"
+                                />
                             </div>
                         </div>
 
@@ -86,8 +93,15 @@
                                 <div class="model-name">{{ formattedModelsByPosition.west }}</div>
                                 <div class="status">{{ isCurrentPlayer('west') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
-                            <div v-if="playerHands.west.length > 0" class="hand-display">
-                                {{ playerHands.west.map(formatCard).join(', ') }}
+                            <div v-if="playerHands.west.length > 0" class="hand-cards">
+                                <Card
+                                    v-for="(card, index) in playerHands.west"
+                                    :key="`west-${index}`"
+                                    :suit="card.suit"
+                                    :rank="card.rank"
+                                    :faceDown="true"
+                                    size="sm"
+                                />
                             </div>
                         </div>
 
@@ -99,9 +113,13 @@
                                     :rank="playedCards.center.rank"
                                 />
                             </div>
-                            <div v-if="turnedUpCard" class="turned-up-card">
+                            <div v-if="turnedUpCard" class="turned-up-card-display">
                                 <div class="card-label">Turned up:</div>
-                                <div class="card-value">{{ formatCard(turnedUpCard) }}</div>
+                                <Card
+                                    :suit="turnedUpCard.suit"
+                                    :rank="turnedUpCard.rank"
+                                    size="md"
+                                />
                             </div>
                         </div>
 
@@ -132,8 +150,15 @@
                                 <div class="model-name">{{ formattedModelsByPosition.east }}</div>
                                 <div class="status">{{ isCurrentPlayer('east') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
-                            <div v-if="playerHands.east.length > 0" class="hand-display">
-                                {{ playerHands.east.map(formatCard).join(', ') }}
+                            <div v-if="playerHands.east.length > 0" class="hand-cards">
+                                <Card
+                                    v-for="(card, index) in playerHands.east"
+                                    :key="`east-${index}`"
+                                    :suit="card.suit"
+                                    :rank="card.rank"
+                                    :faceDown="true"
+                                    size="sm"
+                                />
                             </div>
                         </div>
 
@@ -158,8 +183,15 @@
                                 <div class="model-name">{{ formattedModelsByPosition.south }}</div>
                                 <div class="status">{{ isCurrentPlayer('south') ? '● THINKING' : 'WAITING' }}</div>
                             </div>
-                            <div v-if="playerHands.south.length > 0" class="hand-display">
-                                {{ playerHands.south.map(formatCard).join(', ') }}
+                            <div v-if="playerHands.south.length > 0" class="hand-cards">
+                                <Card
+                                    v-for="(card, index) in playerHands.south"
+                                    :key="`south-${index}`"
+                                    :suit="card.suit"
+                                    :rank="card.rank"
+                                    :faceDown="true"
+                                    size="sm"
+                                />
                             </div>
                         </div>
                     </div>
@@ -1020,6 +1052,15 @@ onMounted(() => {
     border-radius: 2px;
 }
 
+.hand-cards {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    flex-wrap: wrap;
+}
+
 .turned-up-card {
     text-align: center;
     font-size: 0.875rem;
@@ -1041,6 +1082,25 @@ onMounted(() => {
     font-size: 1.5rem;
     font-weight: bold;
     color: #fbbf24;
+}
+
+.turned-up-card-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: rgba(251, 191, 36, 0.05);
+    border: 2px solid rgba(251, 191, 36, 0.2);
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+}
+
+.turned-up-card-display .card-label {
+    font-size: 0.7rem;
+    color: #fbbf24;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 /* Intelligence Panel */
