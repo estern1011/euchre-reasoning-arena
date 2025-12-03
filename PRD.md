@@ -368,7 +368,53 @@ euchre-reasoning-arena/
 
 ---
 
-## 7. Key Decisions & Trade-offs
+## 7. Development Guidelines & Code Quality
+
+### Remove AI Code Slop
+
+All code changes must actively remove AI-generated patterns that don't belong in this codebase:
+
+#### Banned Patterns
+- **Excessive Comments:** Remove comments that a human wouldn't add or are inconsistent with the file's style
+- **Defensive Checks:** Remove unnecessary try/catch blocks or validation in trusted/validated codepaths  
+- **Type Workarounds:** Remove `as any` casts used to bypass TypeScript issues
+- **Generic Styling:** Remove cookie-cutter CSS/components that lack project-specific character
+- **Over-Engineering:** Remove abstraction layers that serve no purpose
+
+#### What to Keep
+- **Minimal Comments:** Only for complex business logic or external API quirks
+- **Necessary Error Handling:** Only where external systems (AI Gateway, network) can fail
+- **Proper Types:** Strong typing without shortcuts
+- **Project-Specific Code:** Code that matches existing patterns and style
+
+#### Reporting Requirement
+After removing slop, provide a brief 1-3 sentence summary of what was changed.
+
+### Frontend Design Principles
+
+**Aesthetic Direction:** Vercel-inspired monochrome with strategic color accents, pixelated/code-style, wireframe-like
+
+**Design Inspiration Sources:**
+- **Vercel.com** - Clean, monochrome, technical aesthetic
+- **dtc-benchmark-report-doug.vercel.app** - Data-driven reports with structured layouts
+- **helix-ai-doug.vercel.app** - Research-focused, scientific presentation
+- **ctx-engineering.vercel.app** - Code-style typography, technical documentation
+
+**Key Design Elements:**
+- **Typography:** Code-style fonts (monospace, technical). Avoid generic fonts like Inter, Arial, system defaults
+- **Color Scheme:** Primarily monochrome (black/white/grays) with strategic color pops for emphasis
+- **Layout:** Wireframe-like structures, technical diagrams, asymmetric compositions
+- **Motion:** Subtle animations focusing on token-by-token text reveals for AI reasoning
+- **Visual Details:** Textures, grain overlays, gradient meshes that reinforce the technical aesthetic
+
+**Frontend Implementation Requirements:**
+- Create distinctive, production-grade interfaces with high design quality
+- Avoid generic "AI slop" aesthetics - no purple gradients on white backgrounds
+- Match implementation complexity to aesthetic vision
+- Use creative, context-specific design choices
+- Implement bold maximalism or refined minimalism with clear intentionality
+
+## 8. Key Decisions & Trade-offs
 
 ### Technology Choices
 
