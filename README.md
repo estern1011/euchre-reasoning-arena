@@ -1,8 +1,8 @@
 # Euchre Reasoning Arena
 
 ![Tests](https://github.com/estern1011/euchre-reasoning-arena/workflows/Tests/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-98.01%25-brightgreen)
-![Tests](https://img.shields.io/badge/tests-177%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
+![Tests](https://img.shields.io/badge/tests-397%20passing-brightgreen)
 
 An interactive playground for exploring, comparing, and evaluating AI strategic reasoning through the card game Euchre.
 
@@ -43,9 +43,9 @@ bun run test:ui
 ```
 
 **Current Test Coverage:**
-- ✅ **177 tests passing**
-- ✅ **98.0% statement coverage**
-- ✅ **94.1% branch coverage**
+- ✅ **397 tests passing**
+- ✅ **98% statement coverage**
+- ✅ **94% branch coverage**
 - ✅ **100% function coverage**
 
 ## Production
@@ -106,10 +106,11 @@ The game engine implements full Euchre rules with comprehensive test coverage:
 - ✅ Custom error types with detailed messages
 
 **Test Coverage:**
-- 177 tests across 5 test suites
+- 397 tests across 17 test suites
 - Tests for all game phases: trump selection → playing → complete
 - Edge case coverage for invalid plays, corrupt state, going alone scenarios
-- 98.0% statement coverage, 100% function coverage
+- AI agent tests: retry logic, illegal moves, streaming variants
+- 98% statement coverage, 100% function coverage
 
 ## Contributing
 

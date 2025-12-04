@@ -4,8 +4,8 @@
 **Repository:** `estern1011/euchre-reasoning-arena`
 **Timeline:** 2 weeks (Nov 30 - Dec 13, 2025)
 **Target:** AI Gateway Game Hackathon - Model Eval Game Category
-**Status:** v1.6 - Two-Mode Layout System Complete 🎨
-**Last Updated:** Dec 3, 2025 (Evening)
+**Status:** v1.7 - Production Hardening Complete 🔒
+**Last Updated:** Dec 4, 2025
 
 ---
 
@@ -15,8 +15,10 @@
 
 #### Backend Infrastructure
 - **Game Engine** - Full Euchre implementation with trump selection, bidding, card play
-- **Test Suite** - 217 tests with 100% coverage (statement/branch/function/line)
-  - Added 13 new tests for illegal move handling
+- **Test Suite** - 397 tests with comprehensive coverage
+  - Added 13 tests for illegal move handling
+  - Added 22 tests for AI agent service
+  - Test speed optimized with fake timers (12s → 600ms)
 - **AI Gateway Integration** - Using Vercel AI SDK with `streamText()` for token-by-token streaming
 - **API Endpoints:**
   - `/api/new-game` - Initialize new game with model selection
@@ -97,6 +99,26 @@
 - Coverage badges
 - Type-safe TypeScript throughout
 
+#### Production Hardening (v1.7) ✅ NEW
+- **API Validation** - Zod schemas for all API endpoints (GameState, Position, Card, model IDs)
+- **Accessibility (WCAG AA)**
+  - Modal: role="dialog", aria-modal, focus trap, Escape key
+  - Card component: keyboard navigation (Enter/Space), aria-label
+  - aria-live regions for screen readers (ActivityLog, StreamingReasoning)
+  - Semantic HTML landmarks (main, aside)
+  - Improved color contrast for WCAG compliance
+- **Vue/Nuxt Best Practices**
+  - Converted module-level refs to Nuxt useState() for SSR safety
+  - Added onBeforeUnmount cleanup for event listeners
+- **Performance Optimizations**
+  - Replaced deep watch with targeted property watch in MultiAgentReasoning
+  - Fixed O(n²) hand filtering in store using Set for O(1) lookup
+  - Model-specific config to skip temperature for reasoning models (o1, o3, gpt-5)
+- **Code Quality**
+  - Refactored ai-agent.ts (850 lines) into modular structure (8 files)
+  - Fixed TypeScript types using LanguageModelUsage from AI SDK
+  - Added timeout cleanup to prevent memory leaks
+
 ### 🔄 In Progress
 
 **Polish Mode 1 - Visual Enhancements** (Branch: `polish-mode-1`)
@@ -147,15 +169,17 @@ Current focus: Improving card visualization and game state display
 ### Timeline Status
 
 **Original Deadline:** Dec 13, 2025
-**Current Date:** Dec 2, 2025 (11 days remaining)
+**Current Date:** Dec 4, 2025 (9 days remaining)
 **Status:** ✅ **AHEAD OF SCHEDULE!**
 
 **Updated Schedule:**
 - **Dec 2:** ~~Fix SSE frontend~~ ✅ **DONE!** ~~complete Mode 1~~ ✅ **DONE!**
-- **Dec 3 (TODAY):** ✅ Pinia migration, illegal moves, live reasoning, hands display, Card component
-  - 🚧 **Current:** Visual card displays with Card components (hands, center, turned-up)
-  - 🚧 **Next:** Loading states, animations, polish
-- **Dec 3-4:** Complete Mode 1 polish, deploy to Vercel, test live
+- **Dec 3:** ✅ Pinia migration, illegal moves, live reasoning, hands display, Card component
+- **Dec 4 (TODAY):** ✅ Production hardening - validation, accessibility, performance
+  - ✅ Zod validation on all API endpoints
+  - ✅ WCAG AA accessibility (modal, keyboard, aria-live)
+  - ✅ Performance optimizations (O(n²) fix, deep watch fix)
+  - ✅ Code refactoring (ai-agent modularization)
 - **Dec 5-6:** Mode 2 (Prompt Editor) - Stretch goal
 - **Dec 7-8:** Mode 3 (Rating System) - Stretch goal
 - **Dec 9-10:** Comprehensive testing, UI improvements
@@ -303,12 +327,23 @@ data: {"type":"round_complete","gameState":{...},"phase":"..."}
 euchre-reasoning-arena/
 ├── server/
 │   ├── api/
-│   │   ├── new-game.post.ts          # Game initialization
-│   │   ├── stream-next-round.post.ts # SSE streaming (WORKING)
-│   │   ├── play-next-round.post.ts   # Non-streaming fallback
+│   │   ├── new-game.post.ts          # Game initialization (Zod validated)
+│   │   ├── stream-next-round.post.ts # SSE streaming (Zod validated)
+│   │   ├── play-next-round.post.ts   # Non-streaming fallback (Zod validated)
 │   │   └── models.get.ts             # Available models
+│   ├── schemas/
+│   │   └── game-schemas.ts           # Zod validation schemas
 │   └── services/
-│       └── ai-agent.ts                # AI SDK integration with streamText()
+│       └── ai-agent/                  # Modular AI service (refactored from single file)
+│           ├── index.ts              # Public exports
+│           ├── config.ts             # Gateway, retry, timeout, model config
+│           ├── schemas.ts            # AI response schemas
+│           ├── prompts.ts            # System prompts
+│           ├── trump-bid.ts          # Trump bidding logic
+│           ├── card-play.ts          # Card play logic
+│           ├── discard.ts            # Discard logic
+│           ├── logger.ts             # Structured logging
+│           └── types.ts              # TypeScript types
 │
 ├── lib/
 │   └── game/
@@ -377,9 +412,11 @@ euchre-reasoning-arena/
 - ❌ Database persistence (Vercel KV)
 - ❌ Multiple game history
 - ❌ Mobile optimization
-- ❌ Accessibility audit
+- ✅ ~~Accessibility audit~~ - WCAG AA implemented (v1.7)
 - ❌ Prompt marketplace
 - ❌ Advanced statistics
+- ❌ Rate limiting
+- ❌ Error tracking (Sentry)
 
 ---
 
