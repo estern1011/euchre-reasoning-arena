@@ -424,19 +424,21 @@ export async function makeCardPlayDecisionStreaming(
       `[AI-Agent] No legal cards computed for ${player} (${modelId}). Falling back to first card in hand.`,
     );
     const fallbackCard = playerObj.hand[0];
+    const reasoning = "No legal cards detected; playing the first card in hand as a safeguard.";
+    onToken(reasoning);
     return {
       card: fallbackCard,
-      reasoning:
-        "No legal cards detected; playing the first card in hand as a safeguard.",
+      reasoning,
       duration: Date.now() - startTime,
     };
   }
 
   if (validCards.length === 1) {
+    const reasoning = "Only one legal card available; playing it automatically to follow suit.";
+    onToken(reasoning);
     return {
       card: validCards[0],
-      reasoning:
-        "Only one legal card available; playing it automatically to follow suit.",
+      reasoning,
       duration: Date.now() - startTime,
     };
   }

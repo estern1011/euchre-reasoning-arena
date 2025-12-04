@@ -30,6 +30,10 @@ defineProps<Props>();
 .activity-log {
     border-bottom: 1px solid #333;
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .log-header {
@@ -38,6 +42,7 @@ defineProps<Props>();
     margin-bottom: 1rem;
     font-size: 0.875rem;
     color: var(--color-text);
+    flex-shrink: 0;
 }
 
 .keyword {
@@ -49,9 +54,9 @@ defineProps<Props>();
     flex-direction: column;
     gap: 0.5rem;
     font-size: 0.875rem;
-    max-height: 200px;
     overflow-y: auto;
     padding-right: 0.5rem;
+    flex: 1;
 }
 
 .log-entry {

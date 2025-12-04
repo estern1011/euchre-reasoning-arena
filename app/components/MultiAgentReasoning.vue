@@ -14,7 +14,7 @@
                     <span v-if="position === currentPlayer" class="live-indicator">● LIVE</span>
                 </div>
                 <div class="agent-model">{{ getModelName(position) }}</div>
-                <div class="agent-reasoning">
+                <div :ref="(el) => setAgentRef(el as HTMLElement | null, position)" class="agent-reasoning">
                     <template v-if="reasoning[position]">
                         {{ reasoning[position] }}<span v-if="position === currentPlayer" class="cursor">▋</span>
                     </template>
@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch, ref, nextTick } from "vue";
 import type { Position } from "~/types/game";
 
 interface Props {
@@ -38,6 +39,38 @@ interface Props {
 const props = defineProps<Props>();
 
 const positions: Position[] = ['north', 'east', 'south', 'west'];
+const agentRefs = ref<Record<string, HTMLElement>>({});
+
+const setAgentRef = (el: HTMLElement | null, position: string) => {
+    if (el) {
+        agentRefs.value[position] = el;
+    }
+};
+
+// Watch for reasoning updates and auto-scroll
+watch(
+    () => props.reasoning,
+    async (newReasoning) => {
+        await nextTick();
+        // If there is a current player, scroll their box
+        if (props.currentPlayer && agentRefs.value[props.currentPlayer]) {
+             const el = agentRefs.value[props.currentPlayer];
+             el.scrollTop = el.scrollHeight;
+        }
+        // Also check all other positions in case updates came in concurrently
+        positions.forEach(pos => {
+             if (agentRefs.value[pos]) {
+                 const el = agentRefs.value[pos];
+                 // Only auto-scroll if already near bottom or if it's the active player
+                 // But for streaming, we generally want to stick to bottom for the active one
+                 if (pos === props.currentPlayer) {
+                     el.scrollTop = el.scrollHeight;
+                 }
+             }
+        });
+    },
+    { deep: true }
+);
 
 const getModelName = (position: Position): string => {
     const modelId = props.modelIds[position];

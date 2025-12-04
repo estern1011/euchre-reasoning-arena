@@ -18,10 +18,6 @@
                     </button>
                 </div>
             </div>
-            <span class="live-badge">
-                <span class="live-dot"></span>
-                LIVE
-            </span>
         </header>
 
         <div class="game-content">
