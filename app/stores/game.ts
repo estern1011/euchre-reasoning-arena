@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import type { GameState } from '~/lib/game/types'
 
+export type ViewMode = 'arena' | 'intelligence'
+
 export const useGameStore = defineStore('game', {
   state: () => ({
     gameState: null as GameState | null,
@@ -11,6 +13,7 @@ export const useGameStore = defineStore('game', {
       west: 'xai/grok-4.1-fast-non-reasoning',
     },
     isInitialized: false,
+    viewMode: 'arena' as ViewMode,
   }),
 
   getters: {
@@ -52,8 +55,13 @@ export const useGameStore = defineStore('game', {
       this.isInitialized = false
     },
 
+    setViewMode(mode: ViewMode) {
+      this.viewMode = mode
+    },
+
     reset() {
       this.clearGameState()
+      this.viewMode = 'arena'
       this.modelIds = {
         north: 'anthropic/claude-haiku-4.5',
         east: 'google/gemini-2.5-flash',

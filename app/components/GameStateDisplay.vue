@@ -48,7 +48,7 @@ defineProps<Props>();
 }
 
 .state-label {
-    color: #a3e635;
+    color: var(--color-accent);
     font-weight: 500;
 }
 
@@ -57,11 +57,11 @@ defineProps<Props>();
 }
 
 .divider {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .trump-suit {
-    color: #ef4444;
+    color: var(--color-error);
     font-size: 1rem;
     font-weight: 600;
 }

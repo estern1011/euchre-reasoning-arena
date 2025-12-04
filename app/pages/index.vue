@@ -137,15 +137,15 @@ const startGame = () => {
     font-weight: 600;
     letter-spacing: 0.05em;
     margin: 0;
-    color: #e5e7eb;
+    color: var(--color-text);
 }
 
 .bracket {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .accent {
-    color: #a3e635;
+    color: var(--color-accent);
 }
 
 .live-dot {
@@ -184,7 +184,7 @@ const startGame = () => {
 }
 
 .code-comment {
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
 }
@@ -194,7 +194,7 @@ const startGame = () => {
     font-weight: 700;
     line-height: 1.1;
     margin-bottom: 1.5rem;
-    background: linear-gradient(135deg, #fff 0%, #a3e635 100%);
+    background: linear-gradient(135deg, #fff 0%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -205,7 +205,7 @@ const startGame = () => {
 }
 
 .hero-subtitle {
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     font-size: 1.125rem;
     letter-spacing: 0.025em;
 }
@@ -219,11 +219,11 @@ const startGame = () => {
     font-size: 1.5rem;
     font-weight: 500;
     margin: 0;
-    color: #e5e7eb;
+    color: var(--color-text);
 }
 
 .keyword {
-    color: #c084fc;
+    color: var(--color-keyword);
 }
 
 .model-grid {
@@ -253,20 +253,20 @@ const startGame = () => {
     font-size: 1rem;
     font-weight: 500;
     letter-spacing: 0.025em;
-    color: #a3e635;
+    color: var(--color-accent);
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .comma {
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 1.125rem;
     flex-shrink: 0;
 }
 
 .closing-brace {
     font-size: 1.5rem;
-    color: #e5e7eb;
+    color: var(--color-text);
     padding: 0 0 1rem 0rem;
 }
 
@@ -361,7 +361,7 @@ const startGame = () => {
 }
 
 .start-button-shell:focus-within {
-    border-color: #a3e635;
+    border-color: var(--color-accent);
     box-shadow:
         12px 12px 0px rgba(163, 230, 53, 0.5),
         0 0 0 4px rgba(163, 230, 53, 0.2);
@@ -378,7 +378,7 @@ const startGame = () => {
     letter-spacing: 0.05em !important;
     font-family: "Courier New", monospace !important;
     background: transparent !important;
-    color: #a3e635 !important;
+    color: var(--color-accent) !important;
     border: none !important;
     box-shadow: none !important;
     font-weight: 600 !important;

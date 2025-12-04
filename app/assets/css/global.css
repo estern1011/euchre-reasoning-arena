@@ -1,3 +1,29 @@
+:root {
+    /* Primary accent - lime green */
+    --color-accent: #a3e635;
+    --color-accent-muted: rgba(163, 230, 53, 0.5);
+    --color-accent-subtle: rgba(163, 230, 53, 0.2);
+    --color-accent-bg: rgba(163, 230, 53, 0.05);
+    --color-accent-bg-hover: rgba(163, 230, 53, 0.15);
+
+    /* Status colors */
+    --color-error: #ef4444;
+    --color-live: #3b82f6;
+
+    /* Text hierarchy */
+    --color-text: #e5e7eb;
+    --color-text-secondary: #9ca3af;
+    --color-text-muted: #6b7280;
+    --color-text-placeholder: #4b5563;
+
+    /* Syntax highlighting */
+    --color-keyword: #c084fc;
+
+    /* Borders */
+    --color-border: #374151;
+    --color-border-subtle: rgba(255, 255, 255, 0.1);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -22,11 +48,11 @@ body {
     position: relative;
     z-index: 50;
     background: #0a0a0a;
-    border: 3px solid rgba(163, 230, 53, 0.5);
+    border: 3px solid var(--color-accent-muted);
     border-radius: 0;
     color: #fff;
     box-shadow:
-        8px 8px 0px rgba(163, 230, 53, 0.2),
+        8px 8px 0px var(--color-accent-subtle),
         0 20px 40px rgba(0, 0, 0, 0.9);
     overflow: hidden;
 }
@@ -43,15 +69,15 @@ body {
     font-family: "Courier New", monospace;
     font-size: 0.875rem;
     transition: all 0.1s ease;
-    color: #e5e7eb;
+    color: var(--color-text);
     border-left: 3px solid transparent;
 }
 
 .model-select-item:hover,
 .model-select-item[data-highlighted] {
-    background: rgba(163, 230, 53, 0.15);
-    color: #a3e635;
-    border-left-color: #a3e635;
+    background: var(--color-accent-bg-hover);
+    color: var(--color-accent);
+    border-left-color: var(--color-accent);
     transform: translateX(4px);
 }
 

@@ -4,8 +4,8 @@
 **Repository:** `estern1011/euchre-reasoning-arena`
 **Timeline:** 2 weeks (Nov 30 - Dec 13, 2025)
 **Target:** AI Gateway Game Hackathon - Model Eval Game Category
-**Status:** v1.5 - Mode 1 Polish Phase 🎨
-**Last Updated:** Dec 3, 2025 (Afternoon)
+**Status:** v1.6 - Two-Mode Layout System Complete 🎨
+**Last Updated:** Dec 3, 2025 (Evening)
 
 ---
 
@@ -57,6 +57,14 @@
   - Vertical: Cards, fonts, spacing scale with viewport height using CSS clamp()
   - No scrolling required (works from 500px to 1100px+ height)
   - All player info visible including south position
+- **Two-Mode Layout System** ✅ NEW
+  - **Arena Mode**: Game board (2fr) + Intelligence sidebar (1fr)
+  - **Intelligence Mode**: Multi-agent reasoning grid (2fr) + Compact arena sidebar (1fr)
+  - Mode switcher tabs in header (like Cursor's Agent/Editor)
+  - MultiAgentReasoning component: 2x2 grid showing all 4 agents simultaneously
+  - CompactArena component: Text-based game state with suit symbols for hands
+  - Smooth content swapping while preserving state
+- **Card Component Fix** ✅ - Removed duplicate rank from center (now shows only suit symbol)
 
 #### State Management
 - **Pinia Store** - Replaced URL params with proper state management
@@ -97,36 +105,44 @@ Current focus: Improving card visualization and game state display
 
 ### 📋 Immediate Next Steps
 
-1. **Mode 1 Visual Enhancements** (Priority 1 - IN PROGRESS)
-   - Optimize horizontal space usage
-   - Show played cards in center area during tricks
-   - Enhance live thinking panel (constant size, better UX)
-   - Reposition THINKING indicator appropriately
-   - Improve card spacing in hands
-   - Add visual indicator when player sits out (partner went alone)
+1. **Arena Mode Visual Polish** (Priority 1 - NEXT)
+   - **Header layout**: Move title to top-left, tabs to the right of it
+   - **Card positioning by player**:
+     - North: cards below name
+     - South: cards above name
+     - East: cards to left of name
+     - West: cards to right of name (current)
+   - **Diamond format played cards**: Cards fan toward center from player who played
+   - **Going alone visual**: Gray out partner when player goes alone
 
-2. **Polish Mode 1 - Remaining** (Priority 2)
+2. **Thinking Indicator Fixes** (Priority 1 - BUG)
+   - **Indicator not moving**: Fix `currentThinkingPlayer` to update between agents
+   - **Immediate feedback**: Show thinking indicator on `player_thinking` event, before first token arrives
+   - User should always know which agent is thinking (no "hanging" feeling)
+
+3. **Intelligence Mode Refinements** (Priority 2)
+   - **Tiny card visuals**: Show actual mini cards instead of suit symbols for hands
+   - **Dynamic trick order**: Don't use fixed N/E/S/W positions for current trick
+     - Show cards in order played: `[10♥, K♠, ...]`
+     - Lead player changes each trick
+
+4. **Polish Mode 1 - Remaining** (Priority 3)
    - Add game completion modal with final scores
    - Improve error handling UI for failed streams
    - Test full 5-trick game completion
    - Smooth animations and transitions
 
-2. **Deployment** (Priority 2)
+5. **Deployment** (Priority 4)
    - Set up AI_GATEWAY_API_KEY environment variable
    - Deploy to Vercel
    - Smoke test live deployment
    - Verify streaming works in production
 
-3. **Mode 2: Experimentation** (Priority 3 - If Time Permits)
+6. **Mode 2: Experimentation** (Priority 5 - If Time Permits)
    - Basic prompt editor for one player
    - Pre-built templates (Aggressive, Conservative, Card Counting)
    - Replay trick with new prompt
    - Simple before/after comparison
-
-4. **Mode 3: Evaluation** (Priority 4 - If Time Permits)
-   - Single rating dimension (Overall Quality 1-5 stars)
-   - In-memory ratings (no database)
-   - Simple aggregate display
 
 ### Timeline Status
 

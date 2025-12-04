@@ -26,7 +26,7 @@ defineEmits<{
 .play-next-button {
     background: rgba(163, 230, 53, 0.1);
     border: 2px solid rgba(163, 230, 53, 0.3);
-    color: #a3e635;
+    color: var(--color-accent);
     padding: 0.5rem 1rem;
     border-radius: 2px;
     font-family: "Courier New", monospace;

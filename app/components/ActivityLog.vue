@@ -37,11 +37,11 @@ defineProps<Props>();
     letter-spacing: 0.025em;
     margin-bottom: 1rem;
     font-size: 0.875rem;
-    color: #e5e7eb;
+    color: var(--color-text);
 }
 
 .keyword {
-    color: #c084fc;
+    color: var(--color-keyword);
 }
 
 .log-entries {

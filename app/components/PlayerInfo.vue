@@ -1,27 +1,34 @@
 <template>
-    <div class="player-info">
+    <div class="player-info" :class="{ 'is-horizontal': isHorizontalPosition }">
         <div class="player-name">{{ position.toUpperCase() }}</div>
         <div class="model-name">{{ modelName }}</div>
-        <div class="status" :class="{ 'thinking': isThinking }">
-            <span v-if="isThinking" class="thinking-indicator">
-                <span class="thinking-dot"></span>
-                THINKING
-            </span>
-            <span v-else>WAITING</span>
+        <div class="status-row">
+            <div class="status" :class="{ 'thinking': isThinking }">
+                <span v-if="isThinking" class="thinking-indicator">
+                    <span class="thinking-dot"></span>
+                    THINKING
+                </span>
+                <span v-else>WAITING</span>
+            </div>
+            <div v-if="isGoingAlone" class="alone-badge">ALONE</div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { Position } from "~/types/game";
 
 interface Props {
     position: Position;
     modelName: string;
     isThinking: boolean;
+    isGoingAlone?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+const isHorizontalPosition = computed(() => props.position === 'north' || props.position === 'south');
 </script>
 
 <style scoped>
@@ -39,7 +46,7 @@ defineProps<Props>();
 }
 
 .model-name {
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -51,13 +58,33 @@ defineProps<Props>();
     line-height: 1.2;
 }
 
+.status-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.is-horizontal .status-row {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
 .status {
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: clamp(0.5rem, 0.9vh, 0.6rem);
 }
 
 .status.thinking {
-    color: #a3e635;
+    color: var(--color-accent);
+}
+
+.alone-badge {
+    color: var(--color-error);
+    font-weight: bold;
+    font-size: clamp(0.5rem, 0.9vh, 0.6rem);
+    letter-spacing: 0.5px;
 }
 
 .thinking-indicator {
@@ -70,7 +97,7 @@ defineProps<Props>();
     display: inline-block;
     width: 6px;
     height: 6px;
-    background: #a3e635;
+    background: var(--color-accent);
     border-radius: 50%;
     animation: pulse-glow 1.5s ease-in-out infinite;
 }
@@ -78,11 +105,11 @@ defineProps<Props>();
 @keyframes pulse-glow {
     0%, 100% {
         opacity: 1;
-        box-shadow: 0 0 4px #a3e635;
+        box-shadow: 0 0 4px var(--color-accent);
     }
     50% {
         opacity: 0.4;
-        box-shadow: 0 0 8px #a3e635;
+        box-shadow: 0 0 8px var(--color-accent);
     }
 }
 </style>

@@ -192,26 +192,58 @@ NUXT_DEV_HTTPS=false
 ## Current Status
 
 **Mode 1 (Simulation):** 🚧 In Progress - 4 AI models play with visible reasoning
-- ✅ SSE streaming with token-by-token AI reasoning
-- ✅ Pinia state management for model selection
-- ✅ Illegal move handling with retry logic
-- ✅ Live reasoning persistence (visible until next player thinks)
-- ✅ Improved trump bid parsing
-- ✅ Player hands and turned-up card display (face-up cards for all players)
-- ✅ Re-themed Card component with hover effects and neon glow
-- ✅ Fully responsive layout (horizontal and vertical scaling with CSS clamp/vh/vw)
-- ✅ Model name wrapping for long names
-- ✅ Moved playNextRound button to header for visibility
-- ✅ Fixed THINKING status to only show during active streaming
-- 🚧 **Next Steps:**
-  - Improve horizontal space usage
-  - Show cards being played in center area
-  - Enhance live thinking panel (constant size, better UX)
-  - Reposition THINKING indicator appropriately
-  - Better card spacing in hands
-  - Visual indicator when player sits out (partner went alone)
+
+### ✅ Completed
+- SSE streaming with token-by-token AI reasoning
+- Pinia state management for model selection
+- Illegal move handling with retry logic
+- Live reasoning persistence (visible until next player thinks)
+- Improved trump bid parsing
+- Player hands and turned-up card display (face-up cards for all players)
+- Re-themed Card component with hover effects and neon glow
+- Fully responsive layout (horizontal and vertical scaling with CSS clamp/vh/vw)
+- Model name wrapping for long names
+- Moved playNextRound button to header for visibility
+- Fixed THINKING status to only show during active streaming
+- **Two-Mode Layout System**
+  - Arena Mode: Game board (2fr) + Intelligence sidebar (1fr)
+  - Intelligence Mode: Multi-agent reasoning grid (2fr) + Compact arena sidebar (1fr)
+  - Mode switcher tabs in header (like Cursor's Agent/Editor)
+  - `MultiAgentReasoning.vue`: 2x2 grid showing all 4 agents simultaneously
+  - `CompactArena.vue`: Text-based game state with suit symbols
+- Card component fix: Removed duplicate rank from center
+- **Arena Mode Visual Polish** (Dec 3 Late)
+  - Header layout: Title top-left, tabs to the right
+  - Card positioning by player (N below, S above, E left, W right of name)
+  - Diamond format for played cards in center area
+  - Cards persist after trick completion until next click
+  - Going alone visual: Partner grayed out (opacity + grayscale)
+- **Thinking Indicator Fix**: Now properly tracks `currentThinkingPlayer` during streaming
+- **UI Polish** (Dec 4)
+  - Enhanced thinking indicator with glowing border
+  - LiveThinking panel stays at max size with auto-scroll
+  - Going alone badge ("ALONE" in red on nameplate)
+  - Diamond cards sized to match turned-up card
+- **CSS Design System** (Dec 4)
+  - CSS variables for all colors in `global.css`
+  - Consistent color tokens: `--color-accent`, `--color-error`, `--color-text`, etc.
+  - Single source of truth for theming
+- **Cleanup** (Dec 4)
+  - Removed Playwright e2e tests (unused)
+  - Fixed unused CSS classes
+  - Consolidated duplicate CSS rules
+
+### 🚧 Next Steps (Priority Order)
+
+**1. Intelligence Mode Refinements**
+- Tiny card visuals instead of suit symbols for hands
+- Dynamic trick order: Show cards in order played (not fixed N/E/S/W positions)
+
+**2. Remaining Polish**
+- Game completion modal with final scores
+- Error handling UI for failed streams
+- Full 5-trick game completion test
+- Smooth animations and transitions
 
 **Mode 2 (Experimentation):** 📋 Planned - Prompt editing capabilities
 **Mode 3 (Evaluation):** 📋 Planned - Rating/comparison system
-
-The project is currently focused on enhancing Mode 1 visuals and UX.

@@ -134,17 +134,17 @@ const close = () => {
     margin: 0;
     font-size: 1.125rem;
     font-weight: 500;
-    color: #e5e7eb;
+    color: var(--color-text);
 }
 
 .keyword {
-    color: #c084fc;
+    color: var(--color-keyword);
 }
 
 .close-button {
     background: rgba(163, 230, 53, 0.08);
     border: 2px solid rgba(163, 230, 53, 0.3);
-    color: #a3e635;
+    color: var(--color-accent);
     font-size: 1.5rem;
     width: 40px;
     height: 40px;
@@ -202,12 +202,12 @@ const close = () => {
     font-weight: bold;
     font-size: 1rem;
     letter-spacing: 1px;
-    color: #a3e635;
+    color: var(--color-accent);
 }
 
 .decision-time {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
 }
 
 .decision-meta {
@@ -216,11 +216,11 @@ const close = () => {
     gap: 0.5rem;
     margin-bottom: 0.75rem;
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
 }
 
 .model-id {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .action {
@@ -233,7 +233,7 @@ const close = () => {
 
 .fallback-badge {
     background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    color: var(--color-error);
     font-size: 0.75rem;
     padding: 2px 6px;
     border-radius: 2px;
@@ -253,7 +253,7 @@ const close = () => {
 .reasoning-text {
     font-size: 0.9375rem;
     line-height: 1.6;
-    color: #e5e7eb;
+    color: var(--color-text);
     white-space: pre-wrap;
     word-wrap: break-word;
 }
@@ -263,7 +263,7 @@ const close = () => {
     align-items: center;
     justify-content: center;
     padding: 4rem 2rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.9375rem;
     text-align: center;
 }
@@ -275,6 +275,6 @@ const close = () => {
 
 .closing-brace {
     font-size: 0.875rem;
-    color: #e5e7eb;
+    color: var(--color-text);
 }
 </style>

@@ -18,7 +18,6 @@
             <!-- Center content -->
             <div class="card-center">
                 <div class="suit-large">{{ suitSymbol }}</div>
-                <div class="rank-large">{{ displayRank }}</div>
             </div>
 
             <!-- Bottom right corner (upside down) -->
@@ -222,29 +221,14 @@ const handleClick = () => {
 .suit-large {
     font-size: 36px;
     line-height: 1;
-    margin-bottom: 2px;
-}
-
-.rank-large {
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 1;
 }
 
 .size-sm .suit-large {
     font-size: clamp(20px, 4vh, 28px);
 }
 
-.size-sm .rank-large {
-    font-size: clamp(14px, 2.8vh, 20px);
-}
-
 .size-lg .suit-large {
     font-size: 44px;
-}
-
-.size-lg .rank-large {
-    font-size: 36px;
 }
 
 /* Card back */
@@ -291,7 +275,7 @@ const handleClick = () => {
 .card-back-icon {
     font-size: 40px;
     opacity: 0.25;
-    color: #a3e635;
+    color: var(--color-accent);
     position: relative;
     z-index: 1;
 }

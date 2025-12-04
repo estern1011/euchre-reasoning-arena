@@ -63,7 +63,7 @@ defineEmits<{
 .play-next-button {
     background: rgba(163, 230, 53, 0.1);
     border: 2px solid rgba(163, 230, 53, 0.3);
-    color: #a3e635;
+    color: var(--color-accent);
     padding: 0.5rem 1rem;
     border-radius: 2px;
     font-family: "Courier New", monospace;
@@ -101,7 +101,7 @@ defineEmits<{
 }
 
 .state-label {
-    color: #a3e635;
+    color: var(--color-accent);
     font-weight: 500;
 }
 
@@ -110,11 +110,11 @@ defineEmits<{
 }
 
 .divider {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .trump-suit {
-    color: #ef4444;
+    color: var(--color-error);
     font-size: 1rem;
     font-weight: 600;
 }

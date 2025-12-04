@@ -1,7 +1,23 @@
 <template>
     <div class="game-container">
         <header class="game-header">
-            <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+            <div class="header-left">
+                <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+                <div class="mode-switcher">
+                    <button
+                        :class="['mode-tab', { active: viewMode === 'arena' }]"
+                        @click="setViewMode('arena')"
+                    >
+                        Arena
+                    </button>
+                    <button
+                        :class="['mode-tab', { active: viewMode === 'intelligence' }]"
+                        @click="setViewMode('intelligence')"
+                    >
+                        Intelligence
+                    </button>
+                </div>
+            </div>
             <span class="live-badge">
                 <span class="live-dot"></span>
                 LIVE
@@ -9,75 +25,135 @@
         </header>
 
         <div class="game-content">
-            <!-- Left Panel: Arena -->
-            <div class="arena-panel">
-                <div class="panel-header">
-                    <span class="comment">// </span>arena
-                </div>
-
-                <!-- Game State Display & Controls -->
-                <div class="game-state-header">
-                    <GameStateDisplay
-                        :current-phase="currentPhase"
-                        :current-trick="currentTrick"
-                        :trump-suit="trumpSuit"
-                        :last-trick-winner="lastTrickWinner"
-                    />
-                    <GameControls
-                        :disabled="!gameState || isLoading"
-                        @play-next="handlePlayNextRound"
-                    />
-                </div>
-
-                <!-- Table View -->
-                <div class="table-view">
-                    <div class="table-header"><span class="keyword">const</span> table = {</div>
-
-                    <GameBoard
-                        :player-hands="playerHands"
-                        :played-cards="playedCards"
-                        :formatted-models="formattedModelsByPosition"
-                        :turned-up-card="turnedUpCard"
-                        :current-player="currentPlayer"
-                        :is-streaming="isStreaming"
-                    />
-
-                    <!-- Game Controls -->
-                    <div class="game-controls">
-                        <div v-if="errorMessage" class="alert error mb-4">
-                            {{ errorMessage }}
-                        </div>
+            <!-- Left Panel: Changes based on mode -->
+            <div class="main-panel">
+                <!-- Arena Mode: Show Game Board -->
+                <template v-if="viewMode === 'arena'">
+                    <div class="panel-header">
+                        <span class="comment">// </span>arena
                     </div>
-                    <div class="closing-brace">}</div>
-                </div>
+
+                    <!-- Game State Display & Controls -->
+                    <div class="game-state-header">
+                        <GameStateDisplay
+                            :current-phase="currentPhase"
+                            :current-trick="currentTrick"
+                            :trump-suit="trumpSuit"
+                            :last-trick-winner="lastTrickWinner"
+                        />
+                        <GameControls
+                            :disabled="!gameState || isLoading"
+                            @play-next="handlePlayNextRound"
+                        />
+                    </div>
+
+                    <!-- Table View -->
+                    <div class="table-view">
+                        <div class="table-header"><span class="keyword">const</span> table = {</div>
+
+                        <GameBoard
+                            :player-hands="playerHands"
+                            :played-cards="activePlayedCards"
+                            :formatted-models="formattedModelsByPosition"
+                            :turned-up-card="turnedUpCard"
+                            :current-player="activeThinkingPlayer"
+                            :is-streaming="isStreaming"
+                            :going-alone="goingAlone"
+                        />
+
+                        <!-- Game Controls -->
+                        <div class="game-controls">
+                            <div v-if="errorMessage" class="alert error mb-4">
+                                {{ errorMessage }}
+                            </div>
+                        </div>
+                        <div class="closing-brace">}</div>
+                    </div>
+                </template>
+
+                <!-- Intelligence Mode: Show Multi-Agent Reasoning Grid -->
+                <template v-else>
+                    <div class="panel-header">
+                        <span class="comment">// </span>intelligence
+                    </div>
+
+                    <MultiAgentReasoning
+                        :reasoning="streamingReasoning"
+                        :current-player="currentThinkingPlayer"
+                        :model-ids="gameStore.modelIds"
+                    />
+
+                    <!-- Reasoning History Button -->
+                    <div class="history-section-inline">
+                        <button
+                            class="history-button"
+                            type="button"
+                            @click="showReasoningModal = true"
+                        >
+                            <span class="button-text">viewHistory()</span>
+                            <span class="badge">{{ allDecisions.length }}</span>
+                        </button>
+                    </div>
+                </template>
             </div>
 
-            <!-- Right Panel: Intelligence -->
-            <div class="intelligence-panel">
-                <div class="panel-header">
-                    <span class="comment">// </span>intelligence
-                </div>
+            <!-- Right Panel: Changes based on mode -->
+            <div class="side-panel">
+                <!-- Arena Mode: Show Intelligence sidebar -->
+                <template v-if="viewMode === 'arena'">
+                    <div class="panel-header">
+                        <span class="comment">// </span>intelligence
+                    </div>
 
-                <!-- Activity Log -->
-                <ActivityLog :entries="activityLog" />
+                    <!-- Activity Log -->
+                    <ActivityLog :entries="activityLog" />
 
-                <!-- Real-Time Streaming Reasoning -->
-                <StreamingReasoning
-                    :player="currentThinkingPlayer"
-                    :reasoning="currentThinkingPlayer ? (streamingReasoning[currentThinkingPlayer] ?? '') : ''"
-                />
+                    <!-- Real-Time Streaming Reasoning -->
+                    <StreamingReasoning
+                        :player="currentThinkingPlayer"
+                        :reasoning="currentThinkingPlayer ? (streamingReasoning[currentThinkingPlayer] ?? '') : ''"
+                    />
 
-                <!-- Reasoning History Button -->
-                <div class="history-section">
-                    <button
-                        class="history-button"
-                        type="button"
-                        @click="showReasoningModal = true"
-                    >
-                        <span class="button-text">viewHistory()</span>
-                        <span class="badge">{{ allDecisions.length }}</span>
-                    </button>
-                </div>
+                    <!-- Reasoning History Button -->
+                    <div class="history-section">
+                        <button
+                            class="history-button"
+                            type="button"
+                            @click="showReasoningModal = true"
+                        >
+                            <span class="button-text">viewHistory()</span>
+                            <span class="badge">{{ allDecisions.length }}</span>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Intelligence Mode: Show Compact Arena sidebar -->
+                <template v-else>
+                    <div class="panel-header">
+                        <span class="comment">// </span>arena
+                    </div>
+
+                    <!-- Game State Display & Controls -->
+                    <div class="game-state-header compact">
+                        <GameControls
+                            :disabled="!gameState || isLoading"
+                            @play-next="handlePlayNextRound"
+                        />
+                    </div>
+
+                    <!-- Compact Arena View -->
+                    <CompactArena
+                        :player-hands="playerHands"
+                        :played-cards="activePlayedCards"
+                        :current-player="activeThinkingPlayer"
+                        :trump-suit="trumpSuit"
+                        :current-trick="currentTrick"
+                        :turned-up-card="turnedUpCard"
+                    />
+
+                    <!-- Activity Log (condensed) -->
+                    <ActivityLog :entries="activityLog" />
+                </template>
             </div>
         </div>
 
@@ -98,14 +174,16 @@ import GameControls from "~/components/GameControls.vue";
 import GameBoard from "~/components/GameBoard.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
+import MultiAgentReasoning from "~/components/MultiAgentReasoning.vue";
+import CompactArena from "~/components/CompactArena.vue";
 import { useGameState } from "~/composables/useGameState";
 import { useGameFlow } from "~/composables/useGameFlow";
 import { useCardDisplay } from "~/composables/useCardDisplay";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useErrorHandling } from "~/composables/useErrorHandling";
-import { useGameStore } from "~/stores/game";
+import { useGameStore, type ViewMode } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
-import type { Position } from "~/types/game";
+import type { Position, Card } from "~/types/game";
 import { formatSuit } from "../../lib/game/formatting";
 import {
     formatCardPlayEntry,
@@ -124,7 +202,7 @@ const {
     roundSummary: currentRoundSummary,
 } = useGameFlow();
 const { playedCards } = useCardDisplay();
-const { formattedModelsByPosition, currentPlayer, isCurrentPlayer } = usePlayerInfo();
+const { formattedModelsByPosition, currentPlayer, isCurrentPlayer, goingAlone } = usePlayerInfo();
 const { currentError, getUserFriendlyMessage } = useErrorHandling();
 
 // Local ref for currentRoundDecisions (writable for SSE streaming)
@@ -133,6 +211,10 @@ const currentRoundDecisions = ref<any[]>([]);
 // Get model assignments from Pinia store
 const gameStore = useGameStore();
 const modelIdsArray = computed(() => gameStore.modelIdsArray);
+
+// View mode (arena or intelligence)
+const viewMode = computed(() => gameStore.viewMode);
+const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
 
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
@@ -198,11 +280,58 @@ const currentThinkingPlayer = ref<Position | null>(null);
 const showReasoningModal = ref(false);
 const allDecisions = ref<any[]>([]);
 
+// Track played cards during the current trick (updated as cards are played)
+const streamingPlayedCards = ref<Record<Position, Card | null>>({
+    north: null,
+    east: null,
+    south: null,
+    west: null,
+});
+
+// Reset played cards for new trick
+const resetStreamingPlayedCards = () => {
+    streamingPlayedCards.value = {
+        north: null,
+        east: null,
+        south: null,
+        west: null,
+    };
+};
+
+// Combine streaming played cards with gameState played cards
+const activePlayedCards = computed(() => {
+    // Use streaming cards if any are present (persists after round_complete until next click)
+    const hasStreamingCards = streamingPlayedCards.value.north ||
+                              streamingPlayedCards.value.east ||
+                              streamingPlayedCards.value.south ||
+                              streamingPlayedCards.value.west;
+    if (hasStreamingCards) {
+        return {
+            north: streamingPlayedCards.value.north,
+            east: streamingPlayedCards.value.east,
+            south: streamingPlayedCards.value.south,
+            west: streamingPlayedCards.value.west,
+            center: null,
+        };
+    }
+    return playedCards.value;
+});
+
+// Use currentThinkingPlayer during streaming, otherwise use currentPlayer from game state
+const activeThinkingPlayer = computed(() => {
+    if (isStreaming.value && currentThinkingPlayer.value) {
+        return currentThinkingPlayer.value;
+    }
+    return currentPlayer.value;
+});
+
 // Handle playing next round with SSE streaming
 const handlePlayNextRound = async () => {
     if (!gameState.value || isStreaming.value) return;
 
     currentRoundDecisions.value = [];
+    // Reset played cards at start of new round/trick
+    resetStreamingPlayedCards();
 
     try {
         for await (const message of streamGameRound(gameState.value)) {
@@ -235,11 +364,13 @@ const handlePlayNextRound = async () => {
 
                 case 'decision_made':
                     const step = activityLog.value.length + 1;
-                    
+
                     if (message.card) {
                         activityLog.value.push(
                             formatCardPlayEntry(step, message.player!, message.card)
                         );
+                        // Track played card for diamond display
+                        streamingPlayedCards.value[message.player!] = message.card;
                     } else {
                         activityLog.value.push(
                             formatTrumpBidEntry(step, message.player!, message.action!)
@@ -257,6 +388,7 @@ const handlePlayNextRound = async () => {
                 case 'round_complete':
                     setGameState(message.gameState!);
                     activityLog.value.push(formatRoundSummaryEntry(message.roundSummary!));
+                    // Cards stay visible until user clicks playNextRound
                     return;
 
                 case 'error':
@@ -325,25 +457,65 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 3rem;
+    padding: 1rem 2rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.mode-switcher {
+    display: flex;
+    gap: 0;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    padding: 2px;
+}
+
+.mode-tab {
+    padding: 0.5rem 1rem;
+    font-family: "Courier New", monospace;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.025em;
+}
+
+.mode-tab:hover:not(.active) {
+    color: var(--color-text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-tab.active {
+    color: var(--color-accent);
+    background: rgba(163, 230, 53, 0.1);
+    border-bottom: 2px solid var(--color-accent);
+}
+
 .game-header h1 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
     letter-spacing: 0.05em;
     margin: 0;
-    color: #e5e7eb;
+    color: var(--color-text);
+    white-space: nowrap;
 }
 
 .bracket {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .accent {
-    color: #a3e635;
+    color: var(--color-accent);
 }
 
 .live-indicator {
@@ -357,7 +529,7 @@ onMounted(() => {
 .live-dot {
     width: 8px;
     height: 8px;
-    background: #3b82f6;
+    background: var(--color-live);
     border-radius: 50%;
     animation: pulse 2s ease-in-out infinite;
 }
@@ -398,8 +570,8 @@ onMounted(() => {
 }
 
 /* Panel Styling */
-.arena-panel,
-.intelligence-panel {
+.main-panel,
+.side-panel {
     border: 3px solid rgba(163, 230, 53, 0.3);
     border-radius: 0px;
     background: rgba(0, 0, 0, 0.6);
@@ -413,8 +585,8 @@ onMounted(() => {
     position: relative;
 }
 
-.arena-panel::before,
-.intelligence-panel::before {
+.main-panel::before,
+.side-panel::before {
     content: '';
     position: absolute;
     top: -3px;
@@ -436,15 +608,15 @@ onMounted(() => {
     font-weight: 500;
     letter-spacing: 0.025em;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    color: #9ca3af;
+    color: var(--color-text-secondary);
 }
 
 .comment {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .keyword {
-    color: #c084fc;
+    color: var(--color-keyword);
 }
 
 .prompt-button {
@@ -455,7 +627,7 @@ onMounted(() => {
     font-family: "Courier New", monospace;
     font-size: 0.75rem;
     background: rgba(10, 10, 10, 0.8);
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     border: 2px solid rgba(107, 114, 128, 0.5);
     border-radius: 0px;
     cursor: pointer;
@@ -465,8 +637,8 @@ onMounted(() => {
 
 .prompt-button:hover {
     background: rgba(75, 85, 99, 0.3);
-    border-color: #9ca3af;
-    color: #e5e7eb;
+    border-color: var(--color-text-secondary);
+    color: var(--color-text);
     box-shadow: 4px 4px 0px rgba(75, 85, 99, 0.4);
     transform: translate(-1px, -1px);
 }
@@ -488,7 +660,7 @@ onMounted(() => {
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.025em;
-    color: #a3e635;
+    color: var(--color-accent);
     background: rgba(163, 230, 53, 0.08);
     border: 3px solid rgba(163, 230, 53, 0.5);
     border-radius: 0px;
@@ -560,12 +732,12 @@ onMounted(() => {
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
     padding: 0 1rem;
-    color: #e5e7eb;
+    color: var(--color-text);
 }
 
 .closing-brace {
     font-size: 0.875rem;
-    color: #e5e7eb;
+    color: var(--color-text);
     padding: 1rem 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -581,20 +753,28 @@ onMounted(() => {
     gap: 1rem;
 }
 
-/* Intelligence Panel */
-.intelligence-panel {
+/* Side Panel */
+.side-panel {
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.game-state-header.compact {
+    justify-content: center;
+}
+
+.history-section,
+.history-section-inline {
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .history-section {
-    flex: 1;
-    padding: 1rem;
-    display: flex;
     align-items: flex-start;
-    justify-content: center;
-    padding-top: 2rem;
 }
 
 .history-button {
@@ -605,7 +785,7 @@ onMounted(() => {
     font-size: 0.9375rem;
     font-weight: 600;
     letter-spacing: 0.025em;
-    color: #a3e635;
+    color: var(--color-accent);
     background: rgba(163, 230, 53, 0.08);
     border: 2px solid rgba(163, 230, 53, 0.4);
     border-radius: 0px;
@@ -649,7 +829,7 @@ onMounted(() => {
 
 .error-message {
     background: rgba(239, 68, 68, 0.2);
-    border: 1px solid #ef4444;
+    border: 1px solid var(--color-error);
     border-radius: 4px;
     color: #fca5a5;
     padding: 0.75rem;

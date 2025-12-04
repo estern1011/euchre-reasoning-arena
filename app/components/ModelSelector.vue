@@ -77,7 +77,7 @@ const modelValue = defineModel<string>();
 
 .model-select-trigger:focus-visible {
     outline: none;
-    border-color: #a3e635;
+    border-color: var(--color-accent);
     box-shadow:
         6px 6px 0px rgba(163, 230, 53, 0.3),
         0 0 0 3px rgba(163, 230, 53, 0.2);
