@@ -397,27 +397,124 @@ euchre-reasoning-arena/
 
 ## 6. Future Roadmap (Post-Hackathon)
 
-### Phase 2: Enhanced Features (Month 1)
-- **Fix and polish all 3 modes**
-  - Complete SSE integration
-  - Full prompt editor with templates
-  - Comprehensive rating system
-- **Vercel KV integration** for persistent ratings
-- **User sessions** (anonymous tracking)
+### Phase 1: Core Game Completion
+**Focus:** Complete the game experience before adding features
+
+- **Full game support** (multi-hand to 10 points)
+  - Currently only plays 1 hand (5 tricks)
+  - Need: Cumulative score tracking, re-dealing, dealer rotation, game over detection
+  - Requires game state restructuring (add `Match` wrapper around `Hand`)
+- **Searchable model dropdown**
+  - Replace hardcoded dropdowns with searchable combobox
+  - `/api/models` already returns 8+ models - just need UI
+- **UI Polish**
+  - Agent panel click-for-details (model name, team, decision history, reasoning)
+  - Arena view improvements in Intelligence Mode
+  - Auto-play option (run full game without manual advancement)
+
+### Phase 2: Persistence & Infrastructure
+**Focus:** Add database to enable all future features
+
+- **Database integration** (Neon Postgres recommended)
+  - Port schema concepts from `../euchre` Ruby project
+  - Tables: tournaments, games, hands, tricks, trump_decisions, card_plays
+  - Enables: game history, stats, multi-game tracking
+- **Decision logging**
+  - Adapt `decision_logger.rb` patterns from old repo
+  - Track every trump bid, card play, discard with full reasoning + game state
+  - File + database persistence
+- **Prompt versioning**
+  - Track prompt changes over time per agent
+  - Enable A/B testing of prompts
+
+### Phase 3: Experimentation & Evaluation
+**Focus:** Enable prompt editing and AI evaluation
+
+- **Prompt editor** (Mode 2)
+  - `customPrompt` params already exist in function signatures - just need UI
+  - Per-player prompt overrides
+  - Template library (Aggressive, Conservative, Card Counting)
+  - Before/after comparison view
+- **LLM as a Judge**
+  - Port `bower_accuracy_judge.rb` from old repo
+  - Evaluate: bower understanding, strategic reasoning, move quality
+  - Structured prompts with temp 0.0 for consistency
+  - Store evaluations in database
+- **Memory/cost tracking**
+  - Tokens used per decision
+  - Cost per game/tournament
+  - Reasoning length trends
+
+### Phase 4: Multi-Game & Tournaments
+**Focus:** Run experiments at scale
+
+- **Tournament system**
+  - Port from `../euchre` - tournaments → games → hands hierarchy
+  - N games in a row with aggregate tracking
+  - Seat rotation between games
+- **Agent evolution**
+  - Port learning conditions from old repo (A-F)
+  - Agents rewrite their own prompts based on feedback
+  - Per-hand or post-game evolution options
+- **Stats dashboard**
+  - Win rates per model
+  - Decision accuracy metrics
+  - Performance over time
+  - Model comparison reports
+
+### Phase 5: Human Play & Community
+**Focus:** Allow humans to participate
+
+- **Human player support**
+  - Port WebSocket infrastructure from `../euchre`
+  - Token-based position claiming
+  - Any combination of humans/AI
+  - Heartbeat monitoring for disconnections
+- **User accounts** (optional login)
+- **Game replay** - Save and share interesting games
+- **Prompt marketplace** - Share and rate templates
 - **Leaderboard** with aggregate stats
 
-### Phase 3: Community Features (Month 2-3)
-- **User accounts** (optional login)
-- **Prompt marketplace** - Share and rate templates
-- **Game replay** - Save and share interesting games
-- **Tournament mode** - Bracket-style competition
-- **Research API** - Data export for analysis
-
-### Phase 4: Expansion (Month 4+)
+### Phase 6: Expansion
 - **Additional games:** Bridge, Hearts, Poker
-- **Acontext integration:** Memory across games
+- **Research API** - Data export for analysis
 - **Educational mode:** Teach Euchre strategy
 - **Research paper:** "Crowdsourcing AI Strategy Evaluation"
+
+---
+
+### Database Decision
+
+**Recommended: Neon (Serverless Postgres)**
+
+| Option | Fit | Notes |
+|--------|-----|-------|
+| **Neon** | ⭐⭐⭐⭐⭐ | Direct port of `../euchre` PostgreSQL schema, scales to zero, generous free tier |
+| **Supabase** | ⭐⭐⭐⭐ | Postgres + realtime + auth. Good if human play is prioritized |
+| **Turso** | ⭐⭐⭐⭐ | SQLite at edge, simpler, schema still portable |
+
+The old `../euchre` repo has a complete PostgreSQL schema covering:
+- Tournament/game/hand hierarchy
+- Trump decisions with reasoning
+- Card plays with game state context
+- Prompt version history
+- LLM judge evaluations
+
+This can be ported almost directly to Neon/Supabase.
+
+---
+
+### Assets from `../euchre` Repo (Ruby)
+
+High-value code to port:
+1. **Decision Logger** - Tracks all decisions with reasoning + context
+2. **Bower Accuracy Judge** - LLM evaluator with structured prompts
+3. **Prompt Manager** - Prompt versioning per agent
+4. **Learning Methods** - 6 evolution conditions (A-F)
+5. **Database Schema** - Complete tournament tracking structure
+6. **Game Session Manager** - WebSocket + REST for human play
+
+---
 
 ### Long-term Vision
 
