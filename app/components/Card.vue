@@ -1,5 +1,14 @@
 <template>
-    <div :class="cardClasses" @click="handleClick">
+    <div
+        :class="cardClasses"
+        :tabindex="selectable ? 0 : -1"
+        :role="selectable ? 'button' : undefined"
+        :aria-pressed="selectable ? selected : undefined"
+        :aria-label="ariaLabel"
+        @click="handleClick"
+        @keydown.enter.prevent="handleClick"
+        @keydown.space.prevent="handleClick"
+    >
         <!-- Face down card back -->
         <div v-if="faceDown" class="card-back-content">
             <div class="card-back-icon">🃏</div>
@@ -103,6 +112,19 @@ const cardClasses = computed(() => {
     return classes;
 });
 
+const ariaLabel = computed(() => {
+    if (props.faceDown) {
+        return 'Face down card';
+    }
+    const rankNames: Record<string, string> = {
+        '9': 'Nine', '10': 'Ten', 'jack': 'Jack', 'queen': 'Queen', 'king': 'King', 'ace': 'Ace'
+    };
+    const suitNames: Record<string, string> = {
+        hearts: 'Hearts', diamonds: 'Diamonds', clubs: 'Clubs', spades: 'Spades'
+    };
+    return `${rankNames[props.rank]} of ${suitNames[props.suit]}${props.selected ? ', selected' : ''}`;
+});
+
 const handleClick = () => {
     if (props.selectable) {
         emit('click');
@@ -141,11 +163,18 @@ const handleClick = () => {
     cursor: pointer;
 }
 
-.playing-card.selectable:hover {
+.playing-card.selectable:hover,
+.playing-card.selectable:focus {
     transform: scale(1.1) translateY(-8px);
     box-shadow:
         6px 6px 0px rgba(0, 0, 0, 0.2),
         0 0 30px rgba(163, 230, 53, 0.4);
+    outline: none;
+}
+
+.playing-card.selectable:focus-visible {
+    outline: 3px solid rgba(163, 230, 53, 0.8);
+    outline-offset: 2px;
 }
 
 .playing-card.selected {

@@ -1,10 +1,18 @@
 <template>
     <Teleport to="body">
-        <div v-if="isOpen" class="modal-overlay" @click="close">
-            <div class="modal-content" @click.stop>
+        <div
+            v-if="isOpen"
+            class="modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reasoning-modal-title"
+            @click="close"
+            @keydown.escape="close"
+        >
+            <div ref="modalRef" class="modal-content" @click.stop>
                 <div class="modal-header">
-                    <h3><span class="keyword">const</span> reasoningHistory = {</h3>
-                    <button class="close-button" @click="close" aria-label="Close modal">✕</button>
+                    <h3 id="reasoning-modal-title"><span class="keyword">const</span> reasoningHistory = {</h3>
+                    <button ref="closeButtonRef" class="close-button" @click="close" aria-label="Close modal">✕</button>
                 </div>
 
                 <div class="modal-body">
@@ -52,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue';
 import { formatSuit } from '../../lib/game/formatting';
 import type { SSEDecisionMade } from '../../lib/types/sse';
 
@@ -70,12 +78,52 @@ const emit = defineEmits<{
     (e: 'close'): void
 }>()
 
+const modalRef = ref<HTMLElement | null>(null);
+const closeButtonRef = ref<HTMLButtonElement | null>(null);
+let previouslyFocusedElement: HTMLElement | null = null;
+
 // Show newest decisions at top
 const reversedDecisions = computed(() => [...props.decisions].reverse());
 
 const close = () => {
     emit('close')
 }
+
+// Focus trap - keep focus within modal
+function handleFocusTrap(event: KeyboardEvent) {
+    if (event.key !== 'Tab' || !modalRef.value) return;
+
+    const focusableElements = modalRef.value.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable?.focus();
+    } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable?.focus();
+    }
+}
+
+// Focus management when modal opens/closes
+watch(() => props.isOpen, async (isOpen) => {
+    if (isOpen) {
+        previouslyFocusedElement = document.activeElement as HTMLElement;
+        document.addEventListener('keydown', handleFocusTrap);
+        await nextTick();
+        closeButtonRef.value?.focus();
+    } else {
+        document.removeEventListener('keydown', handleFocusTrap);
+        previouslyFocusedElement?.focus();
+    }
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handleFocusTrap);
+});
 </script>
 
 <style scoped>

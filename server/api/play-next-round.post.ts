@@ -11,6 +11,8 @@ import type {
   Suit,
   TrumpBidAction,
 } from "../../lib/game/types";
+import { PlayNextRoundRequestSchema } from "../schemas/game-schemas";
+import { getDefaultModelIdsArray } from "../../lib/config/defaults";
 
 /**
  * API endpoint to advance the game by one round
@@ -19,11 +21,6 @@ import type {
  * - Trump selection round 2 (call trump or pass)
  * - Playing one trick (all 4 or 3 players play a card)
  */
-
-interface PlayNextRoundRequest {
-  gameState?: GameState; // Optional - if not provided, creates new game
-  modelIds?: [string, string, string, string]; // Model IDs for each player
-}
 
 interface AIDecision {
   player: Position;
@@ -55,17 +52,24 @@ interface PlayNextRoundResponse {
 
 export default defineEventHandler(
   async (event): Promise<PlayNextRoundResponse> => {
-    const body = await readBody<PlayNextRoundRequest>(event);
+    const rawBody = await readBody(event);
+
+    // Validate request body with Zod
+    const parseResult = PlayNextRoundRequestSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Invalid request body",
+        data: parseResult.error.flatten(),
+      });
+    }
+
+    const body = parseResult.data;
 
     // Create new game if no game state provided
     let game = body.gameState;
     if (!game) {
-      const modelIds = body.modelIds || [
-        "google/gemini-2.5-flash-lite",
-        "xai/grok-code-fast-1",
-        "google/gemini-2.5-flash",
-        "anthropic/claude-haiku-4.5",
-      ];
+      const modelIds = body.modelIds || getDefaultModelIdsArray();
       game = createNewGame(modelIds);
     }
 

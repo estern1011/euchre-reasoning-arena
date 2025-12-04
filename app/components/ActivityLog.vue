@@ -1,9 +1,9 @@
 <template>
-    <div class="activity-log">
-        <div class="log-header">
+    <div class="activity-log" role="log" aria-label="Game activity log">
+        <div class="log-header" aria-hidden="true">
             <span class="keyword">const</span> activityLog = [
         </div>
-        <div class="log-entries">
+        <div class="log-entries" aria-live="polite" aria-atomic="false">
             <div
                 v-for="(entry, index) in reversedEntries"
                 :key="index"

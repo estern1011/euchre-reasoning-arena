@@ -1,14 +1,11 @@
 import { createNewGame } from "../../lib/game/game";
-import type { GameState, Position } from "../../lib/game/types";
+import type { GameState } from "../../lib/game/types";
+import { NewGameRequestSchema } from "../schemas/game-schemas";
+import { getDefaultModelIdsArray } from "../../lib/config/defaults";
 
 /**
  * API endpoint to create a new game
  */
-
-interface NewGameRequest {
-  modelIds: [string, string, string, string];
-  dealer?: Position;
-}
 
 interface NewGameResponse {
   gameState: GameState;
@@ -16,14 +13,20 @@ interface NewGameResponse {
 }
 
 export default defineEventHandler(async (event): Promise<NewGameResponse> => {
-  const body = await readBody<NewGameRequest>(event);
+  const rawBody = await readBody(event);
 
-  const modelIds = body.modelIds || [
-    "google/gemini-2.5-flash-lite",
-    "xai/grok-code-fast-1",
-    "google/gemini-2.5-flash",
-    "anthropic/claude-haiku-4.5",
-  ];
+  // Validate request body with Zod
+  const parseResult = NewGameRequestSchema.safeParse(rawBody);
+  if (!parseResult.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Invalid request body",
+      data: parseResult.error.flatten(),
+    });
+  }
+
+  const body = parseResult.data;
+  const modelIds = body.modelIds || getDefaultModelIdsArray();
   const dealer = body.dealer || "north";
 
   const gameState = createNewGame(modelIds, dealer);

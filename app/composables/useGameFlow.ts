@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { useGameStore } from "../stores/game";
 import { useErrorHandling } from "./useErrorHandling";
 import type { GameState, Position } from "../../lib/game/types";
@@ -6,6 +6,7 @@ import type { GameState, Position } from "../../lib/game/types";
 /**
  * Game flow control composable
  * Handles game initialization, round progression, and reset
+ * Uses Nuxt's useState for SSR-safe singleton state
  */
 
 export interface AIDecision {
@@ -22,11 +23,12 @@ export interface PlayNextRoundResponse {
   roundSummary: string;
 }
 
-const isLoading = ref(false);
-const currentRoundDecisions = ref<AIDecision[]>([]);
-const roundSummary = ref<string>("");
-
 export function useGameFlow() {
+  // Use Nuxt's useState for SSR-safe singleton state
+  const isLoading = useState<boolean>("game-flow-loading", () => false);
+  const currentRoundDecisions = useState<AIDecision[]>("game-flow-decisions", () => []);
+  const roundSummary = useState<string>("game-flow-summary", () => "");
+
   const gameStore = useGameStore();
   const { withRetry, setError } = useErrorHandling();
 

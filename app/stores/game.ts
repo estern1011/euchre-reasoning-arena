@@ -115,24 +115,36 @@ export const useGameStore = defineStore('game', {
     },
 
     // Player hands from game state (with played cards removed)
+    // Optimized: Uses Set for O(1) lookup instead of O(n) array scan
     playerHands(): { north: Card[]; south: Card[]; east: Card[]; west: Card[] } {
       if (!this.gameState) {
         return { north: [], east: [], south: [], west: [] }
       }
+
+      // Build a Set of played card keys for O(1) lookup per position
+      const playedCardSets = new Map<Position, Set<string>>()
+      for (const { player, card } of this.cardsPlayedThisRound) {
+        if (!playedCardSets.has(player)) {
+          playedCardSets.set(player, new Set())
+        }
+        playedCardSets.get(player)!.add(`${card.suit}-${card.rank}`)
+      }
+
       const hands: { north: Card[]; south: Card[]; east: Card[]; west: Card[] } = {
         north: [], east: [], south: [], west: []
       }
-      this.gameState.players.forEach((player: { position: Position; hand: Card[] }) => {
-        // Filter out cards that have been played this round
-        const playedByThisPlayer = this.cardsPlayedThisRound
-          .filter(p => p.player === player.position)
-          .map(p => p.card)
-        hands[player.position] = player.hand.filter((card: Card) =>
-          !playedByThisPlayer.some(played =>
-            played.suit === card.suit && played.rank === card.rank
+
+      for (const player of this.gameState.players) {
+        const playedSet = playedCardSets.get(player.position)
+        if (!playedSet || playedSet.size === 0) {
+          hands[player.position] = player.hand
+        } else {
+          hands[player.position] = player.hand.filter(
+            (card: Card) => !playedSet.has(`${card.suit}-${card.rank}`)
           )
-        )
-      })
+        }
+      }
+
       return hands
     },
   },

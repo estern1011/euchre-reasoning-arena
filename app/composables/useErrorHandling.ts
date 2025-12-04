@@ -1,7 +1,8 @@
-import { ref, computed } from "vue";
+import { computed } from "vue";
 
 /**
  * Error handling composable with retry logic and timeout handling
+ * Uses Nuxt's useState for proper SSR hydration and singleton state
  */
 
 export type ErrorType =
@@ -18,10 +19,11 @@ export interface ErrorState {
   timestamp: number;
 }
 
-const currentError = ref<ErrorState | null>(null);
-const isRetrying = ref(false);
-
 export function useErrorHandling() {
+  // Use Nuxt's useState for SSR-safe singleton state
+  const currentError = useState<ErrorState | null>("error-handling-current", () => null);
+  const isRetrying = useState<boolean>("error-handling-retrying", () => false);
+
   /**
    * Set an error state
    */

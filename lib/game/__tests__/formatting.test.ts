@@ -40,16 +40,16 @@ describe("formatTrumpSelectionForAI", () => {
     };
 
     const text = formatTrumpSelectionForAI(game, "west");
-    expect(text).toContain("Order up");
-    expect(text).toContain("Call spades as trump");
-    expect(text).toContain("(going alone)");
-    expect(text).toContain("Pass");
+    expect(text).toContain("order_up");
+    expect(text).toContain("call_trump spades");
+    expect(text).toContain("(alone)");
+    expect(text).toContain("pass");
   });
 
-  it("shows '(no bids yet)' when there are no bids", () => {
+  it("shows '(none yet)' when there are no bids", () => {
     const game = createNewGame(modelIds, "north");
     const text = formatTrumpSelectionForAI(game, "north");
-    expect(text).toContain("(no bids yet)");
+    expect(text).toContain("(none yet)");
   });
 });
 

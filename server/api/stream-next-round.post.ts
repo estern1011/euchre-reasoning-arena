@@ -7,24 +7,30 @@ import {
   isGameComplete,
 } from "../../lib/game/game";
 import type {
-  GameState,
   Position,
-  Suit,
   TrumpBidAction,
 } from "../../lib/game/types";
 import { getDefaultModelIdsArray } from "../../lib/config/defaults";
+import { PlayNextRoundRequestSchema } from "../schemas/game-schemas";
 
 /**
  * SSE streaming endpoint for real-time AI reasoning
  */
 
-interface PlayNextRoundRequest {
-  gameState?: GameState;
-  modelIds?: [string, string, string, string];
-}
-
 export default defineEventHandler(async (event) => {
-  const body = await readBody<PlayNextRoundRequest>(event);
+  const rawBody = await readBody(event);
+
+  // Validate request body with Zod
+  const parseResult = PlayNextRoundRequestSchema.safeParse(rawBody);
+  if (!parseResult.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Invalid request body",
+      data: parseResult.error.flatten(),
+    });
+  }
+
+  const body = parseResult.data;
 
   // Create new game if no game state provided
   let game = body.gameState;

@@ -47,29 +47,16 @@ const setAgentRef = (el: HTMLElement | null, position: string) => {
     }
 };
 
-// Watch for reasoning updates and auto-scroll
+// Watch only the current player's reasoning for auto-scroll (avoids expensive deep watch)
 watch(
-    () => props.reasoning,
-    async (newReasoning) => {
+    () => props.currentPlayer ? props.reasoning[props.currentPlayer] : null,
+    async () => {
         await nextTick();
-        // If there is a current player, scroll their box
         if (props.currentPlayer && agentRefs.value[props.currentPlayer]) {
-             const el = agentRefs.value[props.currentPlayer];
-             el.scrollTop = el.scrollHeight;
+            const el = agentRefs.value[props.currentPlayer];
+            el.scrollTop = el.scrollHeight;
         }
-        // Also check all other positions in case updates came in concurrently
-        positions.forEach(pos => {
-             if (agentRefs.value[pos]) {
-                 const el = agentRefs.value[pos];
-                 // Only auto-scroll if already near bottom or if it's the active player
-                 // But for streaming, we generally want to stick to bottom for the active one
-                 if (pos === props.currentPlayer) {
-                     el.scrollTop = el.scrollHeight;
-                 }
-             }
-        });
-    },
-    { deep: true }
+    }
 );
 
 const getModelName = (position: Position): string => {

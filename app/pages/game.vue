@@ -22,7 +22,7 @@
 
         <div class="game-content">
             <!-- Left Panel: Changes based on mode -->
-            <div class="main-panel">
+            <main class="main-panel" aria-label="Game board">
                 <!-- Arena Mode: Show Game Board -->
                 <template v-if="viewMode === 'arena'">
                     <div class="panel-header">
@@ -86,10 +86,10 @@
                         </button>
                     </div>
                 </template>
-            </div>
+            </main>
 
             <!-- Right Panel: Changes based on mode -->
-            <div class="side-panel">
+            <aside class="side-panel" aria-label="Game information">
                 <!-- Arena Mode: Show Intelligence sidebar -->
                 <template v-if="viewMode === 'arena'">
                     <div class="panel-header">
@@ -149,7 +149,7 @@
                     <!-- Activity Log (condensed) -->
                     <ActivityLog :entries="activityLog" />
                 </template>
-            </div>
+            </aside>
         </div>
 
         <!-- Reasoning Modal -->

@@ -355,33 +355,28 @@ export function formatTrumpSelectionForAI(
       ? bids
           .map((b) => {
             if (b.action === "pass") {
-              return `  ${b.player}: Pass`;
+              return `  ${b.player}: pass`;
             } else if (b.action === "order_up") {
-              return `  ${b.player}: Order up ${turnedUpCard.suit}${b.goingAlone ? " (going alone)" : ""}`;
+              return `  ${b.player}: order_up${b.goingAlone ? " (alone)" : ""}`;
             } else {
-              return `  ${b.player}: Call ${b.suit} as trump${b.goingAlone ? " (going alone)" : ""}`;
+              return `  ${b.player}: call_trump ${b.suit}${b.goingAlone ? " (alone)" : ""}`;
             }
           })
           .join("\n")
-      : "  (no bids yet)";
+      : "  (none yet)";
 
-  const roundDesc =
-    round === 1
-      ? `Round 1: Order up the ${cardToString(turnedUpCard)} or pass`
-      : `Round 2: Call any suit EXCEPT ${turnedUpCard.suit} (or pass${playerPosition === dealer ? " - DEALER MUST CALL if last" : ""})`;
+  const isDealer = playerPosition === dealer;
+  const isLastBidderRound2 = round === 2 && bids.slice(BIDS_PER_ROUND).length === BIDS_PER_ROUND - 1;
 
   return `
-Trump Selection - ${roundDesc}
 Turned-up card: ${cardToString(turnedUpCard)}
-Dealer: ${dealer}
+Dealer: ${dealer}${isDealer ? " (you)" : ""}
 Your position: ${playerPosition} (Team ${player.team})
 Your partner: ${partner?.position}
 Your hand: ${player.hand.map(cardToString).join(", ")}
-
-Bidding so far:
+${isDealer && isLastBidderRound2 ? "NOTE: You are dealer and MUST call trump (cannot pass).\n" : ""}
+Bids so far:
 ${bidHistory}
-
-Your turn: What do you bid?
   `.trim();
 }
 
@@ -732,7 +727,7 @@ export function getWinningTeam(game: GameState): 0 | 1 | null {
 }
 
 /**
- * Format game state for AI prompt
+ * Format game state for AI prompt (includes full hand - used for general context)
  */
 export function formatGameStateForAI(
   game: GameState,
@@ -758,6 +753,41 @@ Trump: ${game.trump || "not set"}
 Your position: ${playerPosition} (Team ${player.team})
 Your partner: ${partner?.position}
 Your hand: ${player.hand.map(cardToString).join(", ")}
+
+Current trick (lead: ${game.currentTrick.leadPlayer}):
+${currentTrickStr}
+
+Score: Team 0: ${game.scores[0]}, Team 1: ${game.scores[1]}
+Tricks completed: ${game.completedTricks.length}/${TRICKS_PER_GAME}
+  `.trim();
+}
+
+/**
+ * Format game state for card play decisions (excludes full hand - valid cards shown separately)
+ */
+export function formatGameStateForCardPlay(
+  game: GameState,
+  playerPosition: Position,
+): string {
+  const player = game.players.find((p) => p.position === playerPosition);
+  if (!player)
+    throw new InvalidGameStateError(`Player not found: ${playerPosition}`);
+
+  const partner = game.players.find(
+    (p) => p.team === player.team && p.position !== playerPosition,
+  );
+
+  const currentTrickStr =
+    game.currentTrick.plays.length > 0
+      ? game.currentTrick.plays
+          .map((p) => `  ${p.player}: ${cardToString(p.card)}`)
+          .join("\n")
+      : "  (leading the trick)";
+
+  return `
+Trump: ${game.trump}
+Your position: ${playerPosition} (Team ${player.team})
+Your partner: ${partner?.position}
 
 Current trick (lead: ${game.currentTrick.leadPlayer}):
 ${currentTrickStr}

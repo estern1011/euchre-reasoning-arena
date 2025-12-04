@@ -1,21 +1,28 @@
 <template>
-    <div class="streaming-reasoning">
-        <div class="streaming-header">
+    <div class="streaming-reasoning" role="region" aria-label="AI live reasoning">
+        <div class="streaming-header" aria-hidden="true">
             <span class="keyword">const</span> liveThinking = {
         </div>
         <div class="streaming-content">
             <div :class="['streaming-box', { 'is-active': player && reasoning }]">
                 <div v-if="player && reasoning" class="streaming-player">
                     <span class="player-label">{{ player.toUpperCase() }}</span>
-                    <span class="streaming-indicator">● LIVE</span>
+                    <span class="streaming-indicator" aria-hidden="true">● LIVE</span>
+                    <span class="sr-only">Currently thinking</span>
                 </div>
                 <div v-else class="streaming-player">
                     <span class="player-label idle">WAITING</span>
-                    <span class="status-indicator idle">○ IDLE</span>
+                    <span class="status-indicator idle" aria-hidden="true">○ IDLE</span>
                 </div>
-                <div ref="streamingTextRef" class="streaming-text">
+                <div
+                    ref="streamingTextRef"
+                    class="streaming-text"
+                    aria-live="polite"
+                    aria-atomic="false"
+                    :aria-busy="!!player && !!reasoning"
+                >
                     <template v-if="player && reasoning">
-                        {{ reasoning }}<span class="cursor">▋</span>
+                        {{ reasoning }}<span class="cursor" aria-hidden="true">▋</span>
                     </template>
                     <template v-else>
                         <span class="placeholder-text">// awaiting next action...</span>
@@ -23,7 +30,7 @@
                 </div>
             </div>
         </div>
-        <div class="closing-brace">}</div>
+        <div class="closing-brace" aria-hidden="true">}</div>
     </div>
 </template>
 

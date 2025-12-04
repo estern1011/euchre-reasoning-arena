@@ -368,14 +368,13 @@ describe("Format Trump Selection for AI", () => {
     expect(formatted).toContain("Turned-up card:");
   });
 
-  it("should include round description for round 1", () => {
+  it("should include turned-up card info", () => {
     const formatted = formatTrumpSelectionForAI(game, "east");
 
-    expect(formatted).toContain("Round 1");
-    expect(formatted).toContain("Order up");
+    expect(formatted).toContain("Turned-up card:");
   });
 
-  it("should include round description for round 2", () => {
+  it("should show bids so far section", () => {
     game = makeTrumpBid(game, "east", "pass");
     game = makeTrumpBid(game, "south", "pass");
     game = makeTrumpBid(game, "west", "pass");
@@ -383,8 +382,8 @@ describe("Format Trump Selection for AI", () => {
 
     const formatted = formatTrumpSelectionForAI(game, "east");
 
-    expect(formatted).toContain("Round 2");
-    expect(formatted).toContain("Call any suit EXCEPT");
+    expect(formatted).toContain("Bids so far:");
+    expect(formatted).toContain("east: pass");
   });
 
   it("should include dealer position", () => {
@@ -424,7 +423,7 @@ describe("Format Trump Selection for AI", () => {
 
     const formatted = formatTrumpSelectionForAI(game, "south");
 
-    expect(formatted).toContain("east: Pass");
+    expect(formatted).toContain("east: pass");
   });
 
   it("should show going alone in bid history for order_up", () => {
@@ -473,7 +472,7 @@ describe("Format Trump Selection for AI", () => {
 
     const formatted = formatTrumpSelectionForAI(game, "north");
 
-    expect(formatted).toContain("DEALER MUST CALL");
+    expect(formatted).toContain("MUST call trump");
   });
 
   it("should throw error for invalid player", () => {
