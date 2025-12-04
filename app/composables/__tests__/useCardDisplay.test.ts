@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { useCardDisplay } from "../useCardDisplay";
-import { useGameState } from "../useGameState";
-import type { GameState, Card } from "~/types/game";
+import { useGameStore } from "../../stores/game";
+import type { GameState } from "../../../lib/game/types";
 
 const createMockGameState = (overrides?: Partial<GameState>): GameState => ({
   id: "test-game",
@@ -53,7 +53,7 @@ const createMockGameState = (overrides?: Partial<GameState>): GameState => ({
   completedTricks: [],
   scores: [0, 0],
   ...overrides,
-});
+} as GameState);
 
 describe("useCardDisplay", () => {
   beforeEach(() => {
@@ -62,8 +62,8 @@ describe("useCardDisplay", () => {
 
   describe("playedCards", () => {
     it("should return all null cards when no plays yet", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { playedCards } = useCardDisplay();
 
@@ -89,8 +89,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should map single played card to position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -109,8 +109,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should map multiple played cards to positions", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -131,8 +131,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should update center card to lead card", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "east",
           plays: [
@@ -149,8 +149,8 @@ describe("useCardDisplay", () => {
 
   describe("leadCard", () => {
     it("should return null when no plays yet", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { leadCard } = useCardDisplay();
 
@@ -164,8 +164,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return first played card", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "south",
           plays: [
@@ -183,16 +183,16 @@ describe("useCardDisplay", () => {
 
   describe("leadPlayer", () => {
     it("should return null when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { leadPlayer } = useCardDisplay();
 
       expect(leadPlayer.value).toBeNull();
     });
 
     it("should return lead player from current trick", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: { leadPlayer: "west", plays: [] },
       }));
 
@@ -202,10 +202,10 @@ describe("useCardDisplay", () => {
     });
 
     it("should return null when no current trick", () => {
-      const { setGameState } = useGameState();
+      const gameStore = useGameStore();
       const gameState = createMockGameState();
       gameState.currentTrick = undefined as any;
-      setGameState(gameState);
+      gameStore.setGameState(gameState);
 
       const { leadPlayer } = useCardDisplay();
 
@@ -215,8 +215,8 @@ describe("useCardDisplay", () => {
 
   describe("hasPlayedCard", () => {
     it("should return false when no plays", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { hasPlayedCard } = useCardDisplay();
 
@@ -231,8 +231,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return true for players who have played", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -253,8 +253,8 @@ describe("useCardDisplay", () => {
 
   describe("getCardForPosition", () => {
     it("should return null when no plays", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { getCardForPosition } = useCardDisplay();
 
@@ -268,8 +268,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return card for position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -289,16 +289,16 @@ describe("useCardDisplay", () => {
 
   describe("getPlayerHand", () => {
     it("should return empty array when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { getPlayerHand } = useCardDisplay();
 
       expect(getPlayerHand("north")).toEqual([]);
     });
 
     it("should return player's hand cards", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { getPlayerHand } = useCardDisplay();
 
@@ -313,10 +313,10 @@ describe("useCardDisplay", () => {
     });
 
     it("should return empty array for non-existent player", () => {
-      const { setGameState } = useGameState();
+      const gameStore = useGameStore();
       const gameState = createMockGameState();
       gameState.players = gameState.players.filter((p) => p.position !== "north");
-      setGameState(gameState);
+      gameStore.setGameState(gameState);
 
       const { getPlayerHand } = useCardDisplay();
 
@@ -326,8 +326,8 @@ describe("useCardDisplay", () => {
 
   describe("isTrickComplete", () => {
     it("should return false when no plays", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { isTrickComplete } = useCardDisplay();
 
@@ -341,8 +341,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return false with incomplete plays", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -358,8 +358,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return true when trick has 4 plays", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -377,8 +377,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return true when trick has 3 plays and going alone", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         goingAlone: "north",
         currentTrick: {
           leadPlayer: "north",
@@ -396,8 +396,8 @@ describe("useCardDisplay", () => {
     });
 
     it("should return false when going alone with only 2 plays", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         goingAlone: "north",
         currentTrick: {
           leadPlayer: "north",

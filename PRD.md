@@ -326,7 +326,6 @@ euchre-reasoning-arena/
 │   │   └── Card.vue                   # Card component
 │   │
 │   └── composables/                   # Vue composition functions
-│       ├── useGameState.ts
 │       ├── useGameStreaming.ts        # SSE streaming for real-time AI reasoning
 │       ├── useGameFlow.ts
 │       ├── usePlayerInfo.ts

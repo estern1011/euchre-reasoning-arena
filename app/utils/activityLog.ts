@@ -22,6 +22,14 @@ export function formatTrumpBidEntry(
   return `${String(step).padStart(2, "0")} | [${formatPosition(player)}] ACTION: ${action.toUpperCase()}`;
 }
 
+export function formatDiscardEntry(
+  step: number,
+  player: Position,
+  card: Card
+): string {
+  return `${String(step).padStart(2, "0")} | [${formatPosition(player)}] ACTION: DISCARDED ${formatCard(card)}`;
+}
+
 export function formatIllegalAttemptEntry(
   step: number,
   player: Position,

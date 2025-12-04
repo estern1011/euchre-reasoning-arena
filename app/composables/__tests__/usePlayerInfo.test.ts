@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { ref } from "vue";
 import { setActivePinia, createPinia } from "pinia";
 import { usePlayerInfo } from "../usePlayerInfo";
-import { useGameState } from "../useGameState";
-import type { GameState } from "~/types/game";
+import { useGameStore } from "../../stores/game";
+import type { GameState } from "../../../lib/game/types";
 
 // Create mock game state
 const createMockGameState = (overrides?: Partial<GameState>): GameState => ({
@@ -23,7 +22,7 @@ const createMockGameState = (overrides?: Partial<GameState>): GameState => ({
   completedTricks: [],
   scores: [0, 0],
   ...overrides,
-});
+} as GameState);
 
 describe("usePlayerInfo", () => {
   beforeEach(() => {
@@ -32,15 +31,15 @@ describe("usePlayerInfo", () => {
 
   describe("getModelId", () => {
     it("should return empty string when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { getModelId } = usePlayerInfo();
       expect(getModelId("north")).toBe("");
     });
 
     it("should return model ID for a position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { getModelId } = usePlayerInfo();
 
@@ -51,10 +50,10 @@ describe("usePlayerInfo", () => {
     });
 
     it("should return empty string for non-existent position", () => {
-      const { setGameState } = useGameState();
+      const gameStore = useGameStore();
       const gameState = createMockGameState();
       gameState.players = gameState.players.filter((p) => p.position !== "north");
-      setGameState(gameState);
+      gameStore.setGameState(gameState);
 
       const { getModelId } = usePlayerInfo();
       expect(getModelId("north")).toBe("");
@@ -63,15 +62,15 @@ describe("usePlayerInfo", () => {
 
   describe("getFormattedModelName", () => {
     it("should return empty string when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { getFormattedModelName } = usePlayerInfo();
       expect(getFormattedModelName("north")).toBe("");
     });
 
     it("should format model names by removing provider prefix", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { getFormattedModelName } = usePlayerInfo();
 
@@ -82,10 +81,10 @@ describe("usePlayerInfo", () => {
     });
 
     it("should uppercase model name without provider", () => {
-      const { setGameState } = useGameState();
+      const gameStore = useGameStore();
       const gameState = createMockGameState();
       gameState.players[0].modelId = "simple-model";
-      setGameState(gameState);
+      gameStore.setGameState(gameState);
 
       const { getFormattedModelName } = usePlayerInfo();
       expect(getFormattedModelName("north")).toBe("SIMPLE-MODEL");
@@ -94,15 +93,15 @@ describe("usePlayerInfo", () => {
 
   describe("getTeam", () => {
     it("should return null when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { getTeam } = usePlayerInfo();
       expect(getTeam("north")).toBeNull();
     });
 
     it("should return team number for each position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { getTeam } = usePlayerInfo();
 
@@ -115,15 +114,15 @@ describe("usePlayerInfo", () => {
 
   describe("currentPlayer", () => {
     it("should return null when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { currentPlayer } = usePlayerInfo();
       expect(currentPlayer.value).toBeNull();
     });
 
     it("should return current bidder during trump selection", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         phase: "trump_selection",
         trumpSelection: {
           turnedUpCard: { rank: "9", suit: "hearts" },
@@ -139,8 +138,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should return lead player when no plays yet", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: { leadPlayer: "south", plays: [] },
       }));
 
@@ -149,8 +148,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should return next player in rotation", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -164,10 +163,10 @@ describe("usePlayerInfo", () => {
     });
 
     it("should progress clockwise through players", () => {
-      const { setGameState } = useGameState();
+      const gameStore = useGameStore();
 
       // North plays
-      setGameState(createMockGameState({
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -180,7 +179,7 @@ describe("usePlayerInfo", () => {
       expect(currentPlayer.value).toBe("east");
 
       // East plays
-      setGameState(createMockGameState({
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -194,7 +193,7 @@ describe("usePlayerInfo", () => {
       expect(currentPlayer.value).toBe("south");
 
       // South plays
-      setGameState(createMockGameState({
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -210,8 +209,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should return null when trick is complete", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -228,8 +227,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should skip partner when going alone", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         goingAlone: "north", // North going alone, south sits out
         currentTrick: {
           leadPlayer: "north",
@@ -246,8 +245,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should expect 3 plays when going alone", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         goingAlone: "north",
         currentTrick: {
           leadPlayer: "north",
@@ -264,8 +263,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should handle east as lead player", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "east",
           plays: [
@@ -281,8 +280,8 @@ describe("usePlayerInfo", () => {
 
   describe("isCurrentPlayer", () => {
     it("should return true for current player", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: { leadPlayer: "north", plays: [] },
       }));
 
@@ -294,8 +293,8 @@ describe("usePlayerInfo", () => {
     });
 
     it("should return false for all players when trick is complete", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({
         currentTrick: {
           leadPlayer: "north",
           plays: [
@@ -317,8 +316,8 @@ describe("usePlayerInfo", () => {
 
   describe("modelsByPosition", () => {
     it("should return all model IDs mapped by position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { modelsByPosition } = usePlayerInfo();
 
@@ -333,8 +332,8 @@ describe("usePlayerInfo", () => {
 
   describe("formattedModelsByPosition", () => {
     it("should return all formatted model names mapped by position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState());
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState());
 
       const { formattedModelsByPosition } = usePlayerInfo();
 
@@ -349,15 +348,15 @@ describe("usePlayerInfo", () => {
 
   describe("dealer", () => {
     it("should return null when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { dealer } = usePlayerInfo();
       expect(dealer.value).toBeNull();
     });
 
     it("should return dealer position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({ dealer: "west" }));
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({ dealer: "west" }));
 
       const { dealer } = usePlayerInfo();
       expect(dealer.value).toBe("west");
@@ -366,15 +365,15 @@ describe("usePlayerInfo", () => {
 
   describe("trumpCaller", () => {
     it("should return null when game state is null", () => {
-      const { clearGameState } = useGameState();
-      clearGameState();
+      const gameStore = useGameStore();
+      gameStore.gameState = null;
       const { trumpCaller } = usePlayerInfo();
       expect(trumpCaller.value).toBeNull();
     });
 
     it("should return trump caller position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({ trumpCaller: "east" }));
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({ trumpCaller: "east" }));
 
       const { trumpCaller } = usePlayerInfo();
       expect(trumpCaller.value).toBe("east");
@@ -383,16 +382,16 @@ describe("usePlayerInfo", () => {
 
   describe("goingAlone", () => {
     it("should return going alone position", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({ goingAlone: "south" }));
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({ goingAlone: "south" }));
 
       const { goingAlone } = usePlayerInfo();
       expect(goingAlone.value).toBe("south");
     });
 
     it("should return null when no one is going alone", () => {
-      const { setGameState } = useGameState();
-      setGameState(createMockGameState({ goingAlone: undefined }));
+      const gameStore = useGameStore();
+      gameStore.setGameState(createMockGameState({ goingAlone: undefined }));
 
       const { goingAlone } = usePlayerInfo();
       expect(goingAlone.value).toBeNull();

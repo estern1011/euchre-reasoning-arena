@@ -1,6 +1,6 @@
 import { computed } from "vue";
-import { useGameState } from "./useGameState";
-import type { Card, Position } from "~/lib/game/types";
+import { useGameStore } from "../stores/game";
+import type { Card, Position } from "../../lib/game/types";
 
 /**
  * Card display composable
@@ -16,7 +16,7 @@ export interface PlayedCards {
 }
 
 export function useCardDisplay() {
-  const { gameState } = useGameState();
+  const gameStore = useGameStore();
 
   /**
    * Get played cards from the current trick
@@ -31,11 +31,11 @@ export function useCardDisplay() {
       center: null,
     };
 
-    if (!gameState.value || !gameState.value.currentTrick) {
+    if (!gameStore.gameState?.currentTrick) {
       return emptyCards;
     }
 
-    const trick = gameState.value.currentTrick;
+    const trick = gameStore.gameState.currentTrick;
     const cards: PlayedCards = { ...emptyCards };
 
     // Map each play to its position
@@ -56,25 +56,25 @@ export function useCardDisplay() {
    * Get the lead card of the current trick
    */
   const leadCard = computed<Card | null>(() => {
-    if (!gameState.value?.currentTrick || gameState.value.currentTrick.plays.length === 0) {
+    if (!gameStore.gameState?.currentTrick || gameStore.gameState.currentTrick.plays.length === 0) {
       return null;
     }
-    return gameState.value.currentTrick.plays[0].card;
+    return gameStore.gameState.currentTrick.plays[0].card;
   });
 
   /**
    * Get the lead player of the current trick
    */
   const leadPlayer = computed<Position | null>(() => {
-    return gameState.value?.currentTrick?.leadPlayer || null;
+    return gameStore.gameState?.currentTrick?.leadPlayer || null;
   });
 
   /**
    * Check if a position has played a card in the current trick
    */
   function hasPlayedCard(position: Position): boolean {
-    if (!gameState.value?.currentTrick) return false;
-    return gameState.value.currentTrick.plays.some(
+    if (!gameStore.gameState?.currentTrick) return false;
+    return gameStore.gameState.currentTrick.plays.some(
       (play) => play.player === position,
     );
   }
@@ -83,8 +83,8 @@ export function useCardDisplay() {
    * Get the card played by a specific position
    */
   function getCardForPosition(position: Position): Card | null {
-    if (!gameState.value?.currentTrick) return null;
-    const play = gameState.value.currentTrick.plays.find(
+    if (!gameStore.gameState?.currentTrick) return null;
+    const play = gameStore.gameState.currentTrick.plays.find(
       (p) => p.player === position,
     );
     return play?.card || null;
@@ -94,8 +94,8 @@ export function useCardDisplay() {
    * Get player's hand cards
    */
   function getPlayerHand(position: Position): Card[] {
-    if (!gameState.value) return [];
-    const player = gameState.value.players.find((p) => p.position === position);
+    if (!gameStore.gameState) return [];
+    const player = gameStore.gameState.players.find((p) => p.position === position);
     return player?.hand || [];
   }
 
@@ -103,9 +103,9 @@ export function useCardDisplay() {
    * Check if the current trick is complete
    */
   const isTrickComplete = computed(() => {
-    if (!gameState.value?.currentTrick) return false;
-    const expectedPlays = gameState.value.goingAlone ? 3 : 4;
-    return gameState.value.currentTrick.plays.length >= expectedPlays;
+    if (!gameStore.gameState?.currentTrick) return false;
+    const expectedPlays = gameStore.gameState.goingAlone ? 3 : 4;
+    return gameStore.gameState.currentTrick.plays.length >= expectedPlays;
   });
 
   return {

@@ -1,6 +1,6 @@
 import { computed } from "vue";
-import { useGameState } from "./useGameState";
-import type { Position } from "~/lib/game/types";
+import { useGameStore } from "../stores/game";
+import type { Position } from "../../lib/game/types";
 
 /**
  * Player information composable
@@ -8,14 +8,14 @@ import type { Position } from "~/lib/game/types";
  */
 
 export function usePlayerInfo() {
-  const { gameState } = useGameState();
+  const gameStore = useGameStore();
 
   /**
    * Get model ID for a specific position
    */
   function getModelId(position: Position): string {
-    if (!gameState.value) return "";
-    const player = gameState.value.players.find((p) => p.position === position);
+    if (!gameStore.gameState) return "";
+    const player = gameStore.gameState.players.find((p: { position: Position }) => p.position === position);
     return player?.modelId || "";
   }
 
@@ -37,8 +37,8 @@ export function usePlayerInfo() {
    * Get team number for a position
    */
   function getTeam(position: Position): 0 | 1 | null {
-    if (!gameState.value) return null;
-    const player = gameState.value.players.find((p) => p.position === position);
+    if (!gameStore.gameState) return null;
+    const player = gameStore.gameState.players.find((p: { position: Position }) => p.position === position);
     return player?.team ?? null;
   }
 
@@ -46,19 +46,19 @@ export function usePlayerInfo() {
    * Get current player who needs to make a decision
    */
   const currentPlayer = computed<Position | null>(() => {
-    if (!gameState.value) return null;
+    if (!gameStore.gameState) return null;
 
     // During trump selection, use the current bidder
-    if (gameState.value.phase === "trump_selection") {
-      return gameState.value.trumpSelection?.currentBidder || null;
+    if (gameStore.gameState.phase === "trump_selection") {
+      return gameStore.gameState.trumpSelection?.currentBidder || null;
     }
 
     // During playing, determine next player based on current trick
-    if (gameState.value.phase === "playing") {
-      const trick = gameState.value.currentTrick;
+    if (gameStore.gameState.phase === "playing") {
+      const trick = gameStore.gameState.currentTrick;
       if (!trick) return null;
 
-      const expectedPlays = gameState.value.goingAlone ? 3 : 4;
+      const expectedPlays = gameStore.gameState.goingAlone ? 3 : 4;
       if (trick.plays.length >= expectedPlays) {
         return null; // Trick is complete
       }
@@ -75,16 +75,16 @@ export function usePlayerInfo() {
       const nextPlayer = positions[nextIndex];
 
       // Skip if player's partner is going alone
-      if (gameState.value.goingAlone) {
-        const alonePlayer = gameState.value.players.find(
-          (p) => p.position === gameState.value!.goingAlone,
+      if (gameStore.gameState.goingAlone) {
+        const alonePlayer = gameStore.gameState.players.find(
+          (p: { position: Position }) => p.position === gameStore.gameState!.goingAlone,
         );
         if (alonePlayer) {
           const partnerTeam = alonePlayer.team;
-          const nextPlayerObj = gameState.value.players.find(
-            (p) => p.position === nextPlayer,
+          const nextPlayerObj = gameStore.gameState.players.find(
+            (p: { position: Position }) => p.position === nextPlayer,
           );
-          if (nextPlayerObj?.team === partnerTeam && nextPlayer !== gameState.value.goingAlone) {
+          if (nextPlayerObj?.team === partnerTeam && nextPlayer !== gameStore.gameState.goingAlone) {
             // This player sits out, find next player
             const afterNextIndex = (nextIndex + 1) % 4;
             return positions[afterNextIndex];
@@ -128,17 +128,17 @@ export function usePlayerInfo() {
   /**
    * Get dealer position
    */
-  const dealer = computed<Position | null>(() => gameState.value?.dealer || null);
+  const dealer = computed<Position | null>(() => gameStore.gameState?.dealer || null);
 
   /**
    * Get trump caller position
    */
-  const trumpCaller = computed<Position | null>(() => gameState.value?.trumpCaller || null);
+  const trumpCaller = computed<Position | null>(() => gameStore.gameState?.trumpCaller || null);
 
   /**
    * Get player going alone (if any)
    */
-  const goingAlone = computed<Position | null>(() => gameState.value?.goingAlone || null);
+  const goingAlone = computed<Position | null>(() => gameStore.gameState?.goingAlone || null);
 
   return {
     // Functions

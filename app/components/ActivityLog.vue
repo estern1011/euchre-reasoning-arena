@@ -5,7 +5,7 @@
         </div>
         <div class="log-entries">
             <div
-                v-for="(entry, index) in entries"
+                v-for="(entry, index) in reversedEntries"
                 :key="index"
                 class="log-entry"
             >
@@ -19,11 +19,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+
 interface Props {
     entries: string[];
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+// Show newest entries at top
+const reversedEntries = computed(() => [...props.entries].reverse());
 </script>
 
 <style scoped>

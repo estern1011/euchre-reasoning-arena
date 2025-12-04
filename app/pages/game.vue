@@ -29,16 +29,14 @@
                         <span class="comment">// </span>arena
                     </div>
 
-                    <!-- Game State Display & Controls -->
+                    <!-- Live Status Banner & Controls -->
                     <div class="game-state-header">
-                        <GameStateDisplay
-                            :current-phase="currentPhase"
-                            :current-trick="currentTrick"
-                            :trump-suit="trumpSuit"
-                            :last-trick-winner="lastTrickWinner"
-                        />
+                        <div class="status-row">
+                            <LiveStatusBanner />
+                            <GameMetaInfo />
+                        </div>
                         <GameControls
-                            :disabled="!gameState || isLoading"
+                            :disabled="!gameStore.gameState || gameStore.isStreaming"
                             @play-next="handlePlayNextRound"
                         />
                     </div>
@@ -48,21 +46,18 @@
                         <div class="table-header"><span class="keyword">const</span> table = {</div>
 
                         <GameBoard
-                            :player-hands="playerHands"
-                            :played-cards="activePlayedCards"
+                            :player-hands="gameStore.playerHands"
+                            :played-cards="gameStore.activePlayedCards"
                             :formatted-models="formattedModelsByPosition"
-                            :turned-up-card="turnedUpCard"
-                            :current-player="activeThinkingPlayer"
-                            :is-streaming="isStreaming"
-                            :going-alone="goingAlone"
+                            :turned-up-card="gameStore.turnedUpCard"
+                            :current-player="gameStore.currentThinkingPlayer"
+                            :is-streaming="gameStore.isStreaming"
+                            :going-alone="gameStore.goingAlone"
+                            :dealer="gameStore.dealer"
                         />
 
                         <!-- Game Controls -->
-                        <div class="game-controls">
-                            <div v-if="errorMessage" class="alert error mb-4">
-                                {{ errorMessage }}
-                            </div>
-                        </div>
+                        <div class="game-controls"></div>
                         <div class="closing-brace">}</div>
                     </div>
                 </template>
@@ -74,8 +69,8 @@
                     </div>
 
                     <MultiAgentReasoning
-                        :reasoning="streamingReasoning"
-                        :current-player="currentThinkingPlayer"
+                        :reasoning="gameStore.streamingReasoning"
+                        :current-player="gameStore.currentThinkingPlayer"
                         :model-ids="gameStore.modelIds"
                     />
 
@@ -106,8 +101,8 @@
 
                     <!-- Real-Time Streaming Reasoning -->
                     <StreamingReasoning
-                        :player="currentThinkingPlayer"
-                        :reasoning="currentThinkingPlayer ? (streamingReasoning[currentThinkingPlayer] ?? '') : ''"
+                        :player="gameStore.displayedReasoningPlayer"
+                        :reasoning="gameStore.displayedReasoningPlayer ? (gameStore.streamingReasoning[gameStore.displayedReasoningPlayer] ?? '') : ''"
                     />
 
                     <!-- Reasoning History Button -->
@@ -129,22 +124,26 @@
                         <span class="comment">// </span>arena
                     </div>
 
-                    <!-- Game State Display & Controls -->
+                    <!-- Live Status Banner & Controls -->
                     <div class="game-state-header compact">
+                        <div class="status-row">
+                            <LiveStatusBanner />
+                            <GameMetaInfo />
+                        </div>
                         <GameControls
-                            :disabled="!gameState || isLoading"
+                            :disabled="!gameStore.gameState || gameStore.isStreaming"
                             @play-next="handlePlayNextRound"
                         />
                     </div>
 
                     <!-- Compact Arena View -->
                     <CompactArena
-                        :player-hands="playerHands"
-                        :played-cards="activePlayedCards"
-                        :current-player="activeThinkingPlayer"
+                        :player-hands="gameStore.playerHands"
+                        :played-cards="gameStore.activePlayedCards"
+                        :current-player="gameStore.currentThinkingPlayer"
                         :trump-suit="trumpSuit"
                         :current-trick="currentTrick"
-                        :turned-up-card="turnedUpCard"
+                        :turned-up-card="gameStore.turnedUpCard"
                     />
 
                     <!-- Activity Log (condensed) -->
@@ -163,50 +162,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
-import GameStateDisplay from "~/components/GameStateDisplay.vue";
+import LiveStatusBanner from "~/components/LiveStatusBanner.vue";
+import GameMetaInfo from "~/components/GameMetaInfo.vue";
 import GameControls from "~/components/GameControls.vue";
 import GameBoard from "~/components/GameBoard.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
 import MultiAgentReasoning from "~/components/MultiAgentReasoning.vue";
 import CompactArena from "~/components/CompactArena.vue";
-import { useGameState } from "~/composables/useGameState";
 import { useGameFlow } from "~/composables/useGameFlow";
-import { useCardDisplay } from "~/composables/useCardDisplay";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
-import { useErrorHandling } from "~/composables/useErrorHandling";
 import { useGameStore, type ViewMode } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
-import type { Position, Card } from "~/types/game";
 import { formatSuit } from "../../lib/game/formatting";
 import {
     formatCardPlayEntry,
     formatTrumpBidEntry,
+    formatDiscardEntry,
     formatIllegalAttemptEntry,
     formatRoundSummaryEntry,
     formatErrorEntry,
 } from "~/utils/activityLog";
+import type { SSEMessage, SSEDecisionMade } from "../../lib/types/sse";
+import type { Position } from "../../lib/game/types";
+
+// Decision record for history
+interface DecisionRecord extends SSEDecisionMade {
+  // All fields from SSEDecisionMade plus any resolved reasoning
+}
+
+// Pinia store - single source of truth
+const gameStore = useGameStore();
 
 // Composables
-const { gameState, trump, scores, setGameState } = useGameState();
-const {
-    initializeGame,
-    playNextRound,
-    isLoading,
-    roundSummary: currentRoundSummary,
-} = useGameFlow();
-const { playedCards } = useCardDisplay();
-const { formattedModelsByPosition, currentPlayer, isCurrentPlayer, goingAlone } = usePlayerInfo();
-const { currentError, getUserFriendlyMessage } = useErrorHandling();
-
-// Local ref for currentRoundDecisions (writable for SSE streaming)
-const currentRoundDecisions = ref<any[]>([]);
-
-// Get model assignments from Pinia store
-const gameStore = useGameStore();
-const modelIdsArray = computed(() => gameStore.modelIdsArray);
+const { initializeGame } = useGameFlow();
+const { formattedModelsByPosition } = usePlayerInfo();
+const { streamGameRound } = useGameStreaming();
 
 // View mode (arena or intelligence)
 const viewMode = computed(() => gameStore.viewMode);
@@ -215,134 +208,48 @@ const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
 
-// Computed values for display
-const currentPhase = computed(() => {
-    if (!gameState.value) return "LOADING";
-    if (gameState.value.phase === "trump_selection") return "TRUMP SELECTION";
-    if (gameState.value.phase === "playing") return "PLAYING";
-    return "COMPLETE";
-});
+// Reasoning modal and history
+const showReasoningModal = ref(false);
+const allDecisions = ref<DecisionRecord[]>([]);
 
+// Computed values for display (still needed for CompactArena)
 const currentTrick = computed(() => {
-    return gameState.value?.completedTricks?.length || 0;
+    return gameStore.completedTricks?.length || 0;
 });
 
 const trumpSuit = computed(() => {
-    if (!trump.value) return "?";
-    return formatSuit(trump.value);
-});
-
-const lastTrickWinner = computed(() => {
-    const tricks = gameState.value?.completedTricks || [];
-    if (tricks.length === 0) return "N/A";
-    return tricks[tricks.length - 1]?.winner?.toUpperCase() || "N/A";
-});
-
-// Player hands
-const playerHands = computed(() => {
-    if (!gameState.value) return { north: [], east: [], south: [], west: [] };
-    const hands = { north: [], east: [], south: [], west: [] } as Record<Position, typeof gameState.value.players[0]['hand']>;
-    gameState.value.players.forEach(player => {
-        hands[player.position] = player.hand;
-    });
-    return hands;
-});
-
-// Turned-up card during trump selection
-const turnedUpCard = computed(() => {
-    return gameState.value?.trumpSelection?.turnedUpCard || null;
-});
-
-// Error message for display
-const errorMessage = computed(() => {
-    if (!currentError.value) return null;
-    return getUserFriendlyMessage(currentError.value);
+    if (!gameStore.trump) return "?";
+    return formatSuit(gameStore.trump);
 });
 
 // Handle game initialization
 const handleInitializeGame = async () => {
     try {
-        await initializeGame(modelIdsArray.value);
+        await initializeGame(gameStore.modelIdsArray);
         activityLog.value.push("Game initialized successfully");
     } catch (e) {
         console.error("Failed to initialize game:", e);
     }
 };
 
-// Local state for SSE streaming
-const { isStreaming, streamGameRound } = useGameStreaming();
-const streamingReasoning = ref<Record<Position, string>>({} as Record<Position, string>);
-const currentThinkingPlayer = ref<Position | null>(null);
-const showReasoningModal = ref(false);
-const allDecisions = ref<any[]>([]);
-
-// Track played cards during the current trick (updated as cards are played)
-const streamingPlayedCards = ref<Record<Position, Card | null>>({
-    north: null,
-    east: null,
-    south: null,
-    west: null,
-});
-
-// Reset played cards for new trick
-const resetStreamingPlayedCards = () => {
-    streamingPlayedCards.value = {
-        north: null,
-        east: null,
-        south: null,
-        west: null,
-    };
-};
-
-// Combine streaming played cards with gameState played cards
-const activePlayedCards = computed(() => {
-    // Use streaming cards if any are present (persists after round_complete until next click)
-    const hasStreamingCards = streamingPlayedCards.value.north ||
-                              streamingPlayedCards.value.east ||
-                              streamingPlayedCards.value.south ||
-                              streamingPlayedCards.value.west;
-    if (hasStreamingCards) {
-        return {
-            north: streamingPlayedCards.value.north,
-            east: streamingPlayedCards.value.east,
-            south: streamingPlayedCards.value.south,
-            west: streamingPlayedCards.value.west,
-            center: null,
-        };
-    }
-    return playedCards.value;
-});
-
-// Use currentThinkingPlayer during streaming, otherwise use currentPlayer from game state
-const activeThinkingPlayer = computed(() => {
-    if (isStreaming.value && currentThinkingPlayer.value) {
-        return currentThinkingPlayer.value;
-    }
-    return currentPlayer.value;
-});
-
 // Handle playing next round with SSE streaming
 const handlePlayNextRound = async () => {
-    if (!gameState.value || isStreaming.value) return;
+    if (!gameStore.gameState || gameStore.isStreaming) return;
 
-    currentRoundDecisions.value = [];
-    // Reset played cards at start of new round/trick
-    resetStreamingPlayedCards();
+    // Clear streaming state and start
+    gameStore.clearStreamingState();
+    gameStore.startStreaming();
 
     try {
-        for await (const message of streamGameRound(gameState.value)) {
+        for await (const message of streamGameRound(gameStore.gameState)) {
             switch (message.type) {
                 case 'player_thinking':
-                    currentThinkingPlayer.value = message.player!;
-                    streamingReasoning.value[message.player!] = '';
+                    gameStore.setThinkingPlayer(message.player!);
                     break;
 
                 case 'reasoning_token':
                     if (message.player && message.token) {
-                        if (!streamingReasoning.value[message.player]) {
-                            streamingReasoning.value[message.player] = '';
-                        }
-                        streamingReasoning.value[message.player] += message.token;
+                        gameStore.appendReasoning(message.player, message.token);
                     }
                     break;
 
@@ -361,12 +268,16 @@ const handlePlayNextRound = async () => {
                 case 'decision_made':
                     const step = activityLog.value.length + 1;
 
-                    if (message.card) {
+                    if (message.action === 'discard' && message.card) {
+                        // Dealer discarding after order_up
+                        activityLog.value.push(
+                            formatDiscardEntry(step, message.player!, message.card)
+                        );
+                    } else if (message.card) {
                         activityLog.value.push(
                             formatCardPlayEntry(step, message.player!, message.card)
                         );
-                        // Track played card for diamond display
-                        streamingPlayedCards.value[message.player!] = message.card;
+                        gameStore.recordCardPlayed(message.player!, message.card);
                     } else {
                         activityLog.value.push(
                             formatTrumpBidEntry(step, message.player!, message.action!)
@@ -375,17 +286,20 @@ const handlePlayNextRound = async () => {
 
                     const decisionWithReasoning = {
                         ...message,
-                        reasoning: message.reasoning || streamingReasoning.value[message.player!] || 'No reasoning provided'
+                        reasoning: message.reasoning || gameStore.streamingReasoning[message.player!] || 'No reasoning provided'
                     };
-                    currentRoundDecisions.value.push(decisionWithReasoning);
                     allDecisions.value.push(decisionWithReasoning);
                     break;
 
                 case 'round_complete':
-                    setGameState(message.gameState!);
+                    gameStore.setGameState(message.gameState!);
                     activityLog.value.push(formatRoundSummaryEntry(message.roundSummary!));
-                    // Cards stay visible until user clicks playNextRound
-                    return;
+
+                    // Use explicit trickWinner field from payload
+                    if (message.trickWinner) {
+                        gameStore.setTrickWinner(message.trickWinner as Position);
+                    }
+                    break;
 
                 case 'error':
                     console.error('SSE error:', message.message);
@@ -396,13 +310,10 @@ const handlePlayNextRound = async () => {
         console.error('Streaming Error:', error);
         const errorMsg = error instanceof Error ? error.message : 'An unknown error occurred';
         activityLog.value.push(formatErrorEntry(errorMsg));
+    } finally {
+        gameStore.stopStreaming();
     }
 };
-
-// Cleanup on unmount
-onUnmounted(() => {
-    // Cleanup if needed
-});
 
 // Initialize game on mount
 onMounted(() => {
@@ -749,6 +660,13 @@ onMounted(() => {
     gap: 1rem;
 }
 
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
 /* Side Panel */
 .side-panel {
     display: flex;
@@ -758,6 +676,11 @@ onMounted(() => {
 }
 
 .game-state-header.compact {
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.game-state-header.compact .status-row {
     justify-content: center;
 }
 

@@ -1,6 +1,9 @@
 <template>
     <div class="player-info" :class="{ 'is-horizontal': isHorizontalPosition }">
-        <div class="player-name">{{ position.toUpperCase() }}</div>
+        <div class="name-row">
+            <div class="player-name">{{ position.toUpperCase() }}</div>
+            <div v-if="isDealer" class="dealer-badge">D</div>
+        </div>
         <div class="model-name">{{ modelName }}</div>
         <div class="status-row">
             <div class="status" :class="{ 'thinking': isThinking }">
@@ -24,6 +27,7 @@ interface Props {
     modelName: string;
     isThinking: boolean;
     isGoingAlone?: boolean;
+    isDealer?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -38,11 +42,31 @@ const isHorizontalPosition = computed(() => props.position === 'north' || props.
     min-width: 0;
 }
 
+.name-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
+}
+
 .player-name {
     font-weight: bold;
     letter-spacing: 1px;
-    margin-bottom: clamp(0.1rem, 0.3vh, 0.25rem);
     font-size: clamp(0.55rem, 1.1vh, 0.7rem);
+}
+
+.dealer-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.6rem;
+    font-weight: bold;
+    color: #000;
+    background: var(--color-accent);
+    border-radius: 50%;
 }
 
 .model-name {

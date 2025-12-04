@@ -7,6 +7,7 @@
                 :model-name="formattedModels.north"
                 :is-thinking="isCurrentPlayer('north') && isStreaming"
                 :is-going-alone="goingAlone === 'north'"
+                :is-dealer="dealer === 'north'"
             />
             <PlayerHand :cards="playerHands.north" orientation="horizontal" />
         </div>
@@ -18,6 +19,7 @@
                 :model-name="formattedModels.west"
                 :is-thinking="isCurrentPlayer('west') && isStreaming"
                 :is-going-alone="goingAlone === 'west'"
+                :is-dealer="dealer === 'west'"
             />
             <PlayerHand :cards="playerHands.west" orientation="vertical" />
         </div>
@@ -80,6 +82,7 @@
                 :model-name="formattedModels.east"
                 :is-thinking="isCurrentPlayer('east') && isStreaming"
                 :is-going-alone="goingAlone === 'east'"
+                :is-dealer="dealer === 'east'"
             />
             <PlayerHand :cards="playerHands.east" orientation="vertical" />
         </div>
@@ -92,6 +95,7 @@
                 :model-name="formattedModels.south"
                 :is-thinking="isCurrentPlayer('south') && isStreaming"
                 :is-going-alone="goingAlone === 'south'"
+                :is-dealer="dealer === 'south'"
             />
         </div>
     </div>
@@ -134,6 +138,7 @@ interface Props {
     currentPlayer: Position | null;
     isStreaming: boolean;
     goingAlone?: Position | null;
+    dealer?: Position | null;
 }
 
 const props = defineProps<Props>();
@@ -261,7 +266,7 @@ const isSittingOut = (position: Position) => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    gap: clamp(0.5rem, 2vh, 1.5rem);
 }
 
 .diamond-north {
@@ -273,7 +278,7 @@ const isSittingOut = (position: Position) => {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: clamp(2rem, 8vw, 6rem);
+    gap: clamp(4rem, 12vw, 10rem);
 }
 
 .diamond-west,

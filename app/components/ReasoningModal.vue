@@ -9,7 +9,7 @@
 
                 <div class="modal-body">
                     <div
-                        v-for="(decision, index) in decisions"
+                        v-for="(decision, index) in reversedDecisions"
                         :key="index"
                         class="decision-card"
                     >
@@ -52,17 +52,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { formatSuit } from '../../lib/game/formatting';
+import type { SSEDecisionMade } from '../../lib/types/sse';
+
+interface DecisionRecord extends SSEDecisionMade {
+    timestamp?: number;
+}
 
 interface Props {
     isOpen: boolean
-    decisions: any[]
+    decisions: DecisionRecord[]
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
     (e: 'close'): void
 }>()
+
+// Show newest decisions at top
+const reversedDecisions = computed(() => [...props.decisions].reverse());
 
 const close = () => {
     emit('close')

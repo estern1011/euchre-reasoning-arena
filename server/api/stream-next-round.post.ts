@@ -1,6 +1,7 @@
 import {
   createNewGame,
   makeTrumpBid,
+  dealerDiscard,
   playCard,
   getNextPlayer,
   isGameComplete,
@@ -11,6 +12,7 @@ import type {
   Suit,
   TrumpBidAction,
 } from "../../lib/game/types";
+import { getDefaultModelIdsArray } from "../../lib/config/defaults";
 
 /**
  * SSE streaming endpoint for real-time AI reasoning
@@ -27,12 +29,7 @@ export default defineEventHandler(async (event) => {
   // Create new game if no game state provided
   let game = body.gameState;
   if (!game) {
-    const modelIds = body.modelIds || [
-      "google/gemini-2.5-flash-lite",
-      "xai/grok-code-fast-1",
-      "google/gemini-2.5-flash",
-      "anthropic/claude-haiku-4.5",
-    ];
+    const modelIds = body.modelIds || getDefaultModelIdsArray();
     game = createNewGame(modelIds);
   }
 
@@ -117,7 +114,54 @@ export default defineEventHandler(async (event) => {
               aiDecision.reasoning
             );
 
+            // If trump was set and dealer has 6 cards, they need to discard
             if (game.phase === "playing") {
+              const dealerObj = game.players.find(
+                (p: { position: Position }) => p.position === game.dealer
+              )!;
+
+              if (dealerObj.hand.length === 6) {
+                // Dealer needs to discard
+                sendEvent("player_thinking", {
+                  player: game.dealer,
+                  modelId: dealerObj.modelId,
+                  action: "discard",
+                });
+
+                const { makeDiscardDecisionStreaming } = await import("../services/ai-agent");
+
+                const discardResult = await makeDiscardDecisionStreaming(
+                  game,
+                  dealerObj.modelId,
+                  (token) => {
+                    sendEvent("reasoning_token", {
+                      player: game.dealer,
+                      token,
+                    });
+                  }
+                );
+
+                sendEvent("decision_made", {
+                  player: game.dealer,
+                  modelId: dealerObj.modelId,
+                  action: "discard",
+                  card: discardResult.card,
+                  reasoning: discardResult.reasoning,
+                  duration: discardResult.duration,
+                });
+
+                decisions.push({
+                  player: game.dealer,
+                  modelId: dealerObj.modelId,
+                  action: "discard",
+                  card: discardResult.card,
+                  reasoning: discardResult.reasoning,
+                  duration: discardResult.duration,
+                });
+
+                game = dealerDiscard(game, discardResult.card);
+              }
+
               break;
             }
           }
@@ -204,7 +248,8 @@ export default defineEventHandler(async (event) => {
           }
 
           const lastTrick = game.completedTricks[game.completedTricks.length - 1];
-          const roundSummary = `Trick ${game.completedTricks.length} complete. Winner: ${lastTrick.winner}`;
+          const trickWinner = lastTrick.winner as Position;
+          const roundSummary = `Trick ${game.completedTricks.length} complete. Winner: ${trickWinner}`;
 
           if (isGameComplete(game)) {
             const finalState = { ...game, phase: "complete" as const };
@@ -213,6 +258,7 @@ export default defineEventHandler(async (event) => {
               phase: "game_complete",
               decisions,
               roundSummary: `Game complete. Final score: Team 0: ${finalState.scores[0]}, Team 1: ${finalState.scores[1]}`,
+              trickWinner,
             });
           } else {
             sendEvent("round_complete", {
@@ -220,6 +266,7 @@ export default defineEventHandler(async (event) => {
               phase: "playing_trick",
               decisions,
               roundSummary,
+              trickWinner,
             });
           }
         } else {

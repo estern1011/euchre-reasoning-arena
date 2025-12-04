@@ -1,7 +1,7 @@
 import { ref, computed } from "vue";
-import { useGameState } from "./useGameState";
+import { useGameStore } from "../stores/game";
 import { useErrorHandling } from "./useErrorHandling";
-import type { GameState, Position } from "~/lib/game/types";
+import type { GameState, Position } from "../../lib/game/types";
 
 /**
  * Game flow control composable
@@ -27,7 +27,7 @@ const currentRoundDecisions = ref<AIDecision[]>([]);
 const roundSummary = ref<string>("");
 
 export function useGameFlow() {
-  const { setGameState, setModelIds, clearGameState, gameState } = useGameState();
+  const gameStore = useGameStore();
   const { withRetry, setError } = useErrorHandling();
 
   /**
@@ -59,8 +59,7 @@ export function useGameFlow() {
         return res.json();
       });
 
-      setGameState(response.gameState);
-      setModelIds(modelIdArray);
+      gameStore.setGameState(response.gameState);
       roundSummary.value = response.message || "Game initialized";
     } catch (error) {
       console.error("Failed to initialize game:", error);
@@ -78,7 +77,7 @@ export function useGameFlow() {
    * Play the next round (trump bid or trick)
    */
   async function playNextRound(): Promise<PlayNextRoundResponse | null> {
-    if (!gameState.value) {
+    if (!gameStore.gameState) {
       setError("unknown", "Game state not initialized", false);
       return null;
     }
@@ -92,7 +91,7 @@ export function useGameFlow() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            gameState: gameState.value,
+            gameState: gameStore.gameState,
           }),
         });
 
@@ -104,7 +103,7 @@ export function useGameFlow() {
       });
 
       // Update game state
-      setGameState(response.gameState);
+      gameStore.setGameState(response.gameState);
       currentRoundDecisions.value = response.decisions;
       roundSummary.value = response.roundSummary;
 
@@ -125,7 +124,7 @@ export function useGameFlow() {
    * Reset the game and return to landing page
    */
   function resetGame() {
-    clearGameState();
+    gameStore.reset();
     currentRoundDecisions.value = [];
     roundSummary.value = "";
     isLoading.value = false;
@@ -140,18 +139,18 @@ export function useGameFlow() {
    * Check if we're in trump selection phase
    */
   const isTrumpSelection = computed(
-    () => gameState.value?.phase === "trump_selection",
+    () => gameStore.phase === "trump_selection",
   );
 
   /**
    * Check if we're in playing phase
    */
-  const isPlaying = computed(() => gameState.value?.phase === "playing");
+  const isPlaying = computed(() => gameStore.phase === "playing");
 
   /**
    * Check if game is complete
    */
-  const isComplete = computed(() => gameState.value?.phase === "complete");
+  const isComplete = computed(() => gameStore.phase === "complete");
 
   return {
     // State

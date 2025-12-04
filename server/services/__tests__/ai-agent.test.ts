@@ -7,13 +7,14 @@ import {
 import { createGameWithTrump, createNewGame } from "../../../lib/game/game";
 import type { Card } from "../../../lib/game/types";
 
-// Mock ai sdk functions
+// Mock ai sdk functions for structured output
 vi.mock("ai", () => ({
-  generateText: vi.fn(),
+  generateObject: vi.fn(),
+  streamObject: vi.fn(),
   createGateway: vi.fn(() => () => ({})),
 }));
 
-const { generateText } = await import("ai");
+const { generateObject } = await import("ai");
 
 const modelIds: [string, string, string, string] = ["m1", "m2", "m3", "m4"];
 
@@ -55,14 +56,13 @@ describe("makeCardPlayDecision fallbacks", () => {
     ]);
 
     const result = await makeCardPlayDecision(game, "east", "m2");
-    expect((generateText as any).mock.calls.length).toBe(0);
+    expect((generateObject as any).mock.calls.length).toBe(0);
     expect(result.card).toEqual({ suit: "hearts", rank: "9" });
     expect(result.reasoning).toContain("Only one legal card");
   });
 
   it("retries on illegal card and falls back to first legal card if still illegal", async () => {
     const game = buildGameForPlay();
-    // Lead with north (hearts), give east multiple hearts so valid cards exist
     const lead = game.currentTrick.leadPlayer;
     game.currentTrick = {
       leadPlayer: lead,
@@ -80,21 +80,17 @@ describe("makeCardPlayDecision fallbacks", () => {
       { suit: "diamonds", rank: "ace" },
     ]);
 
-    // First response chooses an illegal card; second also illegal
-    (generateText as any).mockResolvedValueOnce({
-      text: "I will play the Ace of Clubs.",
+    // Structured output returns illegal card, then still illegal
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "I will play the Ace of Clubs.", rank: "ace", suit: "clubs" },
     });
-    (generateText as any).mockResolvedValueOnce({
-      text: "I insist on Ace of Clubs again.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "I insist on Ace of Clubs again.", rank: "ace", suit: "clubs" },
     });
 
-    const result: CardPlayResult = await makeCardPlayDecision(
-      game,
-      "east",
-      "m2",
-    );
+    const result: CardPlayResult = await makeCardPlayDecision(game, "east", "m2");
 
-    expect((generateText as any).mock.calls.length).toBe(2);
+    expect((generateObject as any).mock.calls.length).toBe(2);
     expect(result.card).toEqual(validHearts[0]); // fell back to first legal card
     expect(result.reasoning.toLowerCase()).toContain("fell back");
   });
@@ -118,15 +114,16 @@ describe("makeCardPlayDecision fallbacks", () => {
       { suit: "diamonds", rank: "ace" },
     ]);
 
-    (generateText as any).mockResolvedValueOnce({
-      text: "I will play the Ace of Clubs.",
+    // First returns illegal, second returns valid
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "I will play the Ace of Clubs.", rank: "ace", suit: "clubs" },
     });
-    (generateText as any).mockResolvedValueOnce({
-      text: "Playing Queen of Hearts.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "Playing Queen of Hearts.", rank: "queen", suit: "hearts" },
     });
 
     const result = await makeCardPlayDecision(game, "east", "m2");
-    expect((generateText as any).mock.calls.length).toBe(2);
+    expect((generateObject as any).mock.calls.length).toBe(2);
     expect(result.card).toEqual({ suit: "hearts", rank: "queen" });
   });
 
@@ -138,7 +135,7 @@ describe("makeCardPlayDecision fallbacks", () => {
     expect(result.reasoning).toContain("No legal cards detected");
   });
 
-  it("returns first valid card when model gives no recognizable card", async () => {
+  it("returns first valid card when model gives card not in hand", async () => {
     const game = buildGameForPlay();
     const lead = game.currentTrick.leadPlayer;
     game.currentTrick = {
@@ -154,8 +151,12 @@ describe("makeCardPlayDecision fallbacks", () => {
       { suit: "diamonds", rank: "ace" },
     ]);
 
-    (generateText as any).mockResolvedValueOnce({
-      text: "I cannot decide, maybe something else entirely.",
+    // Model returns a card not in hand - will trigger retry then fallback
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "Playing something random.", rank: "10", suit: "hearts" },
+    });
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "Still playing something random.", rank: "10", suit: "hearts" },
     });
 
     const result = await makeCardPlayDecision(game, "east", "m2");
@@ -178,13 +179,13 @@ describe("makeCardPlayDecision fallbacks", () => {
       { suit: "diamonds", rank: "ace" },
     ]);
 
-    (generateText as any).mockResolvedValueOnce({
-      text: "Playing Jack of Hearts.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: { reasoning: "Playing Jack of Hearts.", rank: "jack", suit: "hearts" },
     });
 
     const result = await makeCardPlayDecision(game, "east", "m2");
     expect(result.card).toEqual({ suit: "hearts", rank: "jack" });
-    expect((generateText as any).mock.calls.length).toBe(1);
+    expect((generateObject as any).mock.calls.length).toBe(1);
   });
 });
 
@@ -196,8 +197,12 @@ describe("makeTrumpBidDecision parsing", () => {
 
   it("orders up and marks going alone in round 1", async () => {
     const game = createNewGame(modelIds, "north");
-    (generateText as any).mockResolvedValueOnce({
-      text: "ORDER UP GOING ALONE, I love this hand.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "ORDER UP GOING ALONE, I love this hand.",
+        action: "order_up",
+        goingAlone: true,
+      },
     });
 
     const result = await makeTrumpBidDecision(game, "east", "m2");
@@ -209,10 +214,14 @@ describe("makeTrumpBidDecision parsing", () => {
   it("calls a trump suit (not the turned-up suit) in round 2", async () => {
     const game = createNewGame(modelIds, "north");
     game.trumpSelection!.round = 2;
-    // Ensure turned-up suit is different from what we will call
     game.trumpSelection!.turnedUpCard = { suit: "hearts", rank: "9" };
-    (generateText as any).mockResolvedValueOnce({
-      text: "CALL SPADES and I'm going alone.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "CALL SPADES and I'm going alone.",
+        action: "call_trump",
+        suit: "spades",
+        goingAlone: true,
+      },
     });
 
     const result = await makeTrumpBidDecision(game, "south", "m3");
@@ -221,12 +230,16 @@ describe("makeTrumpBidDecision parsing", () => {
     expect(result.goingAlone).toBe(true);
   });
 
-  it("passes when no suit is chosen in round 2", async () => {
+  it("passes when action is pass in round 2", async () => {
     const game = createNewGame(modelIds, "north");
     game.trumpSelection!.round = 2;
     game.trumpSelection!.turnedUpCard = { suit: "clubs", rank: "jack" };
-    (generateText as any).mockResolvedValueOnce({
-      text: "I will pass here.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "I will pass here.",
+        action: "pass",
+        goingAlone: false,
+      },
     });
 
     const result = await makeTrumpBidDecision(game, "west", "m4");
@@ -235,10 +248,14 @@ describe("makeTrumpBidDecision parsing", () => {
     expect(result.goingAlone).toBe(false);
   });
 
-  it("passes in round 1 when no order up text", async () => {
+  it("passes in round 1 when action is pass", async () => {
     const game = createNewGame(modelIds, "north");
-    (generateText as any).mockResolvedValueOnce({
-      text: "I'll sit this one out and pass.",
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "I'll sit this one out and pass.",
+        action: "pass",
+        goingAlone: false,
+      },
     });
 
     const result = await makeTrumpBidDecision(game, "north", "m1");
