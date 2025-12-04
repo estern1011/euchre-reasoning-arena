@@ -1,12 +1,7 @@
 <template>
     <div class="arena-container">
-        <header class="arena-header">
-            <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
-        </header>
-
         <main class="content">
             <div class="hero-section">
-                <div class="code-comment">// ai_reasoning_arena</div>
                 <h2 class="hero-title">
                     Euchre Arena
                 </h2>
@@ -17,7 +12,6 @@
 
             <div class="assignment-panel card">
                 <div class="card-header">
-                    <div class="code-comment">// model_assignment</div>
                     <h2 class="panel-title"><span class="keyword">const</span> players = {</h2>
                 </div>
 
@@ -101,79 +95,18 @@ const startGame = () => {
     font-family: "Courier New", Consolas, Monaco, monospace;
 }
 
-.arena-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: repeating-linear-gradient(
-        0deg,
-        rgba(0, 0, 0, 0.15),
-        rgba(0, 0, 0, 0.15) 1px,
-        transparent 1px,
-        transparent 2px
-    );
-    pointer-events: none;
-    z-index: 1;
-}
 
-.arena-container > * {
-    position: relative;
-    z-index: 2;
-}
 
-.arena-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 3rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.arena-header h1 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    margin: 0;
-    color: var(--color-text);
-}
 
-.bracket {
-    color: var(--color-text-muted);
-}
 
-.accent {
-    color: var(--color-accent);
-}
-
-.live-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: currentColor;
-    border-radius: 50%;
-    margin-right: 0.5rem;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
-}
 
 .content {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 80px);
+    min-height: 100vh;
     padding: 3rem 2rem;
     gap: 3rem;
 }
@@ -183,11 +116,7 @@ const startGame = () => {
     max-width: 800px;
 }
 
-.code-comment {
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-    margin-bottom: 1.5rem;
-}
+
 
 .hero-title {
     font-size: 3.5rem;
@@ -321,7 +250,6 @@ const startGame = () => {
 .card-header {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
 }
 
 .card-footer {
