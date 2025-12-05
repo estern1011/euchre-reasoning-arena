@@ -30,19 +30,28 @@
                     </div>
 
                     <!-- Live Status Banner & Controls -->
-                    <div class="game-state-header">
-                        <div class="status-row">
+                    <div class="game-state-header" :class="{ 'game-complete': gameStore.isGameComplete }">
+                        <template v-if="!gameStore.isGameComplete">
+                            <div class="status-row">
+                                <LiveStatusBanner />
+                                <GameMetaInfo />
+                            </div>
+                            <GameControls
+                                :disabled="!gameStore.gameState || gameStore.isStreaming"
+                                @play-next="handlePlayNext"
+                            />
+                        </template>
+                        <template v-else>
                             <LiveStatusBanner />
-                            <GameMetaInfo />
-                        </div>
-                        <GameControls
-                            :disabled="!gameStore.gameState || gameStore.isStreaming || gameStore.isGameComplete"
-                            @play-next="handlePlayNext"
-                        />
+                            <button class="new-game-button" @click="handleNewGame">
+                                <span class="button-text">newGame()</span>
+                                <span class="button-arrow">→</span>
+                            </button>
+                        </template>
                     </div>
 
-                    <!-- Table View -->
-                    <div class="table-view">
+                    <!-- Table View / Game Summary -->
+                    <div v-if="!gameStore.isGameComplete" class="table-view">
                         <div class="table-header"><span class="keyword">const</span> table = {</div>
 
                         <GameBoard
@@ -60,6 +69,13 @@
                         <div class="game-controls"></div>
                         <div class="closing-brace">}</div>
                     </div>
+
+                    <!-- Game Summary (shown when game is complete) -->
+                    <GameSummary
+                        v-else
+                        :game-state="gameStore.gameState!"
+                        :model-ids="gameStore.modelIds"
+                    />
                 </template>
 
                 <!-- Intelligence Mode: Show Multi-Agent Reasoning Grid -->
@@ -168,6 +184,7 @@ import LiveStatusBanner from "~/components/LiveStatusBanner.vue";
 import GameMetaInfo from "~/components/GameMetaInfo.vue";
 import GameControls from "~/components/GameControls.vue";
 import GameBoard from "~/components/GameBoard.vue";
+import GameSummary from "~/components/GameSummary.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
 import MultiAgentReasoning from "~/components/MultiAgentReasoning.vue";
@@ -231,7 +248,11 @@ const trumpSuit = computed(() => {
 // Handle game initialization
 const handleInitializeGame = async () => {
     try {
-        await initializeGame(gameStore.modelIdsArray);
+        await initializeGame(
+            gameStore.modelIdsArray,
+            undefined,
+            gameStore.configuredWinningScore
+        );
         activityLog.value.push(formatGameInitialized());
     } catch (e) {
         console.error("Failed to initialize game:", e);
@@ -435,6 +456,12 @@ onUnmounted(() => {
         clearTimeout(autoModeTimeoutId);
     }
 });
+
+// Handle new game - reset and navigate to index
+const handleNewGame = () => {
+    gameStore.reset();
+    navigateTo('/');
+};
 
 // Initialize game on mount
 onMounted(() => {
@@ -803,6 +830,58 @@ onMounted(() => {
 
 .game-state-header.compact .status-row {
     justify-content: center;
+}
+
+.game-state-header.game-complete {
+    border-bottom: none;
+    background: rgba(163, 230, 53, 0.05);
+    box-shadow:
+        0 4px 30px rgba(163, 230, 53, 0.3),
+        0 0 60px rgba(163, 230, 53, 0.15),
+        inset 0 0 30px rgba(163, 230, 53, 0.08);
+}
+
+.new-game-button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(163, 230, 53, 0.1);
+    border: 2px solid rgba(163, 230, 53, 0.4);
+    color: var(--color-accent);
+    font-family: "Courier New", monospace;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.2);
+}
+
+.new-game-button:hover {
+    background: rgba(163, 230, 53, 0.2);
+    border-color: rgba(163, 230, 53, 0.6);
+    color: #fff;
+    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.3);
+    transform: translate(-2px, -2px);
+}
+
+.new-game-button:active {
+    box-shadow: 2px 2px 0px rgba(163, 230, 53, 0.2);
+    transform: translate(2px, 2px);
+}
+
+.button-text {
+    letter-spacing: 0.025em;
+}
+
+.button-arrow {
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.new-game-button:hover .button-arrow {
+    transform: translateX(4px);
 }
 
 .history-section,

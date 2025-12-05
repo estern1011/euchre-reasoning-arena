@@ -38,8 +38,21 @@
                         <div class="model-row model-row-last">
                             <label class="model-label">west:</label>
                             <ModelSelector v-model="gameStore.modelIds.west" :options="modelOptions" />
+                            <span class="comma">,</span>
                         </div>
                     </div>
+
+                    <div class="config-section">
+                        <div class="config-row">
+                            <label class="config-label">winningScore:</label>
+                            <select v-model.number="winningScore" class="score-selector">
+                                <option :value="3">3</option>
+                                <option :value="5">5</option>
+                                <option :value="10">10</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="closing-brace">}</div>
                 </div>
 
@@ -63,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { Primitive } from "radix-vue";
 import { useGameStore } from '~/stores/game';
 import ModelSelector from '~/components/ModelSelector.vue';
@@ -76,8 +90,11 @@ const modelOptions = [
     { value: "xai/grok-4.1-fast-non-reasoning", label: "Grok 4.1 Fast" },
 ];
 
+const winningScore = ref(10);
+
 const startGame = () => {
-    // Model IDs are already in the store, just navigate
+    // Set winning score in the store before navigating
+    gameStore.setWinningScore(winningScore.value);
     navigateTo("/game");
 };
 </script>
@@ -197,6 +214,55 @@ const startGame = () => {
     font-size: 1.5rem;
     color: var(--color-text);
     padding: 0 0 1rem 0rem;
+}
+
+.config-section {
+    padding: 1rem 0 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 1rem;
+}
+
+.config-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.config-label {
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    color: var(--color-accent);
+    white-space: nowrap;
+}
+
+.score-selector {
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(107, 114, 128, 0.3);
+    border-radius: 0;
+    color: var(--color-text);
+    font-family: "Courier New", monospace;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.score-selector:hover {
+    border-color: rgba(163, 230, 53, 0.5);
+    background: rgba(163, 230, 53, 0.05);
+}
+
+.score-selector:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.2);
+}
+
+.score-selector option {
+    background: #0a0a0a;
+    color: var(--color-text);
 }
 
 .live-badge {

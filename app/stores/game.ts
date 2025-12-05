@@ -11,6 +11,7 @@ export const useGameStore = defineStore('game', {
     modelIds: { ...DEFAULT_MODEL_IDS },
     isInitialized: false,
     viewMode: 'arena' as ViewMode,
+    configuredWinningScore: 10, // User-configured winning score
 
     // Auto-mode state
     autoMode: false,
@@ -66,6 +67,13 @@ export const useGameStore = defineStore('game', {
 
     // Dynamic status text based on game state and streaming state
     statusText(): string {
+      // Game complete takes priority
+      if (this.phase === 'game_complete') {
+        const gameScores = this.gameState?.gameScores || [0, 0]
+        const winner = gameScores[0] > gameScores[1] ? 'Team 1' : 'Team 2'
+        return `${winner} won the game!`
+      }
+
       // If streaming and we have a thinking player
       if (this.isStreaming && this.currentThinkingPlayer) {
         const playerName = this.currentThinkingPlayer.toUpperCase()
@@ -104,12 +112,6 @@ export const useGameStore = defineStore('game', {
         const handScores = this.scores as [number, number]
         const gameScores = this.gameState?.gameScores || [0, 0]
         return `Hand Complete! Team 1: +${handScores[0]} (${gameScores[0]}), Team 2: +${handScores[1]} (${gameScores[1]})`
-      }
-
-      if (this.phase === 'game_complete') {
-        const gameScores = this.gameState?.gameScores || [0, 0]
-        const winner = gameScores[0] > gameScores[1] ? 'Team 1' : 'Team 2'
-        return `Game Over! ${winner} wins ${gameScores[0]}-${gameScores[1]}`
       }
 
       return 'Ready to play'
@@ -193,6 +195,10 @@ export const useGameStore = defineStore('game', {
 
     setViewMode(mode: ViewMode) {
       this.viewMode = mode
+    },
+
+    setWinningScore(score: number) {
+      this.configuredWinningScore = score
     },
 
     // Auto-mode actions

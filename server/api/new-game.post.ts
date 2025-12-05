@@ -33,8 +33,9 @@ export default defineEventHandler(async (event): Promise<NewGameResponse> => {
   const body = parseResult.data;
   const modelIds = (body.modelIds || getDefaultModelIdsArray()) as [string, string, string, string];
   const dealer = (body.dealer || "north") as Position;
+  const winningScore = body.winningScore || 10;
 
-  const gameState = createNewGame(modelIds, dealer);
+  const gameState = createNewGame(modelIds, dealer, winningScore);
 
   return {
     gameState,

@@ -1,5 +1,5 @@
 <template>
-    <div :class="['status-banner', { 'is-streaming': isStreaming }]">
+    <div :class="['status-banner', { 'is-streaming': isStreaming, 'is-game-over': isGameComplete }]">
         <div class="status-content">
             <span v-if="isStreaming" class="status-dot"></span>
             <span class="status-text">{{ statusText }}</span>
@@ -15,6 +15,7 @@ const gameStore = useGameStore();
 
 const statusText = computed(() => gameStore.statusText);
 const isStreaming = computed(() => gameStore.isStreaming);
+const isGameComplete = computed(() => gameStore.isGameComplete);
 </script>
 
 <style scoped>
@@ -26,13 +27,40 @@ const isStreaming = computed(() => gameStore.isStreaming);
     border: 2px solid rgba(107, 114, 128, 0.3);
     border-radius: 0;
     font-family: "Courier New", monospace;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .status-banner.is-streaming {
     border-color: rgba(163, 230, 53, 0.6);
     background: rgba(163, 230, 53, 0.08);
     box-shadow: 0 0 20px rgba(163, 230, 53, 0.2);
+}
+
+.status-banner.is-game-over {
+    border-color: rgba(163, 230, 53, 0.8);
+    background: rgba(163, 230, 53, 0.15);
+    box-shadow:
+        0 0 30px rgba(163, 230, 53, 0.4),
+        0 0 60px rgba(163, 230, 53, 0.2),
+        inset 0 0 20px rgba(163, 230, 53, 0.1);
+    animation: game-over-glow 2s ease-in-out infinite;
+}
+
+@keyframes game-over-glow {
+    0%, 100% {
+        box-shadow:
+            0 0 30px rgba(163, 230, 53, 0.4),
+            0 0 60px rgba(163, 230, 53, 0.2),
+            inset 0 0 20px rgba(163, 230, 53, 0.1);
+        border-color: rgba(163, 230, 53, 0.8);
+    }
+    50% {
+        box-shadow:
+            0 0 40px rgba(163, 230, 53, 0.6),
+            0 0 80px rgba(163, 230, 53, 0.3),
+            inset 0 0 30px rgba(163, 230, 53, 0.15);
+        border-color: rgba(163, 230, 53, 1);
+    }
 }
 
 .status-content {
@@ -69,5 +97,12 @@ const isStreaming = computed(() => gameStore.isStreaming);
 
 .status-banner.is-streaming .status-text {
     color: var(--color-accent);
+}
+
+.status-banner.is-game-over .status-text {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.0625rem;
+    text-shadow: 0 0 10px rgba(163, 230, 53, 0.6);
 }
 </style>

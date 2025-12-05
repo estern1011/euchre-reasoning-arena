@@ -22,6 +22,7 @@ export interface NewGameResponse {
 export interface CreateGameParams {
   modelIds: [string, string, string, string];
   dealer?: Position;
+  winningScore?: number;
 }
 
 async function createGame(params: CreateGameParams): Promise<NewGameResponse> {
@@ -31,6 +32,7 @@ async function createGame(params: CreateGameParams): Promise<NewGameResponse> {
     body: JSON.stringify({
       modelIds: params.modelIds,
       dealer: params.dealer || "north",
+      winningScore: params.winningScore || 10,
     }),
   });
 
@@ -66,9 +68,10 @@ export function useGameApi() {
    */
   async function initializeGame(
     modelIds: [string, string, string, string],
-    dealer?: Position
+    dealer?: Position,
+    winningScore?: number
   ): Promise<NewGameResponse> {
-    return createGameMutation.mutateAsync({ modelIds, dealer });
+    return createGameMutation.mutateAsync({ modelIds, dealer, winningScore });
   }
 
   return {

@@ -87,6 +87,7 @@ export const ModelIdsArraySchema = z.tuple([
 export const NewGameRequestSchema = z.object({
   modelIds: ModelIdsArraySchema.optional(),
   dealer: PositionSchema.optional(),
+  winningScore: z.number().min(1).max(100).optional().default(10),
 });
 
 export const PlayNextRoundRequestSchema = z.object({
