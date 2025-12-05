@@ -1,25 +1,8 @@
 import { ref } from "vue";
-import type { GameState, Position, Card } from "~/types/game";
+import type { GameState } from "~/types/game";
+import type { SSEMessage } from "../../lib/types/sse";
 
-export interface SSEMessage {
-  type: "player_thinking" | "reasoning_token" | "illegal_attempt" | "decision_made" | "round_complete" | "error";
-  player?: Position;
-  token?: string;
-  attemptedCard?: Card;
-  isFallback?: boolean;
-  card?: Card;
-  action?: string;
-  reasoning?: string;
-  modelId?: string;
-  duration?: number;
-  gameState?: GameState;
-  roundSummary?: string;
-  message?: string;
-  illegalAttempt?: {
-    card: Card;
-    reason: string;
-  };
-}
+export type { SSEMessage } from "../../lib/types/sse";
 
 export function useGameStreaming() {
   const isStreaming = ref(false);

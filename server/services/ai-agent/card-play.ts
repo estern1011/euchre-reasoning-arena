@@ -30,7 +30,7 @@ function findCardInHand(rank: Rank, suit: Suit, validCards: Card[], hand: Card[]
   if (handMatch) return handMatch;
 
   logger.warn(`[AI-Agent] Could not find ${rank} of ${suit} in hand, using first valid card`);
-  return validCards[0] || hand[0];
+  return validCards[0] ?? hand[0]!;
 }
 
 function buildRetryNote(chosenCardStr: string, validCardsList: string): string {
@@ -65,7 +65,7 @@ function prepareCardPlayContext(
   // Early return cases
   if (validCards.length === 0) {
     return {
-      card: playerObj.hand[0],
+      card: playerObj.hand[0]!,
       reasoning: "No legal cards detected; playing the first card in hand as a safeguard.",
       duration: 0,
     };
@@ -73,7 +73,7 @@ function prepareCardPlayContext(
 
   if (validCards.length === 1) {
     return {
-      card: validCards[0],
+      card: validCards[0]!,
       reasoning: "Only one legal card available; playing it automatically to follow suit.",
       duration: 0,
     };
@@ -124,12 +124,13 @@ function processCardPlayResult(
 
   // Invalid after retry - fallback
   if (previousAttempt) {
+    const fallbackCard = ctx.validCards[0]!;
     logger.warn(
       `[AI-Agent] Illegal card persisted after retry from ${ctx.player} (${ctx.modelId}). Falling back to first legal card.`,
     );
     return {
-      card: ctx.validCards[0],
-      reasoning: response.reasoning + `\n\n[Fell back to first legal card: ${formatCardForPrompt(ctx.validCards[0])}]`,
+      card: fallbackCard,
+      reasoning: response.reasoning + `\n\n[Fell back to first legal card: ${formatCardForPrompt(fallbackCard)}]`,
       illegalAttempt: previousAttempt,
       isFallback: true,
       isValid: true, // Fallback is always valid

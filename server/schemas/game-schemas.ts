@@ -8,7 +8,7 @@ import { z } from "zod";
 export const SuitSchema = z.enum(["hearts", "diamonds", "clubs", "spades"]);
 export const RankSchema = z.enum(["9", "10", "jack", "queen", "king", "ace"]);
 export const PositionSchema = z.enum(["north", "east", "south", "west"]);
-export const GamePhaseSchema = z.enum(["trump_selection", "playing", "complete"]);
+export const GamePhaseSchema = z.enum(["trump_selection", "playing", "hand_complete", "game_complete"]);
 export const TrumpBidActionSchema = z.enum(["order_up", "call_trump", "pass"]);
 
 export const CardSchema = z.object({
@@ -64,6 +64,10 @@ export const GameStateSchema = z.object({
   currentTrick: TrickSchema,
   completedTricks: z.array(TrickSchema),
   scores: z.tuple([z.number(), z.number()]),
+  // Multi-hand game tracking
+  handNumber: z.number().optional().default(1),
+  gameScores: z.tuple([z.number(), z.number()]).optional().default([0, 0]),
+  winningScore: z.number().optional().default(10),
 });
 
 // Model ID validation (must be in provider/model format)

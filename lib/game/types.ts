@@ -2,7 +2,7 @@ export type Suit = "hearts" | "diamonds" | "clubs" | "spades";
 export type Rank = "9" | "10" | "jack" | "queen" | "king" | "ace";
 export type Position = "north" | "east" | "south" | "west";
 
-export type GamePhase = "trump_selection" | "playing" | "complete";
+export type GamePhase = "trump_selection" | "playing" | "hand_complete" | "game_complete";
 
 export type TrumpBidAction = "order_up" | "call_trump" | "pass";
 
@@ -58,5 +58,9 @@ export interface GameState {
   kitty: Card[]; // Unused cards (3 cards after dealing and turning up one)
   currentTrick: Trick;
   completedTricks: Trick[];
-  scores: [number, number];
+  scores: [number, number]; // Points scored this hand (1-4 based on Euchre rules)
+  // Multi-hand game tracking
+  handNumber: number; // Current hand number (1-indexed)
+  gameScores: [number, number]; // Cumulative game scores across all hands
+  winningScore: number; // Points needed to win the game (default 10)
 }

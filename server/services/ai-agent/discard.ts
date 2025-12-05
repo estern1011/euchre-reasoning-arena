@@ -84,7 +84,7 @@ export async function makeDiscardDecisionStreaming(
     });
   }
 
-  const finalCard = discardedCard || hand[0];
+  const finalCard = discardedCard ?? hand[0]!;
   const duration = Date.now() - startTime;
 
   logger.info("Discard completed", {

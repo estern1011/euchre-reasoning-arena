@@ -1,15 +1,20 @@
 import { createNewGame } from "../../lib/game/game";
-import type { GameState } from "../../lib/game/types";
+import type { GameState, Position } from "../../lib/game/types";
 import { NewGameRequestSchema } from "../schemas/game-schemas";
 import { getDefaultModelIdsArray } from "../../lib/config/defaults";
 
 /**
  * API endpoint to create a new game
+ * Returns pure structured data - frontend handles display formatting
  */
 
-interface NewGameResponse {
+export interface NewGameResponse {
   gameState: GameState;
-  message: string;
+  metadata: {
+    modelIds: [string, string, string, string];
+    dealer: Position;
+    firstBidder: Position;
+  };
 }
 
 export default defineEventHandler(async (event): Promise<NewGameResponse> => {
@@ -26,13 +31,17 @@ export default defineEventHandler(async (event): Promise<NewGameResponse> => {
   }
 
   const body = parseResult.data;
-  const modelIds = body.modelIds || getDefaultModelIdsArray();
-  const dealer = body.dealer || "north";
+  const modelIds = (body.modelIds || getDefaultModelIdsArray()) as [string, string, string, string];
+  const dealer = (body.dealer || "north") as Position;
 
   const gameState = createNewGame(modelIds, dealer);
 
   return {
     gameState,
-    message: `New game created with ${modelIds.join(", ")}. Dealer: ${dealer}. First bidder: ${gameState.trumpSelection?.currentBidder}`,
+    metadata: {
+      modelIds,
+      dealer,
+      firstBidder: gameState.trumpSelection!.currentBidder,
+    },
   };
 });

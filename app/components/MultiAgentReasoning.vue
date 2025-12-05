@@ -31,7 +31,7 @@ import { watch, ref, nextTick } from "vue";
 import type { Position } from "~/types/game";
 
 interface Props {
-    reasoning: Record<Position, string>;
+    reasoning: Partial<Record<Position, string>>;
     currentPlayer: Position | null;
     modelIds: Record<Position, string>;
 }
@@ -52,9 +52,11 @@ watch(
     () => props.currentPlayer ? props.reasoning[props.currentPlayer] : null,
     async () => {
         await nextTick();
-        if (props.currentPlayer && agentRefs.value[props.currentPlayer]) {
+        if (props.currentPlayer) {
             const el = agentRefs.value[props.currentPlayer];
-            el.scrollTop = el.scrollHeight;
+            if (el) {
+                el.scrollTop = el.scrollHeight;
+            }
         }
     }
 );

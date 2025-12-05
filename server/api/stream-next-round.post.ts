@@ -4,9 +4,9 @@ import {
   dealerDiscard,
   playCard,
   getNextPlayer,
-  isGameComplete,
 } from "../../lib/game/game";
 import type {
+  GameState,
   Position,
   TrumpBidAction,
 } from "../../lib/game/types";
@@ -15,6 +15,7 @@ import { PlayNextRoundRequestSchema } from "../schemas/game-schemas";
 
 /**
  * SSE streaming endpoint for real-time AI reasoning
+ * Returns pure structured data - frontend handles display formatting
  */
 
 export default defineEventHandler(async (event) => {
@@ -32,12 +33,13 @@ export default defineEventHandler(async (event) => {
 
   const body = parseResult.data;
 
-  // Create new game if no game state provided
-  let game = body.gameState;
-  if (!game) {
-    const modelIds = body.modelIds || getDefaultModelIdsArray();
-    game = createNewGame(modelIds);
-  }
+  // Initialize game state - always defined after this point
+  const initialGame: GameState = body.gameState
+    ? (body.gameState as GameState)
+    : createNewGame(body.modelIds || getDefaultModelIdsArray());
+
+  // Use a mutable reference for game state updates
+  let game: GameState = initialGame;
 
   const decisions: any[] = [];
 
@@ -172,20 +174,19 @@ export default defineEventHandler(async (event) => {
             }
           }
 
-          const roundSummary = `Trump selection round ${round} complete. ${
-            game.phase === "playing"
-              ? `${game.trumpCaller} called ${game.trump} as trump${game.goingAlone ? " and is going alone" : ""}`
-              : round === 1
-                ? "All passed, moving to round 2"
-                : "Round 2 complete"
-          }`;
-
+          // Send structured data for trump selection round completion
           sendEvent("round_complete", {
             gameState: game,
-            phase:
-              round === 1 ? "trump_selection_round_1" : "trump_selection_round_2",
+            phase: round === 1 ? "trump_selection_round_1" : "trump_selection_round_2",
             decisions,
-            roundSummary,
+            // Structured data instead of formatted string
+            trumpSelectionResult: game.phase === "playing" ? {
+              trumpCaller: game.trumpCaller,
+              trump: game.trump,
+              goingAlone: game.goingAlone || null,
+            } : null,
+            allPassed: game.phase !== "playing",
+            selectionRound: round,
           });
         } else if (game.phase === "playing") {
           const expectedPlays = game.goingAlone ? 3 : 4;
@@ -254,33 +255,66 @@ export default defineEventHandler(async (event) => {
           }
 
           const lastTrick = game.completedTricks[game.completedTricks.length - 1];
+          if (!lastTrick) {
+            throw new Error("No completed trick found after playing cards");
+          }
           const trickWinner = lastTrick.winner as Position;
-          const roundSummary = `Trick ${game.completedTricks.length} complete. Winner: ${trickWinner}`;
+          const trickNumber = game.completedTricks.length;
 
-          if (isGameComplete(game)) {
-            const finalState = { ...game, phase: "complete" as const };
+          // Check if this trick completed a hand or game
+          if (game.phase === "game_complete") {
+            // Game is fully complete - a team reached the winning score
             sendEvent("round_complete", {
-              gameState: finalState,
+              gameState: game,
               phase: "game_complete",
               decisions,
-              roundSummary: `Game complete. Final score: Team 0: ${finalState.scores[0]}, Team 1: ${finalState.scores[1]}`,
               trickWinner,
+              trickNumber,
+              handScores: game.scores,
+              gameScores: game.gameScores,
+              handNumber: game.handNumber,
+              winningTeam: game.gameScores[0] > game.gameScores[1] ? 0 : 1,
+            });
+          } else if (game.phase === "hand_complete") {
+            // Hand is complete but game continues
+            sendEvent("round_complete", {
+              gameState: game,
+              phase: "hand_complete",
+              decisions,
+              trickWinner,
+              trickNumber,
+              handScores: game.scores,
+              gameScores: game.gameScores,
+              handNumber: game.handNumber,
             });
           } else {
+            // Normal trick complete, hand continues
             sendEvent("round_complete", {
               gameState: game,
               phase: "playing_trick",
               decisions,
-              roundSummary,
               trickWinner,
+              trickNumber,
             });
           }
-        } else {
+        } else if (game.phase === "hand_complete") {
+          // Hand is complete, need to start a new hand
+          sendEvent("round_complete", {
+            gameState: game,
+            phase: "hand_complete",
+            decisions: [],
+            handScores: game.scores,
+            gameScores: game.gameScores,
+            handNumber: game.handNumber,
+          });
+        } else if (game.phase === "game_complete") {
+          // Game is complete
           sendEvent("round_complete", {
             gameState: game,
             phase: "game_complete",
             decisions: [],
-            roundSummary: `Game complete. Final score: Team 0: ${game.scores[0]}, Team 1: ${game.scores[1]}`,
+            gameScores: game.gameScores,
+            winningTeam: game.gameScores[0] > game.gameScores[1] ? 0 : 1,
           });
         }
 

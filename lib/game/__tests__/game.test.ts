@@ -674,7 +674,7 @@ describe("Game Completion", () => {
     expect(isGameComplete(game)).toBe(false);
   });
 
-  it("should return true after 5 tricks", () => {
+  it("should return false after 5 tricks if gameScores below winningScore", () => {
     const game = createNewGame(["gpt-4", "claude", "gemini", "gpt-3.5"]);
 
     game.completedTricks = Array(5).fill({
@@ -682,6 +682,14 @@ describe("Game Completion", () => {
       plays: [],
       winner: "north",
     });
+    // gameScores is [0, 0] by default, winningScore is 10
+
+    expect(isGameComplete(game)).toBe(false);
+  });
+
+  it("should return true when team reaches winning score", () => {
+    const game = createNewGame(["gpt-4", "claude", "gemini", "gpt-3.5"]);
+    game.gameScores = [10, 5]; // Team 0 reached winning score
 
     expect(isGameComplete(game)).toBe(true);
   });
@@ -694,26 +702,16 @@ describe("Get Winning Team", () => {
     expect(getWinningTeam(game)).toBeNull();
   });
 
-  it("should return team 0 when they win", () => {
+  it("should return team 0 when they reach winning score", () => {
     const game = createNewGame(["gpt-4", "claude", "gemini", "gpt-3.5"]);
-    game.completedTricks = Array(5).fill({
-      leadPlayer: "north",
-      plays: [],
-      winner: "north",
-    });
-    game.scores = [1, 0];
+    game.gameScores = [10, 7]; // Team 0 reached winning score (10)
 
     expect(getWinningTeam(game)).toBe(0);
   });
 
-  it("should return team 1 when they win", () => {
+  it("should return team 1 when they reach winning score", () => {
     const game = createNewGame(["gpt-4", "claude", "gemini", "gpt-3.5"]);
-    game.completedTricks = Array(5).fill({
-      leadPlayer: "north",
-      plays: [],
-      winner: "east",
-    });
-    game.scores = [0, 1];
+    game.gameScores = [8, 10]; // Team 1 reached winning score (10)
 
     expect(getWinningTeam(game)).toBe(1);
   });

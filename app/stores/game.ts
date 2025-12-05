@@ -12,11 +12,15 @@ export const useGameStore = defineStore('game', {
     isInitialized: false,
     viewMode: 'arena' as ViewMode,
 
+    // Auto-mode state
+    autoMode: false,
+    autoModeDelay: 2000, // 2 seconds between rounds
+
     // Streaming state
     isStreaming: false,
     currentThinkingPlayer: null as Position | null,
     displayedReasoningPlayer: null as Position | null, // Player whose reasoning is shown (persists)
-    streamingReasoning: {} as Record<Position, string>,
+    streamingReasoning: {} as Partial<Record<Position, string>>,
     streamingPlayedCards: {
       north: null,
       east: null,
@@ -36,6 +40,13 @@ export const useGameStore = defineStore('game', {
     goingAlone: (state) => state.gameState?.goingAlone || null,
     dealer: (state) => state.gameState?.dealer || null,
     turnedUpCard: (state) => state.gameState?.trumpSelection?.turnedUpCard || null,
+
+    // Multi-hand game getters
+    gameScores: (state) => state.gameState?.gameScores || [0, 0],
+    handNumber: (state) => state.gameState?.handNumber || 1,
+    winningScore: (state) => state.gameState?.winningScore || 10,
+    isHandComplete: (state) => state.gameState?.phase === 'hand_complete',
+    isGameComplete: (state) => state.gameState?.phase === 'game_complete',
 
     modelIdsArray(): [string, string, string, string] {
       return [
@@ -89,9 +100,16 @@ export const useGameStore = defineStore('game', {
         return `Playing - Trick ${trickNum} of 5`
       }
 
-      if (this.phase === 'complete') {
-        const scores = this.scores as [number, number]
-        return `Game Complete - Team 1: ${scores[0]}, Team 2: ${scores[1]}`
+      if (this.phase === 'hand_complete') {
+        const handScores = this.scores as [number, number]
+        const gameScores = this.gameState?.gameScores || [0, 0]
+        return `Hand Complete! Team 1: +${handScores[0]} (${gameScores[0]}), Team 2: +${handScores[1]} (${gameScores[1]})`
+      }
+
+      if (this.phase === 'game_complete') {
+        const gameScores = this.gameState?.gameScores || [0, 0]
+        const winner = gameScores[0] > gameScores[1] ? 'Team 1' : 'Team 2'
+        return `Game Over! ${winner} wins ${gameScores[0]}-${gameScores[1]}`
       }
 
       return 'Ready to play'
@@ -177,6 +195,19 @@ export const useGameStore = defineStore('game', {
       this.viewMode = mode
     },
 
+    // Auto-mode actions
+    toggleAutoMode() {
+      this.autoMode = !this.autoMode
+    },
+
+    setAutoMode(enabled: boolean) {
+      this.autoMode = enabled
+    },
+
+    setAutoModeDelay(delay: number) {
+      this.autoModeDelay = delay
+    },
+
     // Streaming actions
     startStreaming() {
       this.isStreaming = true
@@ -241,6 +272,7 @@ export const useGameStore = defineStore('game', {
     reset() {
       this.clearGameState()
       this.viewMode = 'arena'
+      this.autoMode = false
       this.isStreaming = false
       this.currentThinkingPlayer = null
       this.displayedReasoningPlayer = null

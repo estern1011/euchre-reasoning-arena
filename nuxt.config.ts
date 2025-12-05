@@ -4,7 +4,4 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ["~/assets/css/global.css"],
   modules: ["@pinia/nuxt"],
-  colorMode: {
-    preference: "dark",
-  },
 });

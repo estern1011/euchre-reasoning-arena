@@ -83,7 +83,7 @@ describe("usePlayerInfo", () => {
     it("should uppercase model name without provider", () => {
       const gameStore = useGameStore();
       const gameState = createMockGameState();
-      gameState.players[0].modelId = "simple-model";
+      gameState.players[0]!.modelId = "simple-model";
       gameStore.setGameState(gameState);
 
       const { getFormattedModelName } = usePlayerInfo();

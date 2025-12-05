@@ -28,11 +28,11 @@
                         <div class="decision-meta">
                             <div class="model-id">{{ decision.modelId }}</div>
                             <div class="action">
-                                <template v-if="'card' in decision">
+                                <template v-if="'card' in decision && decision.card">
                                     PLAYED {{ decision.card.rank }}{{ formatSuit(decision.card.suit) }}
                                     <span v-if="decision.isFallback" class="fallback-badge">FALLBACK</span>
                                 </template>
-                                <template v-else>
+                                <template v-else-if="'action' in decision && decision.action">
                                     {{ decision.action.toUpperCase() }}
                                 </template>
                             </div>

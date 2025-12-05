@@ -216,7 +216,16 @@ describe("SSE Event Data Structures", () => {
     });
 
     it("should work without illegal attempt fields", () => {
-      const cleanDecisionEvent = {
+      const cleanDecisionEvent: {
+        type: string;
+        player: string;
+        modelId: string;
+        card: { rank: string; suit: string };
+        reasoning: string;
+        duration: number;
+        illegalAttempt?: unknown;
+        isFallback?: boolean;
+      } = {
         type: "decision_made",
         player: "west",
         modelId: "test/model",

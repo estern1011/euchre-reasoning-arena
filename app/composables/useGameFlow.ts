@@ -62,7 +62,8 @@ export function useGameFlow() {
       });
 
       gameStore.setGameState(response.gameState);
-      roundSummary.value = response.message || "Game initialized";
+      // Response now returns structured metadata instead of formatted message
+      // Frontend handles display formatting
     } catch (error) {
       console.error("Failed to initialize game:", error);
       setError(
@@ -152,7 +153,12 @@ export function useGameFlow() {
   /**
    * Check if game is complete
    */
-  const isComplete = computed(() => gameStore.phase === "complete");
+  const isComplete = computed(() => gameStore.phase === "game_complete");
+
+  /**
+   * Check if hand is complete (not game)
+   */
+  const isHandComplete = computed(() => gameStore.phase === "hand_complete");
 
   return {
     // State
@@ -164,6 +170,7 @@ export function useGameFlow() {
     isTrumpSelection,
     isPlaying,
     isComplete,
+    isHandComplete,
 
     // Actions
     initializeGame,

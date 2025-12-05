@@ -29,15 +29,24 @@ import {
 const PLAYERS_PER_GAME = 4;
 const CARDS_PER_HAND = 5;
 const BIDS_PER_ROUND = 4;
-const TRICKS_PER_GAME = 5;
+const TRICKS_PER_HAND = 5;
 const KITTY_SIZE = 3;
+const DEFAULT_WINNING_SCORE = 10;
 
 /**
  * Create a new game with shuffled and dealt cards, starting in trump selection phase
+ * @param modelIds - Model IDs for each position [north, east, south, west]
+ * @param dealer - Starting dealer position (default: north)
+ * @param winningScore - Points needed to win the game (default: 10)
+ * @param existingGameScores - Existing game scores if continuing a game
+ * @param handNumber - Current hand number if continuing a game
  */
 export function createNewGame(
   modelIds: [string, string, string, string],
   dealer: Position = "north",
+  winningScore: number = DEFAULT_WINNING_SCORE,
+  existingGameScores?: [number, number],
+  handNumber: number = 1,
 ): GameState {
   const deck = shuffleDeck(createDeck());
 
@@ -46,11 +55,11 @@ export function createNewGame(
     position,
     team: (index % 2) as 0 | 1, // 0 and 2 are team 0, 1 and 3 are team 1
     hand: deck.slice(index * CARDS_PER_HAND, (index + 1) * CARDS_PER_HAND),
-    modelId: modelIds[index],
+    modelId: modelIds[index]!,
   }));
 
   // Card after dealing all hands is turned up for bidding
-  const turnedUpCard = deck[PLAYERS_PER_GAME * CARDS_PER_HAND];
+  const turnedUpCard = deck[PLAYERS_PER_GAME * CARDS_PER_HAND]!;
 
   // First bidder is left of dealer (clockwise)
   const dealerIndex = positionToIndex(dealer);
@@ -83,6 +92,10 @@ export function createNewGame(
     },
     completedTricks: [],
     scores: [0, 0],
+    // Multi-hand game tracking
+    handNumber,
+    gameScores: existingGameScores || [0, 0],
+    winningScore,
   };
 }
 
@@ -224,10 +237,11 @@ export function makeTrumpBid(
     let updatedPlayers = game.players;
     if (action === "order_up") {
       const dealerIndex = game.players.findIndex((p) => p.position === dealer);
+      const dealerPlayer = game.players[dealerIndex]!;
       updatedPlayers = [...game.players];
       updatedPlayers[dealerIndex] = {
-        ...updatedPlayers[dealerIndex],
-        hand: [...updatedPlayers[dealerIndex].hand, turnedUpCard],
+        ...dealerPlayer,
+        hand: [...dealerPlayer.hand, turnedUpCard],
       };
     }
 
@@ -385,7 +399,7 @@ ${bidHistory}
  */
 export function getLeadSuit(trick: Trick, trump: Suit): Suit | null {
   if (trick.plays.length === 0) return null;
-  return effectiveSuit(trick.plays[0].card, trump);
+  return effectiveSuit(trick.plays[0]!.card, trump);
 }
 
 /**
@@ -407,18 +421,19 @@ export function determineTrickWinner(
 
   const leadSuit = getLeadSuit(trick, trump)!;
 
-  let winningPlay = trick.plays[0];
+  let winningPlay = trick.plays[0]!;
 
   for (let i = 1; i < trick.plays.length; i++) {
+    const currentPlay = trick.plays[i]!;
     const comparison = compareCards(
-      trick.plays[i].card,
+      currentPlay.card,
       winningPlay.card,
       trump,
       leadSuit,
     );
 
     if (comparison > 0) {
-      winningPlay = trick.plays[i];
+      winningPlay = currentPlay;
     }
   }
 
@@ -465,7 +480,7 @@ export function validatePlay(
 
   // Check suit-following rules
   const leadCard =
-    game.currentTrick.plays.length > 0 ? game.currentTrick.plays[0].card : null;
+    game.currentTrick.plays.length > 0 ? game.currentTrick.plays[0]!.card : null;
 
   // If not leading, must follow suit if possible
   if (leadCard && game.trump) {
@@ -505,7 +520,7 @@ export function getValidCardsForPlay(
   }
 
   // Otherwise must follow suit if possible
-  const leadCard = game.currentTrick.plays[0].card;
+  const leadCard = game.currentTrick.plays[0]!.card;
   const leadSuit = effectiveSuit(leadCard, game.trump);
   const canFollow = playerObj.hand.some(
     (c) => effectiveSuit(c, game.trump!) === leadSuit,
@@ -560,7 +575,7 @@ export function getNextPlayer(game: GameState): Position {
   }
 
   // Return the player at index equal to number of plays already made
-  return allPlayers[trick.plays.length];
+  return allPlayers[trick.plays.length]!;
 }
 
 /**
@@ -580,10 +595,11 @@ export function playCard(
 
   // Find player and remove card from hand
   const playerIndex = game.players.findIndex((p) => p.position === player);
+  const playerObj = game.players[playerIndex]!;
   const updatedPlayers = [...game.players];
   updatedPlayers[playerIndex] = {
-    ...updatedPlayers[playerIndex],
-    hand: removeCardFromHand(updatedPlayers[playerIndex].hand, card),
+    ...playerObj,
+    hand: removeCardFromHand(playerObj.hand, card),
   };
 
   // Add play to current trick
@@ -602,6 +618,8 @@ export function playCard(
   let completedTricks = game.completedTricks;
   let currentTrick = updatedTrick;
   let scores = game.scores;
+  let gameScores = game.gameScores;
+  let phase = game.phase;
 
   const expectedPlays = game.goingAlone ? 3 : PLAYERS_PER_GAME;
 
@@ -624,18 +642,36 @@ export function playCard(
       winner: undefined,
     };
 
-    // Update scores if all tricks are complete
-    if (completedTricks.length === TRICKS_PER_GAME) {
+    // Update scores if all tricks are complete (hand is done)
+    if (completedTricks.length === TRICKS_PER_HAND) {
       scores = calculateScores(game, completedTricks);
+
+      // Add hand scores to game scores
+      gameScores = [
+        game.gameScores[0] + scores[0],
+        game.gameScores[1] + scores[1],
+      ];
+
+      // Determine if game is complete or just hand is complete
+      if (
+        gameScores[0] >= game.winningScore ||
+        gameScores[1] >= game.winningScore
+      ) {
+        phase = "game_complete";
+      } else {
+        phase = "hand_complete";
+      }
     }
   }
 
   return {
     ...game,
+    phase,
     players: updatedPlayers,
     currentTrick,
     completedTricks,
     scores,
+    gameScores,
   };
 }
 
@@ -674,7 +710,7 @@ export function calculateScores(
     return winner?.team === 0;
   }).length;
 
-  const team1Tricks = TRICKS_PER_GAME - team0Tricks;
+  const team1Tricks = TRICKS_PER_HAND - team0Tricks;
 
   const makersTricks = makersTeam === 0 ? team0Tricks : team1Tricks;
   const isGoingAlone = game.goingAlone === game.trumpCaller;
@@ -709,10 +745,20 @@ export function calculateScores(
 }
 
 /**
- * Check if the game/hand is complete (all 5 tricks played)
+ * Check if the current hand is complete (all 5 tricks played)
+ */
+export function isHandComplete(game: GameState): boolean {
+  return game.completedTricks.length === TRICKS_PER_HAND;
+}
+
+/**
+ * Check if the game is complete (a team has reached the winning score)
  */
 export function isGameComplete(game: GameState): boolean {
-  return game.completedTricks.length === TRICKS_PER_GAME;
+  return (
+    game.gameScores[0] >= game.winningScore ||
+    game.gameScores[1] >= game.winningScore
+  );
 }
 
 /**
@@ -721,9 +767,55 @@ export function isGameComplete(game: GameState): boolean {
 export function getWinningTeam(game: GameState): 0 | 1 | null {
   if (!isGameComplete(game)) return null;
 
-  if (game.scores[0] > game.scores[1]) return 0;
-  if (game.scores[1] > game.scores[0]) return 1;
+  if (game.gameScores[0] > game.gameScores[1]) return 0;
+  if (game.gameScores[1] > game.gameScores[0]) return 1;
   return null; // Tie (shouldn't happen in Euchre)
+}
+
+/**
+ * Get the next dealer position (clockwise rotation)
+ */
+export function getNextDealer(currentDealer: Position): Position {
+  const dealerIndex = positionToIndex(currentDealer);
+  return indexToPosition((dealerIndex + 1) % PLAYERS_PER_GAME);
+}
+
+/**
+ * Start a new hand after the previous hand is complete.
+ * Preserves game scores and model IDs, rotates dealer, and re-deals.
+ */
+export function startNewHand(game: GameState): GameState {
+  if (!isHandComplete(game)) {
+    throw new InvalidGameStateError(
+      "Cannot start new hand - current hand is not complete"
+    );
+  }
+
+  if (isGameComplete(game)) {
+    throw new InvalidGameStateError(
+      "Cannot start new hand - game is already complete"
+    );
+  }
+
+  // Get model IDs in position order
+  const modelIds = game.players
+    .sort((a, b) => {
+      const order: Position[] = ["north", "east", "south", "west"];
+      return order.indexOf(a.position) - order.indexOf(b.position);
+    })
+    .map((p) => p.modelId) as [string, string, string, string];
+
+  // Rotate dealer clockwise
+  const nextDealer = getNextDealer(game.dealer);
+
+  // Create new hand with preserved game state
+  return createNewGame(
+    modelIds,
+    nextDealer,
+    game.winningScore,
+    game.gameScores,
+    game.handNumber + 1
+  );
 }
 
 /**
@@ -758,7 +850,7 @@ Current trick (lead: ${game.currentTrick.leadPlayer}):
 ${currentTrickStr}
 
 Score: Team 0: ${game.scores[0]}, Team 1: ${game.scores[1]}
-Tricks completed: ${game.completedTricks.length}/${TRICKS_PER_GAME}
+Tricks completed: ${game.completedTricks.length}/${TRICKS_PER_HAND}
   `.trim();
 }
 
@@ -793,7 +885,7 @@ Current trick (lead: ${game.currentTrick.leadPlayer}):
 ${currentTrickStr}
 
 Score: Team 0: ${game.scores[0]}, Team 1: ${game.scores[1]}
-Tricks completed: ${game.completedTricks.length}/${TRICKS_PER_GAME}
+Tricks completed: ${game.completedTricks.length}/${TRICKS_PER_HAND}
   `.trim();
 }
 
@@ -805,8 +897,9 @@ export function createGameWithTrump(
   modelIds: [string, string, string, string],
   trump: Suit,
   dealer: Position = "north",
+  winningScore: number = DEFAULT_WINNING_SCORE,
 ): GameState {
-  const game = createNewGame(modelIds, dealer);
+  const game = createNewGame(modelIds, dealer, winningScore);
 
   // Skip trump selection phase
   return {

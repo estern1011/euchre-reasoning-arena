@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useGameStreaming } from "../useGameStreaming";
-import type { GameState, SSEMessage } from "../useGameStreaming";
+import type { SSEMessage } from "../useGameStreaming";
+import type { GameState } from "~/types/game";
+
+// Helper to access message at index with type assertion for tests
+// This is safe in tests since we control the mock data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getMsg(arr: SSEMessage[], index: number): any {
+  const m = arr[index];
+  if (!m) throw new Error(`No message at index ${index}`);
+  return m;
+}
 
 // Mock game state for testing
 const createMockGameState = (): GameState => ({
@@ -19,6 +29,9 @@ const createMockGameState = (): GameState => ({
   currentTrick: { leadPlayer: "north", plays: [] },
   completedTricks: [],
   scores: [0, 0],
+  handNumber: 1,
+  gameScores: [0, 0],
+  winningScore: 10,
 });
 
 // Helper to create SSE formatted string
@@ -39,7 +52,8 @@ const createMockReader = (chunks: string[]) => {
       if (index >= chunks.length) {
         return { done: true, value: undefined };
       }
-      const value = encodeText(chunks[index]);
+      const chunk = chunks[index]!;
+      const value = encodeText(chunk);
       index++;
       return { done: false, value };
     }),
@@ -80,8 +94,8 @@ describe("useGameStreaming", () => {
       }
 
       expect(messages).toHaveLength(1);
-      expect(messages[0].type).toBe("player_thinking");
-      expect(messages[0].player).toBe("north");
+      expect(getMsg(messages, 0).type).toBe("player_thinking");
+      expect(getMsg(messages, 0).player).toBe("north");
     });
 
     it("should stream multiple SSE messages", async () => {
@@ -107,11 +121,11 @@ describe("useGameStreaming", () => {
       }
 
       expect(received).toHaveLength(4);
-      expect(received[0].type).toBe("player_thinking");
-      expect(received[1].type).toBe("reasoning_token");
-      expect(received[1].token).toBe("I ");
-      expect(received[2].token).toBe("will ");
-      expect(received[3].token).toBe("play ");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
+      expect(getMsg(received, 1).type).toBe("reasoning_token");
+      expect(getMsg(received, 1).token).toBe("I ");
+      expect(getMsg(received, 2).token).toBe("will ");
+      expect(getMsg(received, 3).token).toBe("play ");
     });
 
     it("should stream complete decision sequence", async () => {
@@ -143,8 +157,8 @@ describe("useGameStreaming", () => {
       }
 
       expect(received).toHaveLength(3);
-      expect(received[2].type).toBe("decision_made");
-      expect(received[2].card).toEqual({ rank: "ace", suit: "hearts" });
+      expect(getMsg(received, 2).type).toBe("decision_made");
+      expect(getMsg(received, 2).card).toEqual({ rank: "ace", suit: "hearts" });
     });
   });
 
@@ -168,13 +182,13 @@ describe("useGameStreaming", () => {
       const { streamGameRound } = useGameStreaming();
       const received: SSEMessage[] = [];
 
-      for await (const msg of streamGameRound(createMockGameState())) {
-        received.push(msg);
+      for await (const m of streamGameRound(createMockGameState())) {
+        received.push(m);
       }
 
       expect(received).toHaveLength(1);
-      expect(received[0].type).toBe("player_thinking");
-      expect(received[0].player).toBe("north");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
+      expect(getMsg(received, 0).player).toBe("north");
     });
 
     it("should handle multiple messages in single chunk", async () => {
@@ -198,13 +212,13 @@ describe("useGameStreaming", () => {
       }
 
       expect(received).toHaveLength(3);
-      expect(received[0].type).toBe("player_thinking");
-      expect(received[1].type).toBe("reasoning_token");
-      expect(received[2].type).toBe("decision_made");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
+      expect(getMsg(received, 1).type).toBe("reasoning_token");
+      expect(getMsg(received, 2).type).toBe("decision_made");
     });
 
     it("should handle empty lines and whitespace", async () => {
-      const chunk = 
+      const chunk =
         "\n" +
         createSSEMessage({ type: "player_thinking", player: "north" }) +
         "   \n" +
@@ -221,13 +235,13 @@ describe("useGameStreaming", () => {
       const { streamGameRound } = useGameStreaming();
       const received: SSEMessage[] = [];
 
-      for await (const msg of streamGameRound(createMockGameState())) {
-        received.push(msg);
+      for await (const m of streamGameRound(createMockGameState())) {
+        received.push(m);
       }
 
       expect(received).toHaveLength(2);
-      expect(received[0].type).toBe("player_thinking");
-      expect(received[1].type).toBe("reasoning_token");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
+      expect(getMsg(received, 1).type).toBe("reasoning_token");
     });
 
     it("should ignore non-data lines", async () => {
@@ -326,7 +340,7 @@ describe("useGameStreaming", () => {
 
       // Should skip malformed message but continue with valid ones
       expect(received).toHaveLength(1);
-      expect(received[0].type).toBe("player_thinking");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "SSE Parse Error:",
         expect.any(Error)
@@ -406,8 +420,8 @@ describe("useGameStreaming", () => {
         received.push(m);
       }
 
-      expect(received[0].type).toBe("player_thinking");
-      expect(received[0].player).toBe("east");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
+      expect(getMsg(received, 0).player).toBe("east");
     });
 
     it("should handle reasoning_token messages", async () => {
@@ -429,9 +443,9 @@ describe("useGameStreaming", () => {
         received.push(m);
       }
 
-      expect(received[0].type).toBe("reasoning_token");
-      expect(received[0].player).toBe("south");
-      expect(received[0].token).toBe("I think ");
+      expect(getMsg(received, 0).type).toBe("reasoning_token");
+      expect(getMsg(received, 0).player).toBe("south");
+      expect(getMsg(received, 0).token).toBe("I think ");
     });
 
     it("should handle illegal_attempt messages", async () => {
@@ -454,10 +468,10 @@ describe("useGameStreaming", () => {
         received.push(m);
       }
 
-      expect(received[0].type).toBe("illegal_attempt");
-      expect(received[0].player).toBe("west");
-      expect(received[0].attemptedCard).toEqual({ rank: "ace", suit: "clubs" });
-      expect(received[0].isFallback).toBe(false);
+      expect(getMsg(received, 0).type).toBe("illegal_attempt");
+      expect(getMsg(received, 0).player).toBe("west");
+      expect(getMsg(received, 0).attemptedCard).toEqual({ rank: "ace", suit: "clubs" });
+      expect(getMsg(received, 0).isFallback).toBe(false);
     });
 
     it("should handle decision_made messages", async () => {
@@ -482,18 +496,20 @@ describe("useGameStreaming", () => {
         received.push(m);
       }
 
-      expect(received[0].type).toBe("decision_made");
-      expect(received[0].card).toEqual({ rank: "king", suit: "hearts" });
-      expect(received[0].reasoning).toBe("Playing king");
-      expect(received[0].modelId).toBe("m1");
-      expect(received[0].duration).toBe(2000);
+      expect(getMsg(received, 0).type).toBe("decision_made");
+      expect(getMsg(received, 0).card).toEqual({ rank: "king", suit: "hearts" });
+      expect(getMsg(received, 0).reasoning).toBe("Playing king");
+      expect(getMsg(received, 0).modelId).toBe("m1");
+      expect(getMsg(received, 0).duration).toBe(2000);
     });
 
     it("should handle round_complete messages", async () => {
       const msg = createSSEMessage({
         type: "round_complete",
         gameState: createMockGameState(),
-        roundSummary: "North wins trick 1",
+        phase: "playing",
+        trickWinner: "north",
+        trickNumber: 1,
       });
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -508,20 +524,21 @@ describe("useGameStreaming", () => {
         received.push(m);
       }
 
-      expect(received[0].type).toBe("round_complete");
-      expect(received[0].gameState).toBeDefined();
-      expect(received[0].roundSummary).toBe("North wins trick 1");
+      expect(getMsg(received, 0).type).toBe("round_complete");
+      expect(getMsg(received, 0).gameState).toBeDefined();
+      expect(getMsg(received, 0).trickWinner).toBe("north");
+      expect(getMsg(received, 0).trickNumber).toBe(1);
     });
 
     it("should handle error messages", async () => {
-      const msg = createSSEMessage({
+      const errorMsg = createSSEMessage({
         type: "error",
         message: "AI model failed",
       });
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        body: { getReader: () => createMockReader([msg]) },
+        body: { getReader: () => createMockReader([errorMsg]) },
       });
 
       const { streamGameRound } = useGameStreaming();
@@ -531,8 +548,8 @@ describe("useGameStreaming", () => {
         received.push(m);
       }
 
-      expect(received[0].type).toBe("error");
-      expect(received[0].message).toBe("AI model failed");
+      expect(getMsg(received, 0).type).toBe("error");
+      expect(getMsg(received, 0).message).toBe("AI model failed");
     });
   });
 
@@ -638,7 +655,9 @@ describe("useGameStreaming", () => {
         createSSEMessage({
           type: "round_complete",
           gameState: createMockGameState(),
-          roundSummary: "North wins trick with ace of hearts",
+          phase: "playing",
+          trickWinner: "north",
+          trickNumber: 1,
         }),
       ];
 
@@ -655,9 +674,9 @@ describe("useGameStreaming", () => {
       }
 
       expect(received).toHaveLength(9);
-      expect(received[0].type).toBe("player_thinking");
-      expect(received[4].type).toBe("decision_made");
-      expect(received[8].type).toBe("round_complete");
+      expect(getMsg(received, 0).type).toBe("player_thinking");
+      expect(getMsg(received, 4).type).toBe("decision_made");
+      expect(getMsg(received, 8).type).toBe("round_complete");
     });
 
     it("should handle illegal move retry scenario", async () => {
@@ -694,9 +713,9 @@ describe("useGameStreaming", () => {
       }
 
       expect(received).toHaveLength(5);
-      expect(received[2].type).toBe("illegal_attempt");
-      expect(received[4].type).toBe("decision_made");
-      expect(received[4].card?.rank).toBe("9");
+      expect(getMsg(received, 2).type).toBe("illegal_attempt");
+      expect(getMsg(received, 4).type).toBe("decision_made");
+      expect(getMsg(received, 4).card?.rank).toBe("9");
     });
   });
 });

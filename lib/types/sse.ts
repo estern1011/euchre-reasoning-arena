@@ -82,8 +82,22 @@ export interface SSERoundComplete {
   gameState: GameState;
   phase: string;
   decisions: Decision[];
-  roundSummary: string;
-  trickWinner?: Position; // Explicit winner field instead of parsing from string
+  // Trick completion fields
+  trickWinner?: Position;
+  trickNumber?: number;
+  // Multi-hand game fields
+  handScores?: [number, number];
+  gameScores?: [number, number];
+  handNumber?: number;
+  winningTeam?: 0 | 1;
+  // Trump selection fields
+  trumpSelectionResult?: {
+    trumpCaller: Position;
+    trump: Suit;
+    goingAlone: Position | null;
+  } | null;
+  allPassed?: boolean;
+  selectionRound?: 1 | 2;
 }
 
 export interface SSEError {

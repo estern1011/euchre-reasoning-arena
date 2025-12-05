@@ -20,7 +20,7 @@ export function positionToIndex(position: Position): number {
  */
 export function indexToPosition(index: number): Position {
   const positions: Position[] = ["north", "east", "south", "west"];
-  return positions[((index % 4) + 4) % 4];
+  return positions[((index % 4) + 4) % 4]!;
 }
 
 /**

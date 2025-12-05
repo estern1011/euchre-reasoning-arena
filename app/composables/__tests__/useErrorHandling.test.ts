@@ -241,7 +241,7 @@ describe("useErrorHandling", () => {
 
       const error = await promise;
       expect(error).toBeInstanceOf(Error);
-      expect(error.message).toContain("timed out");
+      expect((error as Error).message).toContain("timed out");
     });
 
     it("should return result before timeout", async () => {
@@ -329,7 +329,7 @@ describe("useErrorHandling", () => {
 
       const error = await promise;
       expect(error).toBeInstanceOf(Error);
-      expect(error.message).toBe("Always fails");
+      expect((error as Error).message).toBe("Always fails");
       expect(fn).toHaveBeenCalledTimes(3); // Initial + 2 retries
       expect(currentError.value).not.toBeNull();
     });

@@ -187,11 +187,11 @@ export default defineEventHandler(
         );
       }
 
-      const lastTrick = game.completedTricks[game.completedTricks.length - 1];
+      const lastTrick = game.completedTricks[game.completedTricks.length - 1]!;
       const roundSummary = `Trick ${game.completedTricks.length} complete. Winner: ${lastTrick.winner}`;
 
       if (isGameComplete(game)) {
-        const finalState = { ...game, phase: "complete" as const };
+        const finalState = { ...game, phase: "game_complete" as const };
         return {
           gameState: finalState,
           phase: "game_complete",

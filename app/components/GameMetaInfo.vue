@@ -1,16 +1,20 @@
 <template>
     <div class="meta-info">
         <div class="meta-item">
+            <span class="meta-label">hand:</span>
+            <span class="meta-value">{{ gameStore.handNumber }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">game:</span>
+            <span class="meta-value score">[{{ gameStore.gameScores[0] }}, {{ gameStore.gameScores[1] }}]</span>
+        </div>
+        <div class="meta-item">
             <span class="meta-label">trump:</span>
             <span class="meta-value trump">{{ trumpDisplay }}</span>
         </div>
         <div class="meta-item">
             <span class="meta-label">trick:</span>
             <span class="meta-value">{{ trickDisplay }}</span>
-        </div>
-        <div class="meta-item">
-            <span class="meta-label">score:</span>
-            <span class="meta-value">[{{ scores[0] }}, {{ scores[1] }}]</span>
         </div>
     </div>
 </template>
@@ -28,11 +32,12 @@ const trumpDisplay = computed(() => {
 });
 
 const trickDisplay = computed(() => {
+    if (gameStore.isHandComplete || gameStore.isGameComplete) {
+        return '5/5';
+    }
     const completed = gameStore.completedTricks?.length || 0;
     return `${completed + 1}/5`;
 });
-
-const scores = computed(() => gameStore.scores);
 </script>
 
 <style scoped>
@@ -62,5 +67,10 @@ const scores = computed(() => gameStore.scores);
 .meta-value.trump {
     font-size: 1.1rem;
     color: #ef4444;
+}
+
+.meta-value.score {
+    color: var(--color-live);
+    font-weight: 600;
 }
 </style>

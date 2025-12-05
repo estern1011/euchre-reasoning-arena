@@ -45,7 +45,7 @@ export function useCardDisplay() {
 
     // Determine center card (lead card or winning card)
     if (trick.plays.length > 0) {
-      const leadPlay = trick.plays[0];
+      const leadPlay = trick.plays[0]!;
       cards.center = leadPlay.card;
     }
 
@@ -59,7 +59,7 @@ export function useCardDisplay() {
     if (!gameStore.gameState?.currentTrick || gameStore.gameState.currentTrick.plays.length === 0) {
       return null;
     }
-    return gameStore.gameState.currentTrick.plays[0].card;
+    return gameStore.gameState.currentTrick.plays[0]!.card;
   });
 
   /**

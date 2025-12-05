@@ -36,8 +36,8 @@
                             <GameMetaInfo />
                         </div>
                         <GameControls
-                            :disabled="!gameStore.gameState || gameStore.isStreaming"
-                            @play-next="handlePlayNextRound"
+                            :disabled="!gameStore.gameState || gameStore.isStreaming || gameStore.isGameComplete"
+                            @play-next="handlePlayNext"
                         />
                     </div>
 
@@ -131,8 +131,8 @@
                             <GameMetaInfo />
                         </div>
                         <GameControls
-                            :disabled="!gameStore.gameState || gameStore.isStreaming"
-                            @play-next="handlePlayNextRound"
+                            :disabled="!gameStore.gameState || gameStore.isStreaming || gameStore.isGameComplete"
+                            @play-next="handlePlayNext"
                         />
                     </div>
 
@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch, onUnmounted } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
 import LiveStatusBanner from "~/components/LiveStatusBanner.vue";
 import GameMetaInfo from "~/components/GameMetaInfo.vue";
@@ -172,18 +172,24 @@ import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
 import MultiAgentReasoning from "~/components/MultiAgentReasoning.vue";
 import CompactArena from "~/components/CompactArena.vue";
-import { useGameFlow } from "~/composables/useGameFlow";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useGameStore, type ViewMode } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
+import { useGameApi } from "~/composables/useGameApi";
 import { formatSuit } from "../../lib/game/formatting";
+import { startNewHand } from "../../lib/game/game";
 import {
     formatCardPlayEntry,
     formatTrumpBidEntry,
     formatDiscardEntry,
     formatIllegalAttemptEntry,
-    formatRoundSummaryEntry,
     formatErrorEntry,
+    formatTrumpSelectionComplete,
+    formatTrickComplete,
+    formatHandComplete,
+    formatGameComplete,
+    formatNewHandStart,
+    formatGameInitialized,
 } from "~/utils/activityLog";
 import type { SSEMessage, SSEDecisionMade } from "../../lib/types/sse";
 import type { Position } from "../../lib/game/types";
@@ -197,7 +203,7 @@ interface DecisionRecord extends SSEDecisionMade {
 const gameStore = useGameStore();
 
 // Composables
-const { initializeGame } = useGameFlow();
+const { initializeGame, isCreatingGame } = useGameApi();
 const { formattedModelsByPosition } = usePlayerInfo();
 const { streamGameRound } = useGameStreaming();
 
@@ -226,7 +232,7 @@ const trumpSuit = computed(() => {
 const handleInitializeGame = async () => {
     try {
         await initializeGame(gameStore.modelIdsArray);
-        activityLog.value.push("Game initialized successfully");
+        activityLog.value.push(formatGameInitialized());
     } catch (e) {
         console.error("Failed to initialize game:", e);
     }
@@ -284,18 +290,59 @@ const handlePlayNextRound = async () => {
                         );
                     }
 
-                    const decisionWithReasoning = {
-                        ...message,
-                        reasoning: message.reasoning || gameStore.streamingReasoning[message.player!] || 'No reasoning provided'
+                    const decisionRecord: DecisionRecord = {
+                        type: "decision_made",
+                        player: message.player,
+                        modelId: message.modelId,
+                        duration: message.duration,
+                        reasoning: message.reasoning || gameStore.streamingReasoning[message.player] || 'No reasoning provided',
+                        card: message.card,
+                        action: message.action,
+                        suit: message.suit,
+                        goingAlone: message.goingAlone,
+                        illegalAttempt: message.illegalAttempt,
+                        isFallback: message.isFallback,
                     };
-                    allDecisions.value.push(decisionWithReasoning);
+                    allDecisions.value.push(decisionRecord);
                     break;
 
                 case 'round_complete':
                     gameStore.setGameState(message.gameState!);
-                    activityLog.value.push(formatRoundSummaryEntry(message.roundSummary!));
 
-                    // Use explicit trickWinner field from payload
+                    // Format activity log entry based on phase
+                    if (message.phase === 'trump_selection_round_1' || message.phase === 'trump_selection_round_2') {
+                        activityLog.value.push(formatTrumpSelectionComplete({
+                            selectionRound: message.selectionRound || 1,
+                            allPassed: message.allPassed || false,
+                            trumpSelectionResult: message.trumpSelectionResult,
+                        }));
+                    } else if (message.phase === 'game_complete') {
+                        activityLog.value.push(formatTrickComplete({
+                            trickNumber: message.trickNumber!,
+                            trickWinner: message.trickWinner!,
+                        }));
+                        activityLog.value.push(formatGameComplete({
+                            gameScores: message.gameScores!,
+                            winningTeam: message.winningTeam!,
+                        }));
+                    } else if (message.phase === 'hand_complete') {
+                        activityLog.value.push(formatTrickComplete({
+                            trickNumber: message.trickNumber!,
+                            trickWinner: message.trickWinner!,
+                        }));
+                        activityLog.value.push(formatHandComplete({
+                            handNumber: message.handNumber!,
+                            handScores: message.handScores!,
+                            gameScores: message.gameScores!,
+                        }));
+                    } else if (message.phase === 'playing_trick') {
+                        activityLog.value.push(formatTrickComplete({
+                            trickNumber: message.trickNumber!,
+                            trickWinner: message.trickWinner!,
+                        }));
+                    }
+
+                    // Set trick winner for UI display
                     if (message.trickWinner) {
                         gameStore.setTrickWinner(message.trickWinner as Position);
                     }
@@ -314,6 +361,80 @@ const handlePlayNextRound = async () => {
         gameStore.stopStreaming();
     }
 };
+
+// Handle starting a new hand when current hand is complete
+const handleStartNextHand = () => {
+    if (!gameStore.gameState || gameStore.phase !== 'hand_complete') return;
+
+    try {
+        const newGameState = startNewHand(gameStore.gameState);
+        gameStore.setGameState(newGameState);
+        gameStore.clearStreamingState();
+        activityLog.value.push(formatNewHandStart(newGameState.handNumber, newGameState.dealer));
+    } catch (error) {
+        console.error('Failed to start new hand:', error);
+        activityLog.value.push(formatErrorEntry('Failed to start new hand'));
+    }
+};
+
+// Unified play handler that handles both rounds and hand transitions
+const handlePlayNext = async () => {
+    if (!gameStore.gameState || gameStore.isStreaming) return;
+
+    // If hand is complete, start new hand first
+    if (gameStore.phase === 'hand_complete') {
+        handleStartNextHand();
+        // After starting new hand, continue to play if auto-mode is on
+        if (!gameStore.autoMode) return;
+    }
+
+    // Now play the next round
+    await handlePlayNextRound();
+};
+
+// Auto-mode orchestration
+let autoModeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const scheduleNextAutoPlay = () => {
+    if (!gameStore.autoMode || gameStore.isStreaming || gameStore.isGameComplete) {
+        return;
+    }
+
+    // Clear any existing timeout
+    if (autoModeTimeoutId) {
+        clearTimeout(autoModeTimeoutId);
+    }
+
+    // Schedule next play after delay
+    autoModeTimeoutId = setTimeout(async () => {
+        // Double-check conditions before playing
+        if (gameStore.autoMode && !gameStore.isStreaming && !gameStore.isGameComplete) {
+            await handlePlayNext();
+        }
+    }, gameStore.autoModeDelay);
+};
+
+// Watch for auto-mode changes and streaming completion
+watch(
+    () => [gameStore.autoMode, gameStore.isStreaming] as const,
+    ([autoMode, isStreaming]) => {
+        if (autoMode && !isStreaming && !gameStore.isGameComplete) {
+            scheduleNextAutoPlay();
+        } else if (!autoMode && autoModeTimeoutId) {
+            // Auto-mode turned off, cancel pending timeout
+            clearTimeout(autoModeTimeoutId);
+            autoModeTimeoutId = null;
+        }
+    },
+    { immediate: true }
+);
+
+// Clean up on unmount
+onUnmounted(() => {
+    if (autoModeTimeoutId) {
+        clearTimeout(autoModeTimeoutId);
+    }
+});
 
 // Initialize game on mount
 onMounted(() => {

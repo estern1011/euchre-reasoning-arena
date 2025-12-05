@@ -13,7 +13,7 @@
                     :key="position"
                     class="trick-card"
                 >
-                    <span class="position-abbr">{{ position[0].toUpperCase() }}:</span>
+                    <span class="position-abbr">{{ position.charAt(0).toUpperCase() }}:</span>
                     <span v-if="playedCards[position]" :class="['card-text', getSuitClass(playedCards[position]!.suit)]">
                         {{ formatCard(playedCards[position]!) }}
                     </span>
@@ -47,7 +47,7 @@
                     :key="position"
                     :class="['hand-entry', { active: position === currentPlayer }]"
                 >
-                    <span class="hand-position">{{ position[0].toUpperCase() }}</span>
+                    <span class="hand-position">{{ position.charAt(0).toUpperCase() }}</span>
                     <span class="hand-cards">
                         <span
                             v-for="(card, index) in playerHands[position].slice(0, 5)"

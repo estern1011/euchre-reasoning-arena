@@ -29,7 +29,7 @@ export function usePlayerInfo() {
 
     // Remove provider prefix and convert to uppercase
     const parts = modelId.split("/");
-    const modelName = parts.length > 1 ? parts[1] : parts[0];
+    const modelName = parts.length > 1 ? parts[1]! : parts[0]!;
     return modelName.toUpperCase();
   }
 
@@ -50,7 +50,7 @@ export function usePlayerInfo() {
 
     // During trump selection, use the current bidder
     if (gameStore.gameState.phase === "trump_selection") {
-      return gameStore.gameState.trumpSelection?.currentBidder || null;
+      return gameStore.gameState.trumpSelection?.currentBidder ?? null;
     }
 
     // During playing, determine next player based on current trick
@@ -72,7 +72,7 @@ export function usePlayerInfo() {
       const positions: Position[] = ["north", "east", "south", "west"];
       const leadIndex = positions.indexOf(trick.leadPlayer);
       const nextIndex = (leadIndex + trick.plays.length) % 4;
-      const nextPlayer = positions[nextIndex];
+      const nextPlayer = positions[nextIndex]!;
 
       // Skip if player's partner is going alone
       if (gameStore.gameState.goingAlone) {
@@ -87,7 +87,7 @@ export function usePlayerInfo() {
           if (nextPlayerObj?.team === partnerTeam && nextPlayer !== gameStore.gameState.goingAlone) {
             // This player sits out, find next player
             const afterNextIndex = (nextIndex + 1) % 4;
-            return positions[afterNextIndex];
+            return positions[afterNextIndex]!;
           }
         }
       }
