@@ -99,6 +99,7 @@ export async function makeDiscardDecisionStreaming(
   return {
     card: finalCard,
     reasoning: response.reasoning,
+    confidence: response.confidence ?? 50, // Default to 50% if not provided
     duration,
   };
 }

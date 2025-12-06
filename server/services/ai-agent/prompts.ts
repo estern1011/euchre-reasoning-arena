@@ -2,7 +2,25 @@ import type { Suit } from "../../../lib/game/types";
 
 /**
  * System prompts for AI agent decisions
+ * Includes Metacognition Arena: confidence levels and tool availability
  */
+
+// Metacognition prompt section (shared across all decision types)
+const METACOGNITION_PROMPT = `
+METACOGNITION (Important!):
+1. Report your CONFIDENCE (0-100) honestly. Low confidence when uncertain is REWARDED.
+   - High confidence (70-100): You're very sure about the optimal play
+   - Medium confidence (40-69): You see multiple reasonable options
+   - Low confidence (0-39): You're genuinely uncertain
+
+2. You may REQUEST A TOOL if uncertain (costs points but can help):
+   - ask_audience: Poll 3 other AI models for their opinions (-2 pts)
+   - situation_lookup: Query similar historical situations (-1 pt)
+   - fifty_fifty: Reveal which cards can win the trick (-3 pts)
+   - none: No tool needed (recommended if confident)
+
+SCORING: High confidence + correct = +3 pts. High confidence + wrong = -3 pts (overconfidence penalty!).
+Be calibrated: know what you don't know.`;
 
 export function buildTrumpBidSystemPrompt(
   round: 1 | 2,
@@ -16,7 +34,8 @@ The turned-up card is ${turnedUpSuit}. You may:
 - order_up: Make ${turnedUpSuit} trump (dealer picks up the card)
 - pass: Decline
 
-Strategy: Order up with 3+ ${turnedUpSuit} cards, or 2 strong trump + other high cards. Go alone only with exceptional hand (4+ trump including bowers).`;
+Strategy: Order up with 3+ ${turnedUpSuit} cards, or 2 strong trump + other high cards. Go alone only with exceptional hand (4+ trump including bowers).
+${METACOGNITION_PROMPT}`;
   }
 
   if (isDealerMustCall) {
@@ -25,7 +44,8 @@ Strategy: Order up with 3+ ${turnedUpSuit} cards, or 2 strong trump + other high
 The ${turnedUpSuit} was turned down. You are the dealer and MUST call trump.
 Choose any suit EXCEPT ${turnedUpSuit}.
 
-Strategy: Pick your strongest suit (most cards or highest cards).`;
+Strategy: Pick your strongest suit (most cards or highest cards).
+${METACOGNITION_PROMPT}`;
   }
 
   return `You are an expert Euchre player. ROUND 2 trump bidding.
@@ -34,7 +54,8 @@ The ${turnedUpSuit} was turned down. You may:
 - call_trump: Name any suit EXCEPT ${turnedUpSuit}
 - pass: Decline
 
-Strategy: Call with strength in a suit (3+ cards or 2 high cards). Go alone only with exceptional hand.`;
+Strategy: Call with strength in a suit (3+ cards or 2 high cards). Go alone only with exceptional hand.
+${METACOGNITION_PROMPT}`;
 }
 
 export function buildCardPlaySystemPrompt(validCardsList: string): string {
@@ -42,7 +63,8 @@ export function buildCardPlaySystemPrompt(validCardsList: string): string {
 
 VALID CARDS: ${validCardsList}
 
-Strategy: Lead trump to draw out opponent trump. Save high trump for critical moments. Support partner's plays.`;
+Strategy: Lead trump to draw out opponent trump. Save high trump for critical moments. Support partner's plays.
+${METACOGNITION_PROMPT}`;
 }
 
 export function buildDiscardSystemPrompt(handStr: string, trump: Suit): string {
@@ -51,5 +73,6 @@ export function buildDiscardSystemPrompt(handStr: string, trump: Suit): string {
 Trump: ${trump}
 Your hand: ${handStr}
 
-Strategy: Never discard trump. Discard weakest off-suit card (9s or 10s). Keep aces and kings.`;
+Strategy: Never discard trump. Discard weakest off-suit card (9s or 10s). Keep aces and kings.
+${METACOGNITION_PROMPT}`;
 }

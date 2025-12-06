@@ -57,8 +57,8 @@ const buttonText = computed(() => {
 <style scoped>
 .controls-container {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     gap: 0.5rem;
 }
 

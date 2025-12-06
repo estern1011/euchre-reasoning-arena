@@ -91,7 +91,7 @@ async function makeTrumpBidDecisionInternal(options: TrumpBidOptions): Promise<T
 
   const timeout = createTimeout();
   let usage: LanguageModelUsage | undefined;
-  let result: { action: string; suit?: string; goingAlone: boolean; reasoning: string };
+  let result: { action: string; suit?: string; goingAlone: boolean; reasoning: string; confidence?: number };
 
   try {
     if (isStreaming) {
@@ -165,6 +165,7 @@ async function makeTrumpBidDecisionInternal(options: TrumpBidOptions): Promise<T
     suit: "suit" in result ? (result.suit as Suit) : undefined,
     goingAlone: result.goingAlone,
     reasoning: result.reasoning,
+    confidence: result.confidence ?? 50, // Default to 50% if not provided
     duration,
   };
 }

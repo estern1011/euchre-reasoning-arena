@@ -2,8 +2,22 @@ import { defineStore } from 'pinia'
 import type { GameState, Position, Card, Suit } from '../../lib/game/types'
 import { formatSuit } from '../../lib/game/formatting'
 import { DEFAULT_MODEL_IDS } from '../../lib/config/defaults'
+import {
+  type AgentPerformance,
+  type DecisionOutcome,
+  createInitialPerformance,
+  calculateDecisionScore,
+  updatePerformance,
+} from '../../lib/scoring/calibration'
 
-export type ViewMode = 'arena' | 'intelligence'
+export type ViewMode = 'arena' | 'analysis'
+
+// Tool usage record for history
+export interface ToolUsageRecord {
+  tool: string
+  cost: number
+  result: unknown
+}
 
 // Game history types
 export interface PlayRecord {
@@ -12,6 +26,8 @@ export interface PlayRecord {
   modelId: string
   reasoning: string
   duration: number
+  confidence?: number  // 0-100, for Metacognition Arena scoring
+  toolUsed?: ToolUsageRecord
 }
 
 export interface TrickRecord {
@@ -28,6 +44,8 @@ export interface TrumpDecisionRecord {
   goingAlone?: boolean
   reasoning: string
   duration: number
+  confidence?: number  // 0-100, for Metacognition Arena scoring
+  toolUsed?: ToolUsageRecord
 }
 
 export interface HandRecord {
@@ -80,6 +98,19 @@ export const useGameStore = defineStore('game', {
     // Cards played this round (to remove from visible hands)
     cardsPlayedThisRound: [] as Array<{ player: Position; card: Card }>,
     lastTrickWinner: null as Position | null,
+
+    // Tool state (Metacognition Arena)
+    currentToolRequest: null as { tool: string; cost: number } | null,
+    toolProgress: '' as string,
+    toolResult: null as { tool: string; result: unknown; cost: number; duration: number } | null,
+    lastConfidence: null as number | null, // Confidence from last decision
+
+    // ReACT flow phases: thought → action → observation → response
+    reactPhase: 'thought' as 'thought' | 'action' | 'observation' | 'response',
+    initialThought: '' as string, // First reasoning before tool use
+
+    // Metacognition Arena - Performance tracking
+    agentPerformance: {} as Partial<Record<Position, AgentPerformance>>,
   }),
 
   getters: {
@@ -334,6 +365,57 @@ export const useGameStore = defineStore('game', {
       this.streamingReasoning = {}
       this.displayedReasoningPlayer = null
       this.currentThinkingPlayer = null
+      // Clear tool state
+      this.currentToolRequest = null
+      this.toolProgress = ''
+      this.toolResult = null
+      this.lastConfidence = null
+      // Clear ReACT state
+      this.reactPhase = 'thought'
+      this.initialThought = ''
+    },
+
+    // Tool actions (Metacognition Arena)
+    setToolRequest(tool: string, cost: number) {
+      // Save current reasoning as initial thought before tool use
+      const currentPlayer = this.currentThinkingPlayer
+      if (currentPlayer && this.streamingReasoning[currentPlayer]) {
+        this.initialThought = this.streamingReasoning[currentPlayer]
+      }
+      this.currentToolRequest = { tool, cost }
+      this.toolProgress = ''
+      this.toolResult = null
+      this.reactPhase = 'action'
+    },
+
+    setToolProgress(message: string) {
+      this.toolProgress = message
+    },
+
+    setToolResult(tool: string, result: unknown, cost: number, duration: number) {
+      this.toolResult = { tool, result, cost, duration }
+      this.reactPhase = 'observation'
+    },
+
+    startResponsePhase() {
+      this.reactPhase = 'response'
+      // Clear the streaming reasoning for the new response
+      const currentPlayer = this.currentThinkingPlayer
+      if (currentPlayer) {
+        this.streamingReasoning[currentPlayer] = ''
+      }
+    },
+
+    clearToolState() {
+      this.currentToolRequest = null
+      this.toolProgress = ''
+      this.toolResult = null
+      this.reactPhase = 'thought'
+      this.initialThought = ''
+    },
+
+    setLastConfidence(confidence: number) {
+      this.lastConfidence = confidence
     },
 
     // Game history actions
@@ -356,7 +438,10 @@ export const useGameStore = defineStore('game', {
 
     recordTrumpDecision(decision: TrumpDecisionRecord) {
       const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
-      if (!hand) return
+      if (!hand) {
+        console.warn('[GameStore] recordTrumpDecision: No active hand at index', this.gameHistory.currentHandIndex)
+        return
+      }
       
       hand.trumpDecisions.push(decision)
       
@@ -370,7 +455,10 @@ export const useGameStore = defineStore('game', {
 
     recordPlay(play: PlayRecord) {
       const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
-      if (!hand) return
+      if (!hand) {
+        console.warn('[GameStore] recordPlay: No active hand at index', this.gameHistory.currentHandIndex)
+        return
+      }
       
       // Get or create current trick
       let currentTrick = hand.tricks[hand.tricks.length - 1]
@@ -389,7 +477,10 @@ export const useGameStore = defineStore('game', {
 
     recordTrickWinner(trickNumber: number, winner: Position) {
       const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
-      if (!hand) return
+      if (!hand) {
+        console.warn('[GameStore] recordTrickWinner: No active hand at index', this.gameHistory.currentHandIndex)
+        return
+      }
       
       const trick = hand.tricks.find(t => t.trickNumber === trickNumber)
       if (trick) {
@@ -399,7 +490,10 @@ export const useGameStore = defineStore('game', {
 
     recordHandComplete(winningTeam: 'NS' | 'EW', pointsScored: [number, number]) {
       const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
-      if (!hand) return
+      if (!hand) {
+        console.warn('[GameStore] recordHandComplete: No active hand at index', this.gameHistory.currentHandIndex)
+        return
+      }
       
       hand.winningTeam = winningTeam
       hand.pointsScored = pointsScored
@@ -407,6 +501,55 @@ export const useGameStore = defineStore('game', {
 
     getCurrentHand(): HandRecord | null {
       return this.gameHistory.hands[this.gameHistory.currentHandIndex] || null
+    },
+
+    // Performance tracking actions (Metacognition Arena)
+    initializePerformance() {
+      const positions: Position[] = ['north', 'east', 'south', 'west']
+      for (const pos of positions) {
+        this.agentPerformance[pos] = createInitialPerformance(
+          this.modelIds[pos],
+          pos
+        )
+      }
+    },
+
+    recordDecisionOutcome(
+      player: Position,
+      confidence: number,
+      wasCorrect: boolean,
+      toolUsed: { tool: string; cost: number } | null,
+      decisionType?: 'card_play' | 'trump_call' | 'trump_pass',
+      pointsScored?: number
+    ) {
+      // Initialize if needed
+      if (!this.agentPerformance[player]) {
+        this.agentPerformance[player] = createInitialPerformance(
+          this.modelIds[player],
+          player
+        )
+      }
+
+      const outcome: DecisionOutcome = {
+        confidence,
+        toolUsed,
+        wasCorrect,
+        decisionType,
+        pointsScored,
+      }
+
+      const score = calculateDecisionScore(outcome)
+      this.agentPerformance[player] = updatePerformance(
+        this.agentPerformance[player],
+        outcome,
+        score
+      )
+
+      return score
+    },
+
+    getAgentPerformance(player: Position): AgentPerformance | null {
+      return this.agentPerformance[player] || null
     },
 
     reset() {
@@ -421,6 +564,7 @@ export const useGameStore = defineStore('game', {
       this.gameHistory = { hands: [], currentHandIndex: -1 }
       this.clearStreamingState()
       this.modelIds = { ...DEFAULT_MODEL_IDS }
+      this.agentPerformance = {}
     },
   },
 })

@@ -56,15 +56,9 @@
             </div>
         </div>
 
-        <!-- Placeholder for future judge analysis -->
-        <div class="judge-section">
-            <div class="section-label">
-                <span class="property">judgeAnalysis:</span>
-                <span class="comment">// Coming soon...</span>
-            </div>
-            <div class="judge-placeholder">
-                <span class="placeholder-text">AI judge analysis will appear here</span>
-            </div>
+        <!-- Metacognition Arena Performance Report -->
+        <div class="metacognition-section">
+            <PostGameReport />
         </div>
 
         <div class="summary-footer">
@@ -76,7 +70,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { GameState, Position } from '~/types/game';
-import { useGameStore, type HandResult } from '~/stores/game';
+import { useGameStore } from '~/stores/game';
+import PostGameReport from '~/components/PostGameReport.vue';
 
 const emit = defineEmits<{
     newGame: []
@@ -119,7 +114,7 @@ const gameScores = computed(() => props.gameState.gameScores);
 const playerStats = computed((): PlayerStats[] => {
     const stats: PlayerStats[] = [];
     const winningTeam = props.gameState.gameScores[0] > props.gameState.gameScores[1] ? 0 : 1;
-    const handHistory = gameStore.handHistory;
+    const handHistory = gameStore.gameHistory.hands;
 
     for (const player of props.gameState.players) {
         // Count tricks won by this player (from last hand only - completedTricks is per hand)
@@ -132,9 +127,12 @@ const playerStats = computed((): PlayerStats[] => {
 
         // Count trump calls and success rate from hand history
         const trumpCalls = handHistory.filter(h => h.trumpCaller === player.position).length;
-        const trumpCallWins = handHistory.filter(
-            h => h.trumpCaller === player.position && h.callingTeam === h.winningTeam
-        ).length;
+        const trumpCallWins = handHistory.filter(h => {
+            if (h.trumpCaller !== player.position) return false;
+            // Determine if the calling team won
+            const callerTeam = ['north', 'south'].includes(h.trumpCaller) ? 'NS' : 'EW';
+            return callerTeam === h.winningTeam;
+        }).length;
         const trumpCallSuccessRate = trumpCalls > 0 ? Math.round((trumpCallWins / trumpCalls) * 100) : 0;
 
         // Count alone attempts
@@ -359,27 +357,8 @@ const rankedPlayers = computed(() => {
     margin-left: 0.25rem;
 }
 
-.judge-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.judge-placeholder {
-    padding: 2rem;
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px dashed rgba(107, 114, 128, 0.3);
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 8rem;
-}
-
-.placeholder-text {
-    color: var(--color-text-muted);
-    font-style: italic;
-    font-size: 0.9375rem;
+.metacognition-section {
+    margin-top: 1rem;
 }
 
 .summary-footer {

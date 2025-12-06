@@ -13,14 +13,21 @@
                         // Arena
                     </button>
                     <button
-                        :class="['mode-tab', { active: viewMode === 'intelligence' }]"
-                        @click="setViewMode('intelligence')"
+                        :class="['mode-tab', { active: viewMode === 'analysis' }]"
+                        @click="setViewMode('analysis')"
                     >
-                        // Intelligence
+                        // Analysis
                     </button>
                 </div>
             </div>
-            <div class="header-right"></div>
+            <div class="header-right">
+                <GameControls
+                    v-if="!gameStore.isGameComplete"
+                    :disabled="!gameStore.gameState || gameStore.isStreaming"
+                    class="header-controls"
+                    @play-next="handlePlayNext"
+                />
+            </div>
         </header>
 
         <div class="game-content">
@@ -40,14 +47,6 @@
                                 <LiveStatusBanner />
                                 <GameMetaInfo />
                             </div>
-                        </div>
-
-                        <!-- Controls (top right) -->
-                        <div class="game-controls-overlay">
-                            <GameControls
-                                :disabled="!gameStore.gameState || gameStore.isStreaming"
-                                @play-next="handlePlayNext"
-                            />
                         </div>
 
                         <GameBoard
@@ -72,17 +71,41 @@
                     />
                 </template>
 
-                <!-- Intelligence Mode: Show Multi-Agent Reasoning Grid -->
+                <!-- Analysis Mode: Performance Scoreboard and Tool Panel -->
                 <template v-else>
                     <div class="panel-header">
-                        <span class="comment">// </span>intelligence
+                        <span class="comment">// </span>analysis
                     </div>
 
-                    <MultiAgentReasoning
-                        :reasoning="gameStore.streamingReasoning"
-                        :current-player="gameStore.currentThinkingPlayer"
-                        :model-ids="gameStore.modelIds"
-                    />
+                    <div class="analysis-grid">
+                        <!-- Top Left: Performance Scoreboard -->
+                        <div class="grid-panel">
+                            <PerformanceScoreboard
+                                :current-player="gameStore.currentThinkingPlayer"
+                                :show-scoring-info="true"
+                                @show-scoring-rules="showScoringModal = true"
+                            />
+                        </div>
+
+                        <!-- Top Right: Tool Usage -->
+                        <div class="grid-panel">
+                            <ToolPanel :show-available-tools="true" />
+                        </div>
+
+                        <!-- Bottom Left: Recent Decisions -->
+                        <div class="grid-panel">
+                            <RecentDecisions />
+                        </div>
+
+                        <!-- Bottom Right: Current Reasoning -->
+                        <div class="grid-panel">
+                            <StreamingReasoning
+                                :player="gameStore.displayedReasoningPlayer"
+                                :reasoning="gameStore.displayedReasoningPlayer ? (gameStore.streamingReasoning[gameStore.displayedReasoningPlayer] ?? '') : ''"
+                                :show-confidence="true"
+                            />
+                        </div>
+                    </div>
 
                     <!-- Reasoning History Button -->
                     <div class="history-section-inline">
@@ -109,6 +132,9 @@
                     <!-- Activity Log (on top) -->
                     <ActivityLog :entries="activityLog" class="activity-log-fixed" />
 
+                    <!-- Tool Panel (Metacognition Arena) -->
+                    <ToolPanel class="tool-section-sidebar" />
+
                     <!-- Real-Time Streaming Reasoning -->
                     <StreamingReasoning
                         :player="gameStore.displayedReasoningPlayer"
@@ -129,22 +155,18 @@
                     </div>
                 </template>
 
-                <!-- Intelligence Mode: Show Compact Arena sidebar -->
+                <!-- Analysis Mode: Show Compact Arena sidebar -->
                 <template v-else>
                     <div class="panel-header">
                         <span class="comment">// </span>arena
                     </div>
 
-                    <!-- Game Info Box & Controls (compact) -->
+                    <!-- Game Info Box (compact) -->
                     <div class="game-info-container compact">
                         <div class="game-info-box">
                             <LiveStatusBanner />
                             <GameMetaInfo />
                         </div>
-                        <GameControls
-                            :disabled="!gameStore.gameState || gameStore.isStreaming || gameStore.isGameComplete"
-                            @play-next="handlePlayNext"
-                        />
                     </div>
 
                     <!-- Compact Arena View -->
@@ -168,6 +190,99 @@
             :is-open="showReasoningModal"
             @close="showReasoningModal = false"
         />
+
+        <!-- Scoring Rules Modal -->
+        <div v-if="showScoringModal" class="modal-overlay" @click.self="showScoringModal = false">
+            <div class="scoring-modal">
+                <div class="modal-header">
+                    <span class="comment">// </span>scoring_rules
+                    <button class="close-btn" @click="showScoringModal = false">&times;</button>
+                </div>
+                <div class="scoring-content">
+                    <!-- Confidence Scoring -->
+                    <div class="scoring-section">
+                        <div class="section-title">confidence_scoring</div>
+                        <div class="scoring-table">
+                            <div class="table-header">
+                                <span class="col-confidence">confidence</span>
+                                <span class="col-correct">correct</span>
+                                <span class="col-wrong">wrong</span>
+                            </div>
+                            <div class="table-row">
+                                <span class="col-confidence high">HIGH (≥70%)</span>
+                                <span class="col-correct positive">+3</span>
+                                <span class="col-wrong negative">-2</span>
+                            </div>
+                            <div class="table-row">
+                                <span class="col-confidence medium">MED (40-69%)</span>
+                                <span class="col-correct positive">+2</span>
+                                <span class="col-wrong negative">-1</span>
+                            </div>
+                            <div class="table-row">
+                                <span class="col-confidence low">LOW (&lt;40%)</span>
+                                <span class="col-correct positive">+1</span>
+                                <span class="col-wrong neutral">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trump Weighting -->
+                    <div class="scoring-section">
+                        <div class="section-title">trump_multipliers</div>
+                        <div class="multiplier-list">
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">trump_call</span>
+                                <span class="multiplier-value">3x</span>
+                            </div>
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">trump_pass</span>
+                                <span class="multiplier-value">0.5x</span>
+                            </div>
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">march (5 tricks)</span>
+                                <span class="multiplier-value bonus">+1.5x</span>
+                            </div>
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">loner_march</span>
+                                <span class="multiplier-value bonus">+2x</span>
+                            </div>
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">euchred</span>
+                                <span class="multiplier-value penalty">2x penalty</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tool Costs -->
+                    <div class="scoring-section">
+                        <div class="section-title">tool_costs</div>
+                        <div class="multiplier-list">
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">👥 ask_audience</span>
+                                <span class="multiplier-value penalty">-2 pts</span>
+                            </div>
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">📚 situation_lookup</span>
+                                <span class="multiplier-value penalty">-1 pt</span>
+                            </div>
+                            <div class="multiplier-item">
+                                <span class="multiplier-label">🎯 fifty_fifty</span>
+                                <span class="multiplier-value penalty">-3 pts</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calibration Explanation -->
+                    <div class="scoring-section">
+                        <div class="section-title">calibration</div>
+                        <div class="explanation">
+                            <p class="formula">calibration = 100 - |avg_confidence - actual_accuracy|</p>
+                            <p class="hint">// perfect calibration: confidence matches win rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -181,8 +296,10 @@ import GameBoard from "~/components/GameBoard.vue";
 import GameSummary from "~/components/GameSummary.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
-import MultiAgentReasoning from "~/components/MultiAgentReasoning.vue";
 import CompactArena from "~/components/CompactArena.vue";
+import PerformanceScoreboard from "~/components/PerformanceScoreboard.vue";
+import ToolPanel from "~/components/ToolPanel.vue";
+import RecentDecisions from "~/components/RecentDecisions.vue";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useGameStore, type ViewMode } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
@@ -215,6 +332,86 @@ const { initializeGame, isCreatingGame } = useGameApi();
 const { formattedModelsByPosition } = usePlayerInfo();
 const { streamGameRound } = useGameStreaming();
 
+// Helper to determine if two positions are on the same team
+const sameTeam = (pos1: Position, pos2: Position): boolean => {
+    const team1 = ['north', 'south'];
+    const team2 = ['east', 'west'];
+    return (team1.includes(pos1) && team1.includes(pos2)) ||
+           (team2.includes(pos1) && team2.includes(pos2));
+};
+
+// Score card plays after a trick completes
+const scoreTrickPlays = (trickNumber: number, trickWinner: Position) => {
+    const currentHand = gameStore.getCurrentHand();
+    if (!currentHand) return;
+
+    const trick = currentHand.tricks.find(t => t.trickNumber === trickNumber);
+    if (!trick) return;
+
+    for (const play of trick.plays) {
+        // Only score if we have confidence data
+        if (play.confidence === undefined) continue;
+
+        // Was this player's team the winner?
+        const wasCorrect = sameTeam(play.player, trickWinner);
+
+        // Record the decision outcome for scoring (card_play type)
+        gameStore.recordDecisionOutcome(
+            play.player,
+            play.confidence,
+            wasCorrect,
+            play.toolUsed ? { tool: play.toolUsed.tool, cost: play.toolUsed.cost } : null,
+            'card_play'
+        );
+    }
+};
+
+// Score trump decisions after a hand completes
+// Trump calls are weighted higher and depend on points scored
+const scoreTrumpDecisions = (handScores: [number, number]) => {
+    const currentHand = gameStore.getCurrentHand();
+    if (!currentHand || !currentHand.trumpCaller) return;
+
+    // Determine which team called trump and if they made the bid
+    const callerTeam = ['north', 'south'].includes(currentHand.trumpCaller) ? 0 : 1;
+    const callerMadeBid = handScores[callerTeam] > 0;
+    const pointsForCaller = callerMadeBid ? handScores[callerTeam] : -2; // Euchred = -2
+
+    for (const decision of currentHand.trumpDecisions) {
+        if (decision.confidence === undefined) continue;
+
+        const toolUsed = decision.toolUsed
+            ? { tool: decision.toolUsed.tool, cost: decision.toolUsed.cost }
+            : null;
+
+        if (decision.action === 'pass') {
+            // Passing is correct if your team didn't call OR if calling would have failed
+            // For now, just score it neutrally based on whether the hand went well for their team
+            const playerTeam = ['north', 'south'].includes(decision.player) ? 0 : 1;
+            const theirTeamWon = handScores[playerTeam] > 0;
+
+            gameStore.recordDecisionOutcome(
+                decision.player,
+                decision.confidence,
+                theirTeamWon,
+                toolUsed,
+                'trump_pass'
+            );
+        } else {
+            // order_up or call_trump - this is the trump caller
+            // Correct if they made the bid, wrong if euchred
+            gameStore.recordDecisionOutcome(
+                decision.player,
+                decision.confidence,
+                callerMadeBid,
+                toolUsed,
+                'trump_call',
+                pointsForCaller
+            );
+        }
+    }
+};
+
 // View mode (arena or intelligence)
 const viewMode = computed(() => gameStore.viewMode);
 const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
@@ -222,8 +419,9 @@ const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
 
-// Reasoning modal
+// Modals
 const showReasoningModal = ref(false);
+const showScoringModal = ref(false);
 
 // Computed values for display (still needed for CompactArena)
 const currentTrick = computed(() => {
@@ -289,6 +487,37 @@ const handlePlayNextRound = async () => {
                     }
                     break;
 
+                case 'tool_request':
+                    // Metacognition Arena: Agent requested a tool
+                    if (message.tool && message.cost !== undefined) {
+                        gameStore.setToolRequest(message.tool, message.cost);
+                    }
+                    break;
+
+                case 'tool_progress':
+                    // Metacognition Arena: Tool execution progress
+                    if (message.message) {
+                        gameStore.setToolProgress(message.message);
+                    }
+                    break;
+
+                case 'tool_result':
+                    // Metacognition Arena: Tool execution completed
+                    if (message.tool && message.result !== undefined) {
+                        gameStore.setToolResult(
+                            message.tool,
+                            message.result,
+                            message.cost || 0,
+                            message.duration || 0
+                        );
+                    }
+                    break;
+
+                case 'response_phase':
+                    // Metacognition Arena: Agent starting second decision with tool result
+                    gameStore.startResponsePhase();
+                    break;
+
                 case 'illegal_attempt':
                     const illegalStep = activityLog.value.length + 1;
                     activityLog.value.push(
@@ -305,6 +534,11 @@ const handlePlayNextRound = async () => {
                     const step = activityLog.value.length + 1;
                     const reasoning = message.reasoning || gameStore.streamingReasoning[message.player!] || 'No reasoning provided';
 
+                    // Track confidence for Metacognition Arena
+                    if (message.confidence !== undefined) {
+                        gameStore.setLastConfidence(message.confidence);
+                    }
+
                     if (message.action === 'discard' && message.card) {
                         // Dealer discarding after order_up
                         activityLog.value.push(
@@ -317,13 +551,19 @@ const handlePlayNextRound = async () => {
                         );
                         gameStore.recordCardPlayed(message.player!, message.card);
                         
-                        // Record to game history
+                        // Record to game history (including tool usage and confidence)
                         gameStore.recordPlay({
                             player: message.player!,
                             card: message.card,
                             modelId: message.modelId!,
                             reasoning,
                             duration: message.duration!,
+                            confidence: message.confidence,
+                            toolUsed: gameStore.toolResult ? {
+                                tool: gameStore.toolResult.tool,
+                                cost: gameStore.toolResult.cost,
+                                result: gameStore.toolResult.result,
+                            } : undefined,
                         });
                     } else {
                         // Trump decision
@@ -336,7 +576,7 @@ const handlePlayNextRound = async () => {
                             ? gameStore.turnedUpCard?.suit
                             : message.suit;
                         
-                        // Record to game history
+                        // Record to game history (including tool usage and confidence)
                         if (message.action === 'pass' || message.action === 'order_up' || message.action === 'call_trump') {
                             gameStore.recordTrumpDecision({
                                 player: message.player!,
@@ -346,6 +586,12 @@ const handlePlayNextRound = async () => {
                                 goingAlone: message.goingAlone,
                                 reasoning,
                                 duration: message.duration!,
+                                confidence: message.confidence,
+                                toolUsed: gameStore.toolResult ? {
+                                    tool: gameStore.toolResult.tool,
+                                    cost: gameStore.toolResult.cost,
+                                    result: gameStore.toolResult.result,
+                                } : undefined,
                             });
                         }
                     }
@@ -374,8 +620,12 @@ const handlePlayNextRound = async () => {
                         // Record trick winner and hand completion to history
                         if (message.trickNumber && message.trickWinner) {
                             gameStore.recordTrickWinner(message.trickNumber, message.trickWinner);
+                            // Score the plays from this trick (Metacognition Arena)
+                            scoreTrickPlays(message.trickNumber, message.trickWinner as Position);
                         }
                         const finalWinningTeam = message.winningTeam === 0 ? 'NS' : 'EW';
+                        // Score trump decisions based on hand outcome (Metacognition Arena)
+                        scoreTrumpDecisions(message.handScores || [0, 0]);
                         gameStore.recordHandComplete(finalWinningTeam, message.handScores || [0, 0]);
                     } else if (message.phase === 'hand_complete') {
                         activityLog.value.push(formatTrickComplete({
@@ -390,8 +640,12 @@ const handlePlayNextRound = async () => {
                         // Record trick winner and hand completion to history
                         if (message.trickNumber && message.trickWinner) {
                             gameStore.recordTrickWinner(message.trickNumber, message.trickWinner);
+                            // Score the plays from this trick (Metacognition Arena)
+                            scoreTrickPlays(message.trickNumber, message.trickWinner as Position);
                         }
                         const handWinningTeam = message.handScores![0] > message.handScores![1] ? 'NS' : 'EW';
+                        // Score trump decisions based on hand outcome (Metacognition Arena)
+                        scoreTrumpDecisions(message.handScores!);
                         gameStore.recordHandComplete(handWinningTeam, message.handScores!);
                     } else if (message.phase === 'playing_trick') {
                         activityLog.value.push(formatTrickComplete({
@@ -401,6 +655,8 @@ const handlePlayNextRound = async () => {
                         // Record trick winner to history
                         if (message.trickNumber && message.trickWinner) {
                             gameStore.recordTrickWinner(message.trickNumber, message.trickWinner);
+                            // Score the plays from this trick (Metacognition Arena)
+                            scoreTrickPlays(message.trickNumber, message.trickWinner as Position);
                         }
                     }
 
@@ -579,6 +835,15 @@ onMounted(() => {
 
 .header-right {
     flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.header-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 
 .mode-switcher {
@@ -883,13 +1148,6 @@ onMounted(() => {
     z-index: 10;
 }
 
-.game-controls-overlay {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    z-index: 10;
-}
-
 .game-info-container {
     padding: 0.75rem 1rem;
     display: flex;
@@ -1067,5 +1325,233 @@ onMounted(() => {
     margin-bottom: 0.75rem;
     font-size: 0.875rem;
     text-align: center;
+}
+
+/* Analysis Mode Layout */
+.analysis-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.grid-panel {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.grid-panel > * {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* Scoring Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.scoring-modal {
+    background: rgba(10, 20, 20, 0.98);
+    border: 2px solid rgba(56, 189, 186, 0.5);
+    border-radius: 12px;
+    max-width: 650px;
+    width: 95%;
+    max-height: 85vh;
+    overflow: auto;
+    box-shadow: 0 0 40px rgba(56, 189, 186, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1.75rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: #f87171;
+}
+
+/* Scoring Modal Content */
+.scoring-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.scoring-content .scoring-section {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+
+.scoring-content .section-title {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #38bdb8;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+/* Scoring Table */
+.scoring-content .scoring-table {
+    font-size: 0.9375rem;
+    font-family: "Courier New", monospace;
+}
+
+.scoring-content .table-header {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.scoring-content .table-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 1rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.scoring-content .table-row:last-child {
+    border-bottom: none;
+}
+
+.scoring-content .col-confidence {
+    color: var(--color-text-secondary);
+}
+
+.scoring-content .col-confidence.high {
+    color: #a3e635;
+}
+
+.scoring-content .col-confidence.medium {
+    color: #fbbf24;
+}
+
+.scoring-content .col-confidence.low {
+    color: #f87171;
+}
+
+.scoring-content .col-correct,
+.scoring-content .col-wrong {
+    text-align: center;
+    font-weight: 600;
+}
+
+.scoring-content .positive {
+    color: #a3e635;
+}
+
+.scoring-content .negative {
+    color: #f87171;
+}
+
+.scoring-content .neutral {
+    color: var(--color-text-muted);
+}
+
+/* Multiplier List */
+.scoring-content .multiplier-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.scoring-content .multiplier-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9375rem;
+    padding: 0.375rem 0;
+}
+
+.scoring-content .multiplier-label {
+    color: var(--color-text-secondary);
+    font-family: "Courier New", monospace;
+}
+
+.scoring-content .multiplier-value {
+    font-family: "Courier New", monospace;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.scoring-content .multiplier-value.bonus {
+    color: #a3e635;
+}
+
+.scoring-content .multiplier-value.penalty {
+    color: #f87171;
+}
+
+/* Explanation */
+.scoring-content .explanation {
+    font-family: "Courier New", monospace;
+}
+
+.scoring-content .explanation .formula {
+    font-size: 0.9375rem;
+    margin: 0;
+    padding: 0.5rem 0;
+    color: var(--color-text-secondary);
+}
+
+.scoring-content .explanation .hint {
+    font-size: 0.8125rem;
+    margin: 0;
+    color: var(--color-text-muted);
+}
+
+.performance-section {
+    flex-shrink: 0;
+}
+
+.tool-section {
+    flex-shrink: 0;
+}
+
+.tool-section-sidebar {
+    flex-shrink: 0;
+    margin: 0.5rem;
 }
 </style>

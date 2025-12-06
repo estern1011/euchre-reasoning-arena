@@ -1,14 +1,18 @@
 /**
  * SSE Message Types - Discriminated union for type-safe message handling
+ * Includes Metacognition Arena events for tool usage and confidence
  */
 import type { Card, GameState, Position, Suit, TrumpBidAction } from "../game/types";
+import type { ToolResult as ToolResultType } from "../../server/services/tools/types";
 
 // Base decision interface
 export interface BaseDecision {
   player: Position;
   modelId: string;
   reasoning: string;
+  confidence: number;
   duration: number;
+  toolUsed?: ToolResultType;
 }
 
 // Card play decision
@@ -66,6 +70,7 @@ export interface SSEDecisionMade {
   player: Position;
   modelId: string;
   reasoning: string;
+  confidence: number;
   duration: number;
   // Card play
   card?: Card;
@@ -75,6 +80,35 @@ export interface SSEDecisionMade {
   action?: TrumpBidAction | "discard";
   suit?: Suit;
   goingAlone?: boolean;
+  // Tool usage (Metacognition Arena)
+  toolUsed?: ToolResultType;
+}
+
+// =============================================================================
+// Metacognition Arena - Tool Events
+// =============================================================================
+
+export interface SSEToolRequest {
+  type: "tool_request";
+  player: Position;
+  modelId: string;
+  tool: string;
+  cost: number;
+}
+
+export interface SSEToolProgress {
+  type: "tool_progress";
+  player: Position;
+  message: string;
+}
+
+export interface SSEToolResult {
+  type: "tool_result";
+  player: Position;
+  tool: string;
+  result: unknown;
+  cost: number;
+  duration: number;
 }
 
 export interface SSERoundComplete {
@@ -112,7 +146,10 @@ export type SSEMessage =
   | SSEIllegalAttempt
   | SSEDecisionMade
   | SSERoundComplete
-  | SSEError;
+  | SSEError
+  | SSEToolRequest
+  | SSEToolProgress
+  | SSEToolResult;
 
 // Type guard functions
 export function isPlayerThinking(msg: SSEMessage): msg is SSEPlayerThinking {
@@ -137,4 +174,17 @@ export function isRoundComplete(msg: SSEMessage): msg is SSERoundComplete {
 
 export function isSSEError(msg: SSEMessage): msg is SSEError {
   return msg.type === "error";
+}
+
+// Metacognition Arena type guards
+export function isToolRequest(msg: SSEMessage): msg is SSEToolRequest {
+  return msg.type === "tool_request";
+}
+
+export function isToolProgress(msg: SSEMessage): msg is SSEToolProgress {
+  return msg.type === "tool_progress";
+}
+
+export function isToolResult(msg: SSEMessage): msg is SSEToolResult {
+  return msg.type === "tool_result";
 }

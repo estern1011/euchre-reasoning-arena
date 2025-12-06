@@ -1,8 +1,10 @@
 import type { LanguageModelUsage } from "ai";
 import type { Card, Suit, TrumpBidAction } from "../../../lib/game/types";
+import type { ToolResult } from "../tools/types";
 
 /**
  * Shared types for AI agent decisions
+ * Includes confidence and tool usage for Metacognition Arena
  */
 
 export interface TrumpBidResult {
@@ -10,21 +12,27 @@ export interface TrumpBidResult {
   suit?: Suit;
   goingAlone: boolean;
   reasoning: string;
+  confidence: number;
   duration: number;
+  toolUsed?: ToolResult;
 }
 
 export interface CardPlayResult {
   card: Card;
   reasoning: string;
+  confidence: number;
   duration: number;
   illegalAttempt?: { card: Card; reasoning: string };
   isFallback?: boolean;
+  toolUsed?: ToolResult;
 }
 
 export interface DiscardResult {
   card: Card;
   reasoning: string;
+  confidence: number;
   duration: number;
+  toolUsed?: ToolResult;
 }
 
 /** Structured log context for Vercel observability */

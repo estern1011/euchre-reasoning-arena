@@ -8,6 +8,8 @@ import { CardPlaySchema, type CardPlayResponse } from "./schemas";
 import { buildCardPlaySystemPrompt } from "./prompts";
 import type { CardPlayResult } from "./types";
 import { mapUsageToTokenUsage } from "./types";
+import { executeTool, shouldUseTool, buildToolContext } from "../tools";
+import type { ToolResult, ToolCallbacks } from "../tools/types";
 
 /**
  * Card play decision logic
@@ -37,6 +39,64 @@ function buildRetryNote(chosenCardStr: string, validCardsList: string): string {
   return `IMPORTANT: Your previous selection (${chosenCardStr}) was ILLEGAL. You MUST choose exactly one card from this list: ${validCardsList}. Do not choose any other card.`;
 }
 
+function formatToolResultForAgent(toolResult: ToolResult): string {
+  if (toolResult.tool === "ask_audience") {
+    const result = toolResult.result as {
+      opinions: Array<{ modelName: string; decision: string; confidence: number; briefReasoning: string }>;
+      consensus: { decision: string; agreementRate: number };
+    };
+
+    const opinions = result.opinions
+      .map((o) => `  - ${o.modelName}: "${o.decision}" (${o.confidence}% confident) - ${o.briefReasoning}`)
+      .join("\n");
+
+    return `TOOL RESULT - Ask Audience:
+The audience has weighed in! Here's what they recommend:
+${opinions}
+
+Consensus: "${result.consensus.decision}" with ${Math.round(result.consensus.agreementRate)}% agreement.
+
+Now make your final decision, taking this advice into account.`;
+  }
+
+  if (toolResult.tool === "situation_lookup") {
+    const result = toolResult.result as {
+      situationsFound: number;
+      recommendations: Array<{ decision: string; successRate: number; occurrences: number }>;
+    };
+
+    const recs = result.recommendations
+      .map((r) => `  - "${r.decision}": ${r.successRate}% success rate (${r.occurrences} occurrences)`)
+      .join("\n");
+
+    return `TOOL RESULT - Situation Lookup:
+Found ${result.situationsFound} similar historical situations:
+${recs}
+
+Now make your final decision based on this historical data.`;
+  }
+
+  if (toolResult.tool === "fifty_fifty") {
+    const result = toolResult.result as {
+      winningOptions: number;
+      totalOptions: number;
+      revealedWinners: Array<{ rank: string; suit: string }>;
+    };
+
+    const winners = result.revealedWinners
+      .map((c) => `${c.rank} of ${c.suit}`)
+      .join(", ");
+
+    return `TOOL RESULT - 50/50:
+${result.winningOptions} of ${result.totalOptions} cards can win this trick.
+Winning cards: ${winners}
+
+Now make your final decision with this knowledge.`;
+  }
+
+  return `TOOL RESULT: ${JSON.stringify(toolResult.result)}`;
+}
+
 // =============================================================================
 // Context Preparation
 // =============================================================================
@@ -62,11 +122,12 @@ function prepareCardPlayContext(
   const playerObj = game.players.find((p) => p.position === player)!;
   const validCards = getValidCardsForPlay(game, player);
 
-  // Early return cases
+  // Early return cases - automatic plays get 100% confidence
   if (validCards.length === 0) {
     return {
       card: playerObj.hand[0]!,
       reasoning: "No legal cards detected; playing the first card in hand as a safeguard.",
+      confidence: 100,
       duration: 0,
     };
   }
@@ -75,6 +136,7 @@ function prepareCardPlayContext(
     return {
       card: validCards[0]!,
       reasoning: "Only one legal card available; playing it automatically to follow suit.",
+      confidence: 100,
       duration: 0,
     };
   }
@@ -101,6 +163,7 @@ function prepareCardPlayContext(
 interface ProcessedResult {
   card: Card;
   reasoning: string;
+  confidence: number;
   illegalAttempt?: { card: Card; reasoning: string };
   isFallback?: boolean;
   isValid: boolean;
@@ -113,13 +176,14 @@ function processCardPlayResult(
 ): ProcessedResult {
   const card = findCardInHand(response.rank as Rank, response.suit as Suit, ctx.validCards, ctx.playerHand);
   const isValid = ctx.validCards.some((c) => cardsEqual(c, card));
+  const confidence = response.confidence ?? 50; // Default to 50% if not provided
 
   if (isValid && !previousAttempt) {
-    return { card, reasoning: response.reasoning, isValid: true };
+    return { card, reasoning: response.reasoning, confidence, isValid: true };
   }
 
   if (isValid && previousAttempt) {
-    return { card, reasoning: response.reasoning, illegalAttempt: previousAttempt, isValid: true };
+    return { card, reasoning: response.reasoning, confidence, illegalAttempt: previousAttempt, isValid: true };
   }
 
   // Invalid after retry - fallback
@@ -131,6 +195,7 @@ function processCardPlayResult(
     return {
       card: fallbackCard,
       reasoning: response.reasoning + `\n\n[Fell back to first legal card: ${formatCardForPrompt(fallbackCard)}]`,
+      confidence,
       illegalAttempt: previousAttempt,
       isFallback: true,
       isValid: true, // Fallback is always valid
@@ -138,7 +203,7 @@ function processCardPlayResult(
   }
 
   // First attempt invalid - need retry
-  return { card, reasoning: response.reasoning, isValid: false };
+  return { card, reasoning: response.reasoning, confidence, isValid: false };
 }
 
 // =============================================================================
@@ -151,11 +216,13 @@ interface CardPlayOptions {
   modelId: string;
   customPrompt?: string;
   onToken?: (token: string) => void;
+  toolCallbacks?: ToolCallbacks;
 }
 
 async function makeCardPlayDecisionInternal(options: CardPlayOptions): Promise<CardPlayResult> {
-  const { game, player, modelId, customPrompt, onToken } = options;
+  const { game, player, modelId, customPrompt, onToken, toolCallbacks } = options;
   const correlationId = generateCorrelationId();
+  let toolUsed: ToolResult | undefined;
   const startTime = Date.now();
   const ctxOrResult = prepareCardPlayContext(game, player, modelId, customPrompt);
 
@@ -243,6 +310,50 @@ async function makeCardPlayDecisionInternal(options: CardPlayOptions): Promise<C
   const { response: firstResponse, usage } = await attemptDecision();
   let result = processCardPlayResult(firstResponse, ctx);
 
+  // Check if agent requested a tool (Metacognition Arena)
+  if (firstResponse.toolRequest && shouldUseTool(firstResponse.toolRequest)) {
+    logger.info("Tool requested", {
+      correlationId,
+      player,
+      modelId,
+      tool: firstResponse.toolRequest,
+      confidence: result.confidence,
+    });
+
+    const toolContext = buildToolContext(game, player, "card_play");
+    toolUsed = await executeTool(
+      {
+        tool: firstResponse.toolRequest,
+        player,
+        modelId,
+        context: toolContext,
+      },
+      toolCallbacks,
+    );
+
+    logger.info("Tool executed", {
+      correlationId,
+      player,
+      modelId,
+      tool: toolUsed.tool,
+      success: toolUsed.success,
+      cost: toolUsed.cost,
+      duration: toolUsed.duration,
+    });
+
+    // ReACT: Make a second decision with the tool result
+    if (toolUsed.success) {
+      const toolResultNote = formatToolResultForAgent(toolUsed);
+      logger.info("Making second decision with tool result", { correlationId, player, modelId });
+
+      // Signal response phase starting
+      toolCallbacks?.onResponsePhase?.();
+
+      const { response: secondResponse } = await attemptDecision(toolResultNote);
+      result = processCardPlayResult(secondResponse, ctx);
+    }
+  }
+
   // Retry if invalid card selected
   if (!result.isValid) {
     const chosenCardStr = cardToString(result.card);
@@ -266,9 +377,11 @@ async function makeCardPlayDecisionInternal(options: CardPlayOptions): Promise<C
   return {
     card: result.card,
     reasoning: result.reasoning,
+    confidence: result.confidence,
     duration,
     illegalAttempt: result.illegalAttempt,
     isFallback: result.isFallback,
+    toolUsed,
   };
 }
 
@@ -291,6 +404,7 @@ export async function makeCardPlayDecisionStreaming(
   modelId: string,
   onToken: (token: string) => void,
   customPrompt?: string,
+  toolCallbacks?: ToolCallbacks,
 ): Promise<CardPlayResult> {
-  return makeCardPlayDecisionInternal({ game, player, modelId, customPrompt, onToken });
+  return makeCardPlayDecisionInternal({ game, player, modelId, customPrompt, onToken, toolCallbacks });
 }

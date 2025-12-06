@@ -73,6 +73,10 @@
                                                         {{ formatTrumpAction(decision) }}
                                                     </div>
                                                 </div>
+                                                <div v-if="decision.toolUsed" class="tool-usage">
+                                                    <span class="tool-label">🔧 {{ decision.toolUsed.tool }}</span>
+                                                    <span class="tool-cost">-{{ decision.toolUsed.cost }} pts</span>
+                                                </div>
                                                 <div v-if="decision.reasoning" class="reasoning-text">
                                                     {{ decision.reasoning }}
                                                 </div>
@@ -107,6 +111,10 @@
                                                     <div class="action">
                                                         {{ formatTrumpAction(decision) }}
                                                     </div>
+                                                </div>
+                                                <div v-if="decision.toolUsed" class="tool-usage">
+                                                    <span class="tool-label">🔧 {{ decision.toolUsed.tool }}</span>
+                                                    <span class="tool-cost">-{{ decision.toolUsed.cost }} pts</span>
                                                 </div>
                                                 <div v-if="decision.reasoning" class="reasoning-text">
                                                     {{ decision.reasoning }}
@@ -177,6 +185,10 @@
                                                                 size="sm"
                                                             />
                                                         </div>
+                                                    </div>
+                                                    <div v-if="play.toolUsed" class="tool-usage">
+                                                        <span class="tool-label">🔧 {{ play.toolUsed.tool }}</span>
+                                                        <span class="tool-cost">-{{ play.toolUsed.cost }} pts</span>
                                                     </div>
                                                     <div v-if="play.reasoning" class="reasoning-text">
                                                         {{ play.reasoning }}
@@ -672,6 +684,27 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.tool-usage {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(163, 230, 53, 0.1);
+    border: 1px solid rgba(163, 230, 53, 0.3);
+    border-radius: 3px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.tool-label {
+    color: #a3e635;
+}
+
+.tool-cost {
+    color: #f87171;
+    font-weight: 500;
 }
 
 .red-suit { color: #f87171; }

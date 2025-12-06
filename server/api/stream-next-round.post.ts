@@ -98,6 +98,7 @@ export default defineEventHandler(async (event) => {
               suit: bidResult.suit,
               goingAlone: bidResult.goingAlone,
               reasoning: bidResult.reasoning,
+              confidence: bidResult.confidence,
               duration: bidResult.duration,
             });
 
@@ -155,6 +156,7 @@ export default defineEventHandler(async (event) => {
                   action: "discard",
                   card: discardResult.card,
                   reasoning: discardResult.reasoning,
+                  confidence: discardResult.confidence,
                   duration: discardResult.duration,
                 });
 
@@ -204,6 +206,38 @@ export default defineEventHandler(async (event) => {
 
             const { makeCardPlayDecisionStreaming } = await import("../services/ai-agent");
 
+            // Tool callbacks for Metacognition Arena
+            const toolCallbacks = {
+              onToolRequest: (request: { tool: string; player: Position; cost: number }) => {
+                sendEvent("tool_request", {
+                  player: currentPlayer,
+                  modelId: playerObj.modelId,
+                  tool: request.tool,
+                  cost: request.cost,
+                });
+              },
+              onToolProgress: (message: string) => {
+                sendEvent("tool_progress", {
+                  player: currentPlayer,
+                  message,
+                });
+              },
+              onToolResult: (result: any) => {
+                sendEvent("tool_result", {
+                  player: currentPlayer,
+                  tool: result.tool,
+                  result: result.result,
+                  cost: result.cost,
+                  duration: result.duration,
+                });
+              },
+              onResponsePhase: () => {
+                sendEvent("response_phase", {
+                  player: currentPlayer,
+                });
+              },
+            };
+
             const playResult = await makeCardPlayDecisionStreaming(
               game,
               currentPlayer,
@@ -213,7 +247,9 @@ export default defineEventHandler(async (event) => {
                   player: currentPlayer,
                   token,
                 });
-              }
+              },
+              undefined, // customPrompt
+              toolCallbacks,
             );
 
             // Send illegal attempt event if one occurred
@@ -231,9 +267,11 @@ export default defineEventHandler(async (event) => {
               modelId: playerObj.modelId,
               card: playResult.card,
               reasoning: playResult.reasoning,
+              confidence: playResult.confidence,
               duration: playResult.duration,
               illegalAttempt: playResult.illegalAttempt,
               isFallback: playResult.isFallback,
+              toolUsed: playResult.toolUsed,
             });
 
             const aiDecision = {

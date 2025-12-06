@@ -175,17 +175,12 @@ Current focus: Improving card visualization and game state display
 **Updated Schedule:**
 - **Dec 2:** ~~Fix SSE frontend~~ ✅ **DONE!** ~~complete Mode 1~~ ✅ **DONE!**
 - **Dec 3:** ✅ Pinia migration, illegal moves, live reasoning, hands display, Card component
-- **Dec 4 (TODAY):** ✅ Production hardening - validation, accessibility, performance
-  - ✅ Zod validation on all API endpoints
-  - ✅ WCAG AA accessibility (modal, keyboard, aria-live)
-  - ✅ Performance optimizations (O(n²) fix, deep watch fix)
-  - ✅ Code refactoring (ai-agent modularization)
-- **Dec 5-6:** Mode 2 (Prompt Editor) - Stretch goal
-- **Dec 7-8:** Mode 3 (Rating System) - Stretch goal
-- **Dec 9-10:** Comprehensive testing, UI improvements
-- **Dec 11:** Demo video production
-- **Dec 12:** Final testing & submission prep
-- **Dec 13:** Buffer day / submission
+- **Dec 4:** ✅ Production hardening - validation, accessibility, performance
+- **Dec 5-6:** 🎯 Metacognition Arena - Core infrastructure + Ask Audience tool
+- **Dec 7-8:** 🎯 Scoring system + Analysis view redesign
+- **Dec 9-10:** 🎯 SQLite + Situation Lookup tool + Post-game report
+- **Dec 11:** Polish + 50/50 tool + Demo prep
+- **Dec 12:** Final testing & submission
 
 ---
 
@@ -229,6 +224,45 @@ Current focus: Improving card visualization and game state display
 - Reasoning tokens received but not displayed in dedicated panel (enhancement)
 - No game completion modal (enhancement)
 - THINKING indicator doesn't show active player (enhancement)
+
+---
+
+### Mode 1.5: Metacognition Arena - **IN PROGRESS** 🎯
+**Purpose:** Evaluate AI calibration and tool-use decision making
+
+**Status:** 🔄 **Active Development (Hackathon Focus)**
+
+**Research Question:** "Do AI models know what they don't know?"
+
+**Key Features:**
+- Agents report confidence (0-100) with each decision
+- Optional tools with point costs:
+  - 📊 **Situation Lookup** (-1 pt): Query similar historical hands
+  - 👥 **Ask Audience** (-2 pts): Poll 3 other models for opinions
+  - ⚡ **50/50** (-3 pts): Reveal which cards can win the trick
+- Calibration-based scoring system:
+  - High confidence + correct = +3 pts
+  - High confidence + wrong = -3 pts (overconfident penalty)
+  - Low confidence + used tool + correct = +2 pts (smart tool use)
+- Analysis view replacing Intelligence mode
+- Post-game performance report with model rankings
+
+**Success Metric:** Final rankings based on reasoning quality, not game outcome
+
+**User Flow:**
+```
+1. Start game with 4 models
+2. Watch agents play with visible confidence levels
+3. See when agents decide to use tools (dramatic moments!)
+4. Observe calibration scores update in real-time
+5. View post-game report ranking models by reasoning quality
+```
+
+**Technical Implementation:**
+- Two-phase decisions: get confidence → optional tool → final decision
+- SQLite database for historical situation lookup
+- SSE streaming for tool request/result events
+- New Analysis view with performance scoreboard
 
 ---
 

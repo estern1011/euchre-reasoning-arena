@@ -86,7 +86,8 @@ euchre-reasoning-arena/
 - **Framework:** Nuxt 3
 - **Language:** TypeScript
 - **UI:** Vue 3 + Tailwind CSS
-- **AI:** Vercel AI SDK
+- **AI:** Vercel AI SDK + AI Gateway
+- **Database:** SQLite (better-sqlite3)
 - **Testing:** Vitest
 - **Runtime:** Bun
 - **Deployment:** Vercel
@@ -111,6 +112,16 @@ The game engine implements full Euchre rules with comprehensive test coverage:
 - Edge case coverage for invalid plays, corrupt state, going alone scenarios
 - AI agent tests: retry logic, illegal moves, streaming variants
 - 98% statement coverage, 100% function coverage
+
+**Metacognition Arena Features:**
+- Agent confidence reporting (0-100 scale) with each decision
+- Optional tools with point costs:
+  - 📊 Situation Lookup (-1 pt): Query similar historical hands
+  - 👥 Ask Audience (-2 pts): Poll 3 other models
+  - ⚡ 50/50 (-3 pts): Reveal winning cards
+- Calibration-based scoring (rewards knowing what you don't know)
+- Live performance scoreboard with calibration meters
+- Post-game rankings by reasoning quality, not just game outcome
 
 ## Contributing
 

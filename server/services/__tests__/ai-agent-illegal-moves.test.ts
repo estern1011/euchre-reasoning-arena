@@ -13,6 +13,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const resultWithIllegalAttempt: CardPlayResult = {
         card: { rank: "ace", suit: "hearts" },
         reasoning: "I'll play ace of hearts",
+        confidence: 75,
         duration: 1000,
         illegalAttempt: {
           card: { rank: "queen", suit: "spades" },
@@ -30,6 +31,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const fallbackResult: CardPlayResult = {
         card: { rank: "ace", suit: "hearts" },
         reasoning: "Fallback reasoning",
+        confidence: 50,
         duration: 1500,
         isFallback: true,
         illegalAttempt: {
@@ -46,6 +48,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const cleanResult: CardPlayResult = {
         card: { rank: "king", suit: "diamonds" },
         reasoning: "Valid play",
+        confidence: 85,
         duration: 800,
       };
 
@@ -57,6 +60,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const minimalResult: CardPlayResult = {
         card: { rank: "9", suit: "clubs" },
         reasoning: "Minimal result",
+        confidence: 60,
         duration: 500,
         illegalAttempt: undefined,
         isFallback: undefined,
@@ -73,6 +77,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
         action: "order_up",
         goingAlone: false,
         reasoning: "Good hand",
+        confidence: 80,
         duration: 2000,
       };
 
@@ -90,6 +95,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const result: CardPlayResult = {
         card: { rank: "ace", suit: "hearts" },
         reasoning: "Retry succeeded with ace",
+        confidence: 70,
         duration: 3000,
         illegalAttempt: {
           card: illegalCard,
@@ -106,6 +112,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const retrySuccess: CardPlayResult = {
         card: { rank: "king", suit: "hearts" },
         reasoning: "Retry reasoning",
+        confidence: 65,
         duration: 2500,
         illegalAttempt: {
           card: { rank: "queen", suit: "spades" },
@@ -117,6 +124,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const fallbackUsed: CardPlayResult = {
         card: { rank: "ace", suit: "hearts" },
         reasoning: "Fallback reasoning",
+        confidence: 40,
         duration: 3500,
         illegalAttempt: {
           card: { rank: "queen", suit: "spades" },
@@ -135,6 +143,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const result: CardPlayResult = {
         card: { rank: "10", suit: "hearts" },
         reasoning: "Test reasoning",
+        confidence: 75,
         duration: 1200,
       };
 
@@ -143,6 +152,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       expect(result.card.rank).toBeDefined();
       expect(result.card.suit).toBeDefined();
       expect(result.reasoning).toBeDefined();
+      expect(result.confidence).toBeDefined();
       expect(result.duration).toBeDefined();
     });
 
@@ -150,6 +160,7 @@ describe("AI Agent - Illegal Move Tracking Types", () => {
       const result: CardPlayResult = {
         card: { rank: "ace", suit: "clubs" },
         reasoning: "Final decision after retry",
+        confidence: 55,
         duration: 4000,
         illegalAttempt: {
           card: { rank: "king", suit: "spades" },
