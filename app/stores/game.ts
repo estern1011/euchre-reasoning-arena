@@ -9,6 +9,7 @@ import {
   calculateDecisionScore,
   updatePerformance,
 } from '../../lib/scoring/calibration'
+import type { EvolvedInsights } from '../../server/services/analysis/types'
 
 export type ViewMode = 'arena' | 'analysis'
 
@@ -111,6 +112,12 @@ export const useGameStore = defineStore('game', {
 
     // Metacognition Arena - Performance tracking
     agentPerformance: {} as Partial<Record<Position, AgentPerformance>>,
+
+    // Evolving Game Insights
+    evolvedInsights: null as EvolvedInsights | null,
+    latestHandSummary: null as string | null,
+    isAnalyzing: false,
+    completedHandsCount: 0,
   }),
 
   getters: {
@@ -552,6 +559,21 @@ export const useGameStore = defineStore('game', {
       return this.agentPerformance[player] || null
     },
 
+    // Evolving Game Insights actions
+    setAnalyzing(analyzing: boolean) {
+      this.isAnalyzing = analyzing
+    },
+
+    updateInsights(insights: EvolvedInsights, handSummary: string) {
+      this.evolvedInsights = insights
+      this.latestHandSummary = handSummary
+      this.completedHandsCount++
+    },
+
+    incrementHandCount() {
+      this.completedHandsCount++
+    },
+
     reset() {
       this.clearGameState()
       this.viewMode = 'arena'
@@ -565,6 +587,10 @@ export const useGameStore = defineStore('game', {
       this.clearStreamingState()
       this.modelIds = { ...DEFAULT_MODEL_IDS }
       this.agentPerformance = {}
+      this.evolvedInsights = null
+      this.latestHandSummary = null
+      this.isAnalyzing = false
+      this.completedHandsCount = 0
     },
   },
 })

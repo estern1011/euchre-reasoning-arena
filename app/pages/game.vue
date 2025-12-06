@@ -92,17 +92,23 @@
                             <ToolPanel :show-available-tools="true" />
                         </div>
 
-                        <!-- Bottom Left: Recent Decisions -->
+                        <!-- Bottom Left: Hand Strength -->
                         <div class="grid-panel">
-                            <RecentDecisions />
+                            <HandStrengthPanel
+                                :hands="gameStore.playerHands"
+                                :trump-suit="potentialTrumpSuit"
+                                :show-matrix="isRoundTwo"
+                            />
                         </div>
 
-                        <!-- Bottom Right: Current Reasoning -->
+                        <!-- Bottom Right: Game Insights -->
                         <div class="grid-panel">
-                            <StreamingReasoning
-                                :player="gameStore.displayedReasoningPlayer"
-                                :reasoning="gameStore.displayedReasoningPlayer ? (gameStore.streamingReasoning[gameStore.displayedReasoningPlayer] ?? '') : ''"
-                                :show-confidence="true"
+                            <GameInsightsPanel
+                                :insights="gameStore.evolvedInsights"
+                                :hand-summary="gameStore.latestHandSummary"
+                                :hand-number="gameStore.completedHandsCount"
+                                :model-ids="gameStore.modelIds"
+                                :is-analyzing="gameStore.isAnalyzing"
                             />
                         </div>
                     </div>
@@ -300,6 +306,8 @@ import CompactArena from "~/components/CompactArena.vue";
 import PerformanceScoreboard from "~/components/PerformanceScoreboard.vue";
 import ToolPanel from "~/components/ToolPanel.vue";
 import RecentDecisions from "~/components/RecentDecisions.vue";
+import HandStrengthPanel from "~/components/HandStrengthPanel.vue";
+import GameInsightsPanel from "~/components/GameInsightsPanel.vue";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useGameStore, type ViewMode } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
@@ -431,6 +439,28 @@ const currentTrick = computed(() => {
 const trumpSuit = computed(() => {
     if (!gameStore.trump) return "?";
     return formatSuit(gameStore.trump);
+});
+
+// For hand strength panel - determine the potential trump suit
+const potentialTrumpSuit = computed(() => {
+    // If trump is already set, use that
+    if (gameStore.trump) {
+        return gameStore.trump;
+    }
+    // Otherwise, use the turned-up card's suit (Round 1)
+    if (gameStore.turnedUpCard) {
+        return gameStore.turnedUpCard.suit;
+    }
+    return null;
+});
+
+// Check if we're in Round 2 (everyone passed first round)
+const isRoundTwo = computed(() => {
+    const state = gameStore.gameState;
+    if (!state) return false;
+    // Round 2 is when trump is not set but we've gone through all 4 players once
+    // The gameState.trumpRound will be 2 in round 2
+    return state.trumpRound === 2;
 });
 
 // Calculate tricks won by each player from completedTricks
