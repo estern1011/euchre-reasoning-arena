@@ -1,9 +1,52 @@
 import { defineStore } from 'pinia'
-import type { GameState, Position, Card } from '../../lib/game/types'
+import type { GameState, Position, Card, Suit } from '../../lib/game/types'
 import { formatSuit } from '../../lib/game/formatting'
 import { DEFAULT_MODEL_IDS } from '../../lib/config/defaults'
 
 export type ViewMode = 'arena' | 'intelligence'
+
+// Game history types
+export interface PlayRecord {
+  player: Position
+  card: Card
+  modelId: string
+  reasoning: string
+  duration: number
+}
+
+export interface TrickRecord {
+  trickNumber: number
+  plays: PlayRecord[]
+  winner: Position | null
+}
+
+export interface TrumpDecisionRecord {
+  player: Position
+  modelId: string
+  action: 'pass' | 'order_up' | 'call_trump'
+  suit?: Suit  // For order_up (turned up card) or call_trump
+  goingAlone?: boolean
+  reasoning: string
+  duration: number
+}
+
+export interface HandRecord {
+  handNumber: number
+  dealer: Position
+  turnedUpCard: Card | null
+  trumpSuit: Suit | null
+  trumpCaller: Position | null
+  goingAlone: Position | null
+  trumpDecisions: TrumpDecisionRecord[]  // All trump selection decisions
+  tricks: TrickRecord[]
+  winningTeam: 'NS' | 'EW' | null
+  pointsScored: [number, number]  // [team0, team1] for this hand
+}
+
+export interface GameHistory {
+  hands: HandRecord[]
+  currentHandIndex: number  // Index into hands array for the current hand
+}
 
 export const useGameStore = defineStore('game', {
   state: () => ({
@@ -12,6 +55,12 @@ export const useGameStore = defineStore('game', {
     isInitialized: false,
     viewMode: 'arena' as ViewMode,
     configuredWinningScore: 10, // User-configured winning score
+
+    // Game history
+    gameHistory: {
+      hands: [],
+      currentHandIndex: -1,
+    } as GameHistory,
 
     // Auto-mode state
     autoMode: false,
@@ -48,6 +97,18 @@ export const useGameStore = defineStore('game', {
     winningScore: (state) => state.gameState?.winningScore || 10,
     isHandComplete: (state) => state.gameState?.phase === 'hand_complete',
     isGameComplete: (state) => state.gameState?.phase === 'game_complete',
+
+    // Total decisions across all hands (trump decisions + card plays)
+    totalDecisions: (state) => {
+      let count = 0
+      for (const hand of state.gameHistory.hands) {
+        count += hand.trumpDecisions.length
+        for (const trick of hand.tricks) {
+          count += trick.plays.length
+        }
+      }
+      return count
+    },
 
     modelIdsArray(): [string, string, string, string] {
       return [
@@ -275,6 +336,79 @@ export const useGameStore = defineStore('game', {
       this.currentThinkingPlayer = null
     },
 
+    // Game history actions
+    startNewHandRecord(handNumber: number, dealer: Position, turnedUpCard: Card | null) {
+      const newHand: HandRecord = {
+        handNumber,
+        dealer,
+        turnedUpCard,
+        trumpSuit: null,
+        trumpCaller: null,
+        goingAlone: null,
+        trumpDecisions: [],
+        tricks: [],
+        winningTeam: null,
+        pointsScored: [0, 0],
+      }
+      this.gameHistory.hands.push(newHand)
+      this.gameHistory.currentHandIndex = this.gameHistory.hands.length - 1
+    },
+
+    recordTrumpDecision(decision: TrumpDecisionRecord) {
+      const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
+      if (!hand) return
+      
+      hand.trumpDecisions.push(decision)
+      
+      // If trump was called, record it
+      if (decision.action === 'order_up' || decision.action === 'call_trump') {
+        hand.trumpSuit = decision.suit || null
+        hand.trumpCaller = decision.player
+        hand.goingAlone = decision.goingAlone ? decision.player : null
+      }
+    },
+
+    recordPlay(play: PlayRecord) {
+      const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
+      if (!hand) return
+      
+      // Get or create current trick
+      let currentTrick = hand.tricks[hand.tricks.length - 1]
+      if (!currentTrick || currentTrick.plays.length === 4) {
+        // Start new trick
+        currentTrick = {
+          trickNumber: hand.tricks.length + 1,
+          plays: [],
+          winner: null,
+        }
+        hand.tricks.push(currentTrick)
+      }
+      
+      currentTrick.plays.push(play)
+    },
+
+    recordTrickWinner(trickNumber: number, winner: Position) {
+      const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
+      if (!hand) return
+      
+      const trick = hand.tricks.find(t => t.trickNumber === trickNumber)
+      if (trick) {
+        trick.winner = winner
+      }
+    },
+
+    recordHandComplete(winningTeam: 'NS' | 'EW', pointsScored: [number, number]) {
+      const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
+      if (!hand) return
+      
+      hand.winningTeam = winningTeam
+      hand.pointsScored = pointsScored
+    },
+
+    getCurrentHand(): HandRecord | null {
+      return this.gameHistory.hands[this.gameHistory.currentHandIndex] || null
+    },
+
     reset() {
       this.clearGameState()
       this.viewMode = 'arena'
@@ -284,6 +418,7 @@ export const useGameStore = defineStore('game', {
       this.displayedReasoningPlayer = null
       this.streamingReasoning = {}
       this.cardsPlayedThisRound = []
+      this.gameHistory = { hands: [], currentHandIndex: -1 }
       this.clearStreamingState()
       this.modelIds = { ...DEFAULT_MODEL_IDS }
     },

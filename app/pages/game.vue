@@ -3,21 +3,24 @@
         <header class="game-header">
             <div class="header-left">
                 <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+            </div>
+            <div class="header-center">
                 <div class="mode-switcher">
                     <button
                         :class="['mode-tab', { active: viewMode === 'arena' }]"
                         @click="setViewMode('arena')"
                     >
-                        Arena
+                        // Arena
                     </button>
                     <button
                         :class="['mode-tab', { active: viewMode === 'intelligence' }]"
                         @click="setViewMode('intelligence')"
                     >
-                        Intelligence
+                        // Intelligence
                     </button>
                 </div>
             </div>
+            <div class="header-right"></div>
         </header>
 
         <div class="game-content">
@@ -29,30 +32,23 @@
                         <span class="comment">// </span>arena
                     </div>
 
-                    <!-- Live Status Banner & Controls -->
-                    <div class="game-state-header" :class="{ 'game-complete': gameStore.isGameComplete }">
-                        <template v-if="!gameStore.isGameComplete">
-                            <div class="status-row">
+                    <!-- Table View / Game Summary -->
+                    <div v-if="!gameStore.isGameComplete" class="table-view">
+                        <!-- Game Info (top left) -->
+                        <div class="game-info-overlay">
+                            <div class="game-info-box" :class="{ 'game-complete': gameStore.isGameComplete }">
                                 <LiveStatusBanner />
                                 <GameMetaInfo />
                             </div>
+                        </div>
+
+                        <!-- Controls (top right) -->
+                        <div class="game-controls-overlay">
                             <GameControls
                                 :disabled="!gameStore.gameState || gameStore.isStreaming"
                                 @play-next="handlePlayNext"
                             />
-                        </template>
-                        <template v-else>
-                            <LiveStatusBanner />
-                            <button class="new-game-button" @click="handleNewGame">
-                                <span class="button-text">newGame()</span>
-                                <span class="button-arrow">→</span>
-                            </button>
-                        </template>
-                    </div>
-
-                    <!-- Table View / Game Summary -->
-                    <div v-if="!gameStore.isGameComplete" class="table-view">
-                        <div class="table-header"><span class="keyword">const</span> table = {</div>
+                        </div>
 
                         <GameBoard
                             :player-hands="gameStore.playerHands"
@@ -63,11 +59,8 @@
                             :is-streaming="gameStore.isStreaming"
                             :going-alone="gameStore.goingAlone"
                             :dealer="gameStore.dealer"
+                            :tricks-won="tricksWonByPlayer"
                         />
-
-                        <!-- Game Controls -->
-                        <div class="game-controls"></div>
-                        <div class="closing-brace">}</div>
                     </div>
 
                     <!-- Game Summary (shown when game is complete) -->
@@ -75,6 +68,7 @@
                         v-else
                         :game-state="gameStore.gameState!"
                         :model-ids="gameStore.modelIds"
+                        @new-game="handleNewGame"
                     />
                 </template>
 
@@ -98,7 +92,7 @@
                             @click="showReasoningModal = true"
                         >
                             <span class="button-text">viewHistory()</span>
-                            <span class="badge">{{ allDecisions.length }}</span>
+                            <span class="badge">{{ gameStore.totalDecisions }}</span>
                         </button>
                     </div>
                 </template>
@@ -112,13 +106,14 @@
                         <span class="comment">// </span>intelligence
                     </div>
 
-                    <!-- Activity Log -->
-                    <ActivityLog :entries="activityLog" />
+                    <!-- Activity Log (on top) -->
+                    <ActivityLog :entries="activityLog" class="activity-log-fixed" />
 
                     <!-- Real-Time Streaming Reasoning -->
                     <StreamingReasoning
                         :player="gameStore.displayedReasoningPlayer"
                         :reasoning="gameStore.displayedReasoningPlayer ? (gameStore.streamingReasoning[gameStore.displayedReasoningPlayer] ?? '') : ''"
+                        class="reasoning-fixed"
                     />
 
                     <!-- Reasoning History Button -->
@@ -129,7 +124,7 @@
                             @click="showReasoningModal = true"
                         >
                             <span class="button-text">viewHistory()</span>
-                            <span class="badge">{{ allDecisions.length }}</span>
+                            <span class="cursor-prompt">&gt;_</span>
                         </button>
                     </div>
                 </template>
@@ -140,9 +135,9 @@
                         <span class="comment">// </span>arena
                     </div>
 
-                    <!-- Live Status Banner & Controls -->
-                    <div class="game-state-header compact">
-                        <div class="status-row">
+                    <!-- Game Info Box & Controls (compact) -->
+                    <div class="game-info-container compact">
+                        <div class="game-info-box">
                             <LiveStatusBanner />
                             <GameMetaInfo />
                         </div>
@@ -171,7 +166,6 @@
         <!-- Reasoning Modal -->
         <ReasoningModal
             :is-open="showReasoningModal"
-            :decisions="allDecisions"
             @close="showReasoningModal = false"
         />
     </div>
@@ -208,13 +202,10 @@ import {
     formatNewHandStart,
     formatGameInitialized,
 } from "~/utils/activityLog";
-import type { SSEMessage, SSEDecisionMade } from "../../lib/types/sse";
+import type { SSEMessage, SSERoundComplete } from "../../lib/types/sse";
 import type { Position } from "../../lib/game/types";
 
-// Decision record for history
-interface DecisionRecord extends SSEDecisionMade {
-  // All fields from SSEDecisionMade plus any resolved reasoning
-}
+
 
 // Pinia store - single source of truth
 const gameStore = useGameStore();
@@ -231,9 +222,8 @@ const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
 
-// Reasoning modal and history
+// Reasoning modal
 const showReasoningModal = ref(false);
-const allDecisions = ref<DecisionRecord[]>([]);
 
 // Computed values for display (still needed for CompactArena)
 const currentTrick = computed(() => {
@@ -245,15 +235,34 @@ const trumpSuit = computed(() => {
     return formatSuit(gameStore.trump);
 });
 
+// Calculate tricks won by each player from completedTricks
+const tricksWonByPlayer = computed(() => {
+    const counts = { north: 0, south: 0, east: 0, west: 0 };
+    for (const trick of gameStore.completedTricks) {
+        if (trick.winner && counts[trick.winner] !== undefined) {
+            counts[trick.winner]++;
+        }
+    }
+    return counts;
+});
+
 // Handle game initialization
 const handleInitializeGame = async () => {
     try {
-        await initializeGame(
+        const result = await initializeGame(
             gameStore.modelIdsArray,
             undefined,
             gameStore.configuredWinningScore
         );
         activityLog.value.push(formatGameInitialized());
+        
+        // Start recording the first hand
+        const gs = result.gameState;
+        gameStore.startNewHandRecord(
+            gs.handNumber,
+            gs.dealer,
+            gs.trumpSelection?.turnedUpCard || null
+        );
     } catch (e) {
         console.error("Failed to initialize game:", e);
     }
@@ -294,6 +303,7 @@ const handlePlayNextRound = async () => {
 
                 case 'decision_made':
                     const step = activityLog.value.length + 1;
+                    const reasoning = message.reasoning || gameStore.streamingReasoning[message.player!] || 'No reasoning provided';
 
                     if (message.action === 'discard' && message.card) {
                         // Dealer discarding after order_up
@@ -301,30 +311,45 @@ const handlePlayNextRound = async () => {
                             formatDiscardEntry(step, message.player!, message.card)
                         );
                     } else if (message.card) {
+                        // Card play
                         activityLog.value.push(
                             formatCardPlayEntry(step, message.player!, message.card)
                         );
                         gameStore.recordCardPlayed(message.player!, message.card);
+                        
+                        // Record to game history
+                        gameStore.recordPlay({
+                            player: message.player!,
+                            card: message.card,
+                            modelId: message.modelId!,
+                            reasoning,
+                            duration: message.duration!,
+                        });
                     } else {
+                        // Trump decision
                         activityLog.value.push(
                             formatTrumpBidEntry(step, message.player!, message.action!)
                         );
+                        
+                        // For order_up, the trump suit is the turned-up card's suit
+                        const trumpSuit = message.action === 'order_up'
+                            ? gameStore.turnedUpCard?.suit
+                            : message.suit;
+                        
+                        // Record to game history
+                        if (message.action === 'pass' || message.action === 'order_up' || message.action === 'call_trump') {
+                            gameStore.recordTrumpDecision({
+                                player: message.player!,
+                                modelId: message.modelId!,
+                                action: message.action as 'pass' | 'order_up' | 'call_trump',
+                                suit: trumpSuit,
+                                goingAlone: message.goingAlone,
+                                reasoning,
+                                duration: message.duration!,
+                            });
+                        }
                     }
 
-                    const decisionRecord: DecisionRecord = {
-                        type: "decision_made",
-                        player: message.player,
-                        modelId: message.modelId,
-                        duration: message.duration,
-                        reasoning: message.reasoning || gameStore.streamingReasoning[message.player] || 'No reasoning provided',
-                        card: message.card,
-                        action: message.action,
-                        suit: message.suit,
-                        goingAlone: message.goingAlone,
-                        illegalAttempt: message.illegalAttempt,
-                        isFallback: message.isFallback,
-                    };
-                    allDecisions.value.push(decisionRecord);
                     break;
 
                 case 'round_complete':
@@ -346,6 +371,12 @@ const handlePlayNextRound = async () => {
                             gameScores: message.gameScores!,
                             winningTeam: message.winningTeam!,
                         }));
+                        // Record trick winner and hand completion to history
+                        if (message.trickNumber && message.trickWinner) {
+                            gameStore.recordTrickWinner(message.trickNumber, message.trickWinner);
+                        }
+                        const finalWinningTeam = message.winningTeam === 0 ? 'NS' : 'EW';
+                        gameStore.recordHandComplete(finalWinningTeam, message.handScores || [0, 0]);
                     } else if (message.phase === 'hand_complete') {
                         activityLog.value.push(formatTrickComplete({
                             trickNumber: message.trickNumber!,
@@ -356,11 +387,21 @@ const handlePlayNextRound = async () => {
                             handScores: message.handScores!,
                             gameScores: message.gameScores!,
                         }));
+                        // Record trick winner and hand completion to history
+                        if (message.trickNumber && message.trickWinner) {
+                            gameStore.recordTrickWinner(message.trickNumber, message.trickWinner);
+                        }
+                        const handWinningTeam = message.handScores![0] > message.handScores![1] ? 'NS' : 'EW';
+                        gameStore.recordHandComplete(handWinningTeam, message.handScores!);
                     } else if (message.phase === 'playing_trick') {
                         activityLog.value.push(formatTrickComplete({
                             trickNumber: message.trickNumber!,
                             trickWinner: message.trickWinner!,
                         }));
+                        // Record trick winner to history
+                        if (message.trickNumber && message.trickWinner) {
+                            gameStore.recordTrickWinner(message.trickNumber, message.trickWinner);
+                        }
                     }
 
                     // Set trick winner for UI display
@@ -391,6 +432,13 @@ const handleStartNextHand = () => {
         const newGameState = startNewHand(gameStore.gameState);
         gameStore.setGameState(newGameState);
         gameStore.clearStreamingState();
+        
+        // Start recording the new hand
+        gameStore.startNewHandRecord(
+            newGameState.handNumber,
+            newGameState.dealer,
+            newGameState.trumpSelection?.turnedUpCard || null
+        );
         activityLog.value.push(formatNewHandStart(newGameState.handNumber, newGameState.dealer));
     } catch (error) {
         console.error('Failed to start new hand:', error);
@@ -475,10 +523,10 @@ onMounted(() => {
     overflow: hidden;
     position: relative;
     background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-        linear-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px);
-    background-size: 20px 20px;
-    background-color: #0a0a0a;
+        linear-gradient(90deg, rgba(56, 189, 186, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(56, 189, 186, 0.08) 1px, transparent 1px);
+    background-size: 30px 30px;
+    background-color: #0a1414;
     color: #fff;
     font-family: "Courier New", Consolas, Monaco, monospace;
     display: flex;
@@ -520,40 +568,54 @@ onMounted(() => {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    flex: 1;
+}
+
+.header-center {
+    display: flex;
+    justify-content: center;
+    flex: 1;
+}
+
+.header-right {
+    flex: 1;
 }
 
 .mode-switcher {
     display: flex;
     gap: 0;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0;
+    border: 1px solid rgba(56, 189, 186, 0.2);
+    border-radius: 8px;
     padding: 2px;
 }
 
 .mode-tab {
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.25rem;
     font-family: "Courier New", monospace;
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: var(--color-text-muted);
     background: transparent;
-    border: none;
+    border: 2px solid transparent;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s ease;
     letter-spacing: 0.025em;
 }
 
 .mode-tab:hover:not(.active) {
-    color: var(--color-text-secondary);
-    background: rgba(255, 255, 255, 0.05);
+    color: #38bdb8;
+    background: rgba(56, 189, 186, 0.1);
+    border-color: rgba(56, 189, 186, 0.3);
 }
 
 .mode-tab.active {
-    color: var(--color-accent);
-    background: rgba(163, 230, 53, 0.1);
-    border-bottom: 2px solid var(--color-accent);
+    color: #0a1414;
+    background: #38bdb8;
+    border-color: #38bdb8;
+    box-shadow: 0 0 20px rgba(56, 189, 186, 0.5);
+    text-shadow: none;
 }
 
 .game-header h1 {
@@ -570,7 +632,7 @@ onMounted(() => {
 }
 
 .accent {
-    color: var(--color-accent);
+    color: #38bdb8;
 }
 
 .live-indicator {
@@ -625,33 +687,63 @@ onMounted(() => {
 }
 
 /* Panel Styling */
-.main-panel,
-.side-panel {
-    border: 3px solid rgba(163, 230, 53, 0.3);
-    border-radius: 0px;
-    background: rgba(0, 0, 0, 0.6);
+.main-panel {
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    border-radius: 12px;
+    background: rgba(10, 20, 20, 0.8);
     backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     box-shadow:
-        8px 8px 0px rgba(163, 230, 53, 0.2),
-        0 0 40px rgba(0, 0, 0, 0.8);
+        0 0 40px rgba(0, 0, 0, 0.6),
+        0 0 15px rgba(56, 189, 186, 0.15),
+        inset 0 0 30px rgba(56, 189, 186, 0.03);
     position: relative;
 }
 
-.main-panel::before,
+.side-panel {
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    border-radius: 12px;
+    background: rgba(10, 20, 20, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow:
+        0 0 40px rgba(0, 0, 0, 0.6),
+        0 0 20px rgba(56, 189, 186, 0.1),
+        inset 0 0 30px rgba(56, 189, 186, 0.02);
+    position: relative;
+}
+
+.main-panel::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg,
+        rgba(56, 189, 186, 0.05) 0%,
+        transparent 50%,
+        rgba(56, 189, 186, 0.05) 100%
+    );
+    z-index: -1;
+    pointer-events: none;
+}
+
 .side-panel::before {
     content: '';
     position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     background: linear-gradient(45deg,
-        rgba(163, 230, 53, 0.1) 0%,
+        rgba(56, 189, 186, 0.05) 0%,
         transparent 50%,
-        rgba(192, 132, 252, 0.1) 100%
+        rgba(56, 189, 186, 0.05) 100%
     );
     z-index: -1;
     pointer-events: none;
@@ -715,13 +807,13 @@ onMounted(() => {
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.025em;
-    color: var(--color-accent);
-    background: rgba(163, 230, 53, 0.08);
-    border: 3px solid rgba(163, 230, 53, 0.5);
-    border-radius: 0px;
+    color: #38bdb8;
+    background: rgba(56, 189, 186, 0.08);
+    border: 3px solid rgba(56, 189, 186, 0.5);
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
-    box-shadow: 8px 8px 0px rgba(163, 230, 53, 0.3);
+    box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -729,16 +821,16 @@ onMounted(() => {
 }
 
 .primary-button:hover:not(:disabled) {
-    background: rgba(163, 230, 53, 0.12);
-    border-color: rgba(163, 230, 53, 0.7);
-    box-shadow: 12px 12px 0px rgba(163, 230, 53, 0.4);
-    transform: translate(-4px, -4px);
+    background: rgba(56, 189, 186, 0.12);
+    border-color: rgba(56, 189, 186, 0.7);
+    box-shadow: 6px 6px 0px rgba(56, 189, 186, 0.3);
+    transform: translate(-2px, -2px);
     color: #fff;
 }
 
 .primary-button:active:not(:disabled) {
-    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.3);
-    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0px rgba(56, 189, 186, 0.2);
+    transform: translate(2px, 2px);
 }
 
 .primary-button:disabled {
@@ -779,40 +871,67 @@ onMounted(() => {
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
+    position: relative;
+    min-height: 0; /* Allow flex child to shrink */
+    overflow: hidden;
 }
 
-.table-header {
-    font-weight: 500;
-    letter-spacing: 0.025em;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-    padding: 0 1rem;
-    color: var(--color-text);
+.game-info-overlay {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 10;
 }
 
-.closing-brace {
-    font-size: 0.875rem;
-    color: var(--color-text);
-    padding: 1rem 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+.game-controls-overlay {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 10;
 }
 
-.game-state-header {
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 0.875rem;
-    background: rgba(0, 0, 0, 0.2);
+.game-info-container {
+    padding: 0.75rem 1rem;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 1rem;
 }
 
-.status-row {
+.game-info-box {
+    border: 2px solid rgba(56, 189, 186, 0.5);
+    background: rgba(10, 20, 20, 0.9);
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-width: clamp(220px, 25vw, 320px);
+    border-radius: 8px;
+    box-shadow:
+        0 0 20px rgba(56, 189, 186, 0.2),
+        0 0 40px rgba(56, 189, 186, 0.1),
+        inset 0 0 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+}
+
+.game-info-box.game-complete {
+    border-color: rgba(56, 189, 186, 0.6);
+    background: rgba(56, 189, 186, 0.05);
+    box-shadow: 0 0 20px rgba(56, 189, 186, 0.2);
+}
+
+.game-controls-row {
     display: flex;
     align-items: center;
-    gap: 2rem;
-    flex-wrap: wrap;
+}
+
+.game-info-container.compact {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.game-info-container.compact .game-info-box {
+    width: 100%;
 }
 
 /* Side Panel */
@@ -820,25 +939,22 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
+/* Fixed height panels for activity log and reasoning */
+.activity-log-fixed {
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
     overflow-y: auto;
+    flex-shrink: 0;
 }
 
-.game-state-header.compact {
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.game-state-header.compact .status-row {
-    justify-content: center;
-}
-
-.game-state-header.game-complete {
-    border-bottom: none;
-    background: rgba(163, 230, 53, 0.05);
-    box-shadow:
-        0 4px 30px rgba(163, 230, 53, 0.3),
-        0 0 60px rgba(163, 230, 53, 0.15),
-        inset 0 0 30px rgba(163, 230, 53, 0.08);
+.reasoning-fixed {
+    flex: 1;
+    min-height: 150px;
+    overflow-y: auto;
 }
 
 .new-game-button {
@@ -846,28 +962,28 @@ onMounted(() => {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.5rem;
-    background: rgba(163, 230, 53, 0.1);
-    border: 2px solid rgba(163, 230, 53, 0.4);
-    color: var(--color-accent);
+    background: rgba(56, 189, 186, 0.1);
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    color: #38bdb8;
     font-family: "Courier New", monospace;
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     border-radius: 0;
-    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.2);
+    box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.2);
 }
 
 .new-game-button:hover {
-    background: rgba(163, 230, 53, 0.2);
-    border-color: rgba(163, 230, 53, 0.6);
+    background: rgba(56, 189, 186, 0.2);
+    border-color: rgba(56, 189, 186, 0.6);
     color: #fff;
-    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.3);
+    box-shadow: 6px 6px 0px rgba(56, 189, 186, 0.3);
     transform: translate(-2px, -2px);
 }
 
 .new-game-button:active {
-    box-shadow: 2px 2px 0px rgba(163, 230, 53, 0.2);
+    box-shadow: 2px 2px 0px rgba(56, 189, 186, 0.2);
     transform: translate(2px, 2px);
 }
 
@@ -886,59 +1002,55 @@ onMounted(() => {
 
 .history-section,
 .history-section-inline {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     flex-shrink: 0;
 }
 
-.history-section {
-    align-items: flex-start;
-}
-
 .history-button {
-    width: 100%;
-    max-width: 300px;
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     font-family: "Courier New", monospace;
-    font-size: 0.9375rem;
-    font-weight: 600;
+    font-size: 0.875rem;
+    font-weight: 500;
     letter-spacing: 0.025em;
-    color: var(--color-accent);
-    background: rgba(163, 230, 53, 0.08);
-    border: 2px solid rgba(163, 230, 53, 0.4);
-    border-radius: 0px;
+    color: #38bdb8;
+    background: rgba(56, 189, 186, 0.05);
+    border: 2px solid rgba(56, 189, 186, 0.3);
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
-    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.25);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 .history-button:hover {
-    background: rgba(163, 230, 53, 0.15);
-    border-color: rgba(163, 230, 53, 0.6);
-    box-shadow: 8px 8px 0px rgba(163, 230, 53, 0.35);
-    transform: translate(-2px, -2px);
+    background: rgba(56, 189, 186, 0.1);
+    border-color: rgba(56, 189, 186, 0.5);
     color: #fff;
 }
 
 .history-button:active {
-    box-shadow: 3px 3px 0px rgba(163, 230, 53, 0.25);
-    transform: translate(3px, 3px);
+    background: rgba(56, 189, 186, 0.15);
 }
 
 .history-button .badge {
-    background: rgba(163, 230, 53, 0.2);
-    border: 1px solid rgba(163, 230, 53, 0.4);
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.875rem;
-    font-weight: bold;
-    min-width: 32px;
+    background: rgba(56, 189, 186, 0.15);
+    border: 1px solid rgba(56, 189, 186, 0.3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 24px;
     text-align: center;
+}
+
+.cursor-prompt {
+    font-family: "Courier New", monospace;
+    color: #38bdb8;
+    font-weight: 600;
 }
 
 /* Game Controls */

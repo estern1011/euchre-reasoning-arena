@@ -61,8 +61,8 @@ defineEmits<{
 }
 
 .play-next-button {
-    background: rgba(163, 230, 53, 0.1);
-    border: 2px solid rgba(163, 230, 53, 0.3);
+    background: rgba(56, 189, 186, 0.1);
+    border: 2px solid rgba(56, 189, 186, 0.3);
     color: var(--color-accent);
     padding: 0.5rem 1rem;
     border-radius: 2px;
@@ -77,9 +77,9 @@ defineEmits<{
 }
 
 .play-next-button:hover:not(:disabled) {
-    background: rgba(163, 230, 53, 0.15);
-    border-color: rgba(163, 230, 53, 0.5);
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.2);
+    background: rgba(56, 189, 186, 0.15);
+    border-color: rgba(56, 189, 186, 0.5);
+    box-shadow: 0 0 20px rgba(56, 189, 186, 0.2);
 }
 
 .play-next-button:disabled {

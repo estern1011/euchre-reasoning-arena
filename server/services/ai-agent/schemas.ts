@@ -33,17 +33,12 @@ export const TrumpBidRound1Schema = z.object({
 });
 
 // Round 2: Can call_trump (with suit) or pass (no suit)
-const TrumpBidRound2PassSchema = z.object({
-  reasoning: z.string().describe("Your analysis of why you are passing"),
-  action: z.literal("pass"),
-  goingAlone: z.literal(false),
-});
-
-const TrumpBidRound2CallSchema = z.object({
-  reasoning: z.string().describe("Your analysis of your hand and why you chose this trump suit"),
-  action: z.literal("call_trump"),
-  suit: z.enum(SUITS).describe("The suit to call as trump"),
-  goingAlone: z.boolean().describe("Whether to go alone without your partner"),
+// Using single object schema since AI Gateway doesn't support z.union() at top level
+export const TrumpBidRound2Schema = z.object({
+  reasoning: z.string().describe("Your analysis of your hand and decision"),
+  action: z.enum(["pass", "call_trump"]).describe("Your bidding decision"),
+  suit: z.enum(SUITS).optional().describe("The suit to call as trump (required if action is call_trump)"),
+  goingAlone: z.boolean().describe("Whether to go alone without your partner (must be false if passing)"),
 });
 
 // Round 2 dealer (must call - cannot pass)
@@ -53,8 +48,6 @@ export const TrumpBidRound2DealerSchema = z.object({
   suit: z.enum(SUITS).describe("The suit to call as trump"),
   goingAlone: z.boolean().describe("Whether to go alone without your partner"),
 });
-
-export const TrumpBidRound2Schema = z.union([TrumpBidRound2PassSchema, TrumpBidRound2CallSchema]);
 
 export type TrumpBidRound1Response = z.infer<typeof TrumpBidRound1Schema>;
 export type TrumpBidRound2Response = z.infer<typeof TrumpBidRound2Schema>;
@@ -68,20 +61,13 @@ export type TrumpBidRound2DealerResponse = z.infer<typeof TrumpBidRound2DealerSc
 export function createRound2SchemaExcludingSuit(excludedSuit: Suit) {
   const allowedSuits = SUITS.filter((s) => s !== excludedSuit) as [string, ...string[]];
 
-  const passSchema = z.object({
-    reasoning: z.string().describe("Your analysis of why you are passing"),
-    action: z.literal("pass"),
-    goingAlone: z.literal(false),
+  // Single object schema - AI Gateway doesn't support z.union() at top level
+  return z.object({
+    reasoning: z.string().describe("Your analysis of your hand and decision"),
+    action: z.enum(["pass", "call_trump"]).describe("Your bidding decision"),
+    suit: z.enum(allowedSuits).optional().describe(`The suit to call as trump (required if action is call_trump, cannot be ${excludedSuit})`),
+    goingAlone: z.boolean().describe("Whether to go alone without your partner (must be false if passing)"),
   });
-
-  const callSchema = z.object({
-    reasoning: z.string().describe("Your analysis of your hand and why you chose this trump suit"),
-    action: z.literal("call_trump"),
-    suit: z.enum(allowedSuits).describe(`The suit to call as trump (cannot be ${excludedSuit})`),
-    goingAlone: z.boolean().describe("Whether to go alone without your partner"),
-  });
-
-  return z.union([passSchema, callSchema]);
 }
 
 /** Create a Round 2 dealer schema that excludes the turned-down suit */

@@ -6,7 +6,8 @@
             :suit="card.suit"
             :rank="card.rank"
             :faceDown="false"
-            size="sm"
+            :active="isActive"
+            size="xs"
         />
     </div>
 </template>
@@ -18,15 +19,17 @@ import type { Card as CardType } from "~/types/game";
 interface Props {
     cards: CardType[];
     orientation: 'horizontal' | 'vertical';
+    isActive?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    isActive: false,
+});
 </script>
 
 <style scoped>
 .hand-cards {
     display: flex;
-    gap: clamp(1px, 0.3vh, 2px);
     justify-content: center;
     flex-wrap: nowrap;
 }
@@ -35,8 +38,26 @@ defineProps<Props>();
     flex-direction: row;
 }
 
+/* Overlap effect for horizontal cards */
+.hand-cards.horizontal :deep(.playing-card) {
+    margin-left: -20px;
+}
+
+.hand-cards.horizontal :deep(.playing-card:first-child) {
+    margin-left: 0;
+}
+
 .hand-cards.vertical {
     flex-direction: column;
     align-items: center;
+}
+
+/* Overlap effect for vertical cards */
+.hand-cards.vertical :deep(.playing-card) {
+    margin-top: -45px;
+}
+
+.hand-cards.vertical :deep(.playing-card:first-child) {
+    margin-top: 0;
 }
 </style>

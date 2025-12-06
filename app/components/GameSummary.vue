@@ -4,6 +4,9 @@
             <h2 class="summary-title">
                 <span class="keyword">const</span> gameSummary = <span class="bracket">{</span>
             </h2>
+            <button class="new-game-btn" @click="handleNewGame">
+                newGame() →
+            </button>
         </div>
 
         <div class="rankings-section">
@@ -36,12 +39,13 @@
                             <span class="stat-value">{{ stat.winRate }}%</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">called_trump:</span>
-                            <span class="stat-value boolean">{{ stat.calledTrump }}</span>
+                            <span class="stat-label">trump_calls:</span>
+                            <span class="stat-value">{{ stat.trumpCalls }}</span>
+                            <span v-if="stat.trumpCalls > 0" class="stat-detail">({{ stat.trumpCallSuccessRate }}% won)</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">went_alone:</span>
-                            <span class="stat-value boolean">{{ stat.wentAlone }}</span>
+                            <span class="stat-label">alone:</span>
+                            <span class="stat-value">{{ stat.aloneAttempts }}</span>
                         </div>
                     </div>
                 </div>
@@ -72,6 +76,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { GameState, Position } from '~/types/game';
+import { useGameStore, type HandResult } from '~/stores/game';
+
+const emit = defineEmits<{
+    newGame: []
+}>();
+
+const handleNewGame = () => {
+    emit('newGame');
+};
 
 interface Props {
     gameState: GameState;
@@ -79,6 +92,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const gameStore = useGameStore();
 
 interface PlayerStats {
     position: Position;
@@ -87,8 +101,10 @@ interface PlayerStats {
     tricksWon: number;
     totalTricks: number;
     winRate: number;
-    calledTrump: boolean;
-    wentAlone: boolean;
+    trumpCalls: number;
+    trumpCallWins: number;
+    trumpCallSuccessRate: number;
+    aloneAttempts: number;
     isWinningTeam: boolean;
 }
 
@@ -99,19 +115,30 @@ const winnerTeamName = computed(() => {
 
 const gameScores = computed(() => props.gameState.gameScores);
 
-// Calculate player statistics
+// Calculate player statistics from hand history
 const playerStats = computed((): PlayerStats[] => {
     const stats: PlayerStats[] = [];
     const winningTeam = props.gameState.gameScores[0] > props.gameState.gameScores[1] ? 0 : 1;
+    const handHistory = gameStore.handHistory;
 
     for (const player of props.gameState.players) {
-        // Count tricks won by this player
+        // Count tricks won by this player (from last hand only - completedTricks is per hand)
         const tricksWon = props.gameState.completedTricks.filter(
             trick => trick.winner === player.position
         ).length;
 
         const totalTricks = props.gameState.completedTricks.length;
         const winRate = totalTricks > 0 ? Math.round((tricksWon / totalTricks) * 100) : 0;
+
+        // Count trump calls and success rate from hand history
+        const trumpCalls = handHistory.filter(h => h.trumpCaller === player.position).length;
+        const trumpCallWins = handHistory.filter(
+            h => h.trumpCaller === player.position && h.callingTeam === h.winningTeam
+        ).length;
+        const trumpCallSuccessRate = trumpCalls > 0 ? Math.round((trumpCallWins / trumpCalls) * 100) : 0;
+
+        // Count alone attempts
+        const aloneAttempts = handHistory.filter(h => h.goingAlone === player.position).length;
 
         // Get short model name
         const modelId = props.modelIds[player.position];
@@ -125,8 +152,10 @@ const playerStats = computed((): PlayerStats[] => {
             tricksWon,
             totalTricks,
             winRate,
-            calledTrump: props.gameState.trumpCaller === player.position,
-            wentAlone: props.gameState.goingAlone === player.position,
+            trumpCalls,
+            trumpCallWins,
+            trumpCallSuccessRate,
+            aloneAttempts,
             isWinningTeam: player.team === winningTeam,
         });
     }
@@ -158,8 +187,28 @@ const rankedPlayers = computed(() => {
 
 .summary-header {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     gap: 1rem;
+}
+
+.new-game-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 2px solid rgba(56, 189, 186, 0.5);
+    color: var(--color-accent);
+    font-family: "Courier New", monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.new-game-btn:hover {
+    background: rgba(56, 189, 186, 0.15);
+    border-color: rgba(56, 189, 186, 0.8);
+    box-shadow: 0 0 15px rgba(56, 189, 186, 0.3);
 }
 
 .summary-title {
@@ -220,8 +269,8 @@ const rankedPlayers = computed(() => {
 }
 
 .player-stat-card.winner-team {
-    border-color: rgba(163, 230, 53, 0.5);
-    background: rgba(163, 230, 53, 0.05);
+    border-color: rgba(56, 189, 186, 0.5);
+    background: rgba(56, 189, 186, 0.05);
 }
 
 .rank-badge {
@@ -230,8 +279,8 @@ const rankedPlayers = computed(() => {
     justify-content: center;
     width: 3rem;
     height: 3rem;
-    background: rgba(163, 230, 53, 0.15);
-    border: 2px solid rgba(163, 230, 53, 0.4);
+    background: rgba(56, 189, 186, 0.15);
+    border: 2px solid rgba(56, 189, 186, 0.4);
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--color-accent);
@@ -239,8 +288,8 @@ const rankedPlayers = computed(() => {
 }
 
 .player-stat-card.winner-team .rank-badge {
-    background: rgba(163, 230, 53, 0.25);
-    border-color: rgba(163, 230, 53, 0.6);
+    background: rgba(56, 189, 186, 0.25);
+    border-color: rgba(56, 189, 186, 0.6);
 }
 
 .player-info {
@@ -271,8 +320,8 @@ const rankedPlayers = computed(() => {
 }
 
 .player-stat-card.winner-team .team-badge {
-    background: rgba(163, 230, 53, 0.2);
-    border-color: rgba(163, 230, 53, 0.5);
+    background: rgba(56, 189, 186, 0.2);
+    border-color: rgba(56, 189, 186, 0.5);
     color: var(--color-accent);
 }
 
@@ -304,9 +353,10 @@ const rankedPlayers = computed(() => {
     font-weight: 600;
 }
 
-.stat-value.boolean {
-    color: #c084fc;
-    font-style: italic;
+.stat-detail {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
 }
 
 .judge-section {

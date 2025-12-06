@@ -51,7 +51,7 @@ const modelValue = defineModel<string>();
 <style scoped>
 .model-select-trigger {
     background: rgba(10, 10, 10, 0.8);
-    border: 2px solid rgba(163, 230, 53, 0.4);
+    border: 2px solid rgba(56, 189, 186, 0.4);
     border-radius: 0;
     color: #fff;
     font-family: "Courier New", monospace;
@@ -65,13 +65,13 @@ const modelValue = defineModel<string>();
     justify-content: space-between;
     gap: 0.5rem;
     transition: all 0.15s ease;
-    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.15);
+    box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.15);
 }
 
 .model-select-trigger:hover {
-    background: rgba(163, 230, 53, 0.05);
-    border-color: rgba(163, 230, 53, 0.6);
-    box-shadow: 6px 6px 0px rgba(163, 230, 53, 0.25);
+    background: rgba(56, 189, 186, 0.05);
+    border-color: rgba(56, 189, 186, 0.6);
+    box-shadow: 6px 6px 0px rgba(56, 189, 186, 0.25);
     transform: translate(-2px, -2px);
 }
 
@@ -79,8 +79,8 @@ const modelValue = defineModel<string>();
     outline: none;
     border-color: var(--color-accent);
     box-shadow:
-        6px 6px 0px rgba(163, 230, 53, 0.3),
-        0 0 0 3px rgba(163, 230, 53, 0.2);
+        6px 6px 0px rgba(56, 189, 186, 0.3),
+        0 0 0 3px rgba(56, 189, 186, 0.2);
 }
 
 .model-select-icon {

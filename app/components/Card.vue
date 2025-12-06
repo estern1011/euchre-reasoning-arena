@@ -48,9 +48,10 @@ interface Props {
     suit: "hearts" | "diamonds" | "clubs" | "spades";
     rank: "9" | "10" | "jack" | "queen" | "king" | "ace";
     faceDown?: boolean;
-    size?: "sm" | "md" | "lg";
+    size?: "xs" | "sm" | "md" | "lg";
     selectable?: boolean;
     selected?: boolean;
+    active?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -58,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
     size: "md",
     selectable: false,
     selected: false,
+    active: false,
 });
 
 const emit = defineEmits<{
@@ -109,6 +111,10 @@ const cardClasses = computed(() => {
         classes.push('selected');
     }
 
+    if (props.active) {
+        classes.push('active-player');
+    }
+
     return classes;
 });
 
@@ -134,24 +140,32 @@ const handleClick = () => {
 
 <style scoped>
 .playing-card {
-    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+    background: linear-gradient(135deg, #0d1414 0%, #080f0f 100%);
     border-radius: 6px;
-    border: 2px solid rgba(0, 0, 0, 0.2);
+    border: 2px solid;
     position: relative;
-    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.15);
     font-family: "Courier New", Consolas, Monaco, monospace;
     transition: all 0.2s ease;
     cursor: default;
+    box-shadow:
+        2px 2px 8px rgba(0, 0, 0, 0.6),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Fixed pixel sizes - scaling handled by parent container */
+.playing-card.size-xs {
+    width: 50px;
+    height: 70px;
 }
 
 .playing-card.size-sm {
-    width: clamp(35px, 5vh, 60px);
-    height: clamp(49px, 7vh, 84px);
+    width: 65px;
+    height: 91px;
 }
 
 .playing-card.size-md {
-    width: clamp(50px, 7vh, 80px);
-    height: clamp(70px, 9.8vh, 112px);
+    width: 80px;
+    height: 112px;
 }
 
 .playing-card.size-lg {
@@ -165,32 +179,55 @@ const handleClick = () => {
 
 .playing-card.selectable:hover,
 .playing-card.selectable:focus {
-    transform: scale(1.1) translateY(-8px);
+    transform: scale(1.05) translateY(-8px);
     box-shadow:
-        6px 6px 0px rgba(0, 0, 0, 0.2),
-        0 0 30px rgba(163, 230, 53, 0.4);
+        4px 4px 12px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(56, 189, 186, 0.3);
     outline: none;
 }
 
 .playing-card.selectable:focus-visible {
-    outline: 3px solid rgba(163, 230, 53, 0.8);
+    outline: 3px solid rgba(56, 189, 186, 0.8);
     outline-offset: 2px;
 }
 
 .playing-card.selected {
-    transform: scale(1.1) translateY(-8px);
+    transform: scale(1.05) translateY(-8px);
     box-shadow:
-        6px 6px 0px rgba(163, 230, 53, 0.3),
-        0 0 40px rgba(163, 230, 53, 0.6);
-    border-color: rgba(163, 230, 53, 0.8);
+        4px 4px 12px rgba(0, 0, 0, 0.3),
+        0 0 25px rgba(56, 189, 186, 0.5);
+    border-color: rgba(56, 189, 186, 0.8);
 }
 
 .playing-card.red {
-    color: #dc2626;
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.6);
 }
 
 .playing-card.black {
-    color: #1f2937;
+    color: #38bdb8;
+    border-color: rgba(56, 189, 186, 0.6);
+}
+
+/* Active player glow - cyan for current player's cards */
+.playing-card.active-player {
+    border-color: #38bdb8;
+    box-shadow:
+        0 0 10px rgba(56, 189, 186, 0.9),
+        0 0 20px rgba(56, 189, 186, 0.6),
+        0 0 35px rgba(56, 189, 186, 0.4),
+        0 0 50px rgba(56, 189, 186, 0.2),
+        inset 0 0 15px rgba(56, 189, 186, 0.1);
+}
+
+.playing-card.active-player.red {
+    color: #38bdb8;
+    border-color: #38bdb8;
+}
+
+.playing-card.active-player.black {
+    color: #38bdb8;
+    border-color: #38bdb8;
 }
 
 .card-corner {
@@ -223,12 +260,20 @@ const handleClick = () => {
     margin-top: 1px;
 }
 
+.size-xs .rank {
+    font-size: 10px;
+}
+
+.size-xs .suit {
+    font-size: 8px;
+}
+
 .size-sm .rank {
-    font-size: clamp(8px, 1.8vh, 12px);
+    font-size: 12px;
 }
 
 .size-sm .suit {
-    font-size: clamp(7px, 1.5vh, 10px);
+    font-size: 10px;
 }
 
 .size-lg .rank {
@@ -252,27 +297,29 @@ const handleClick = () => {
     line-height: 1;
 }
 
+.size-xs .suit-large {
+    font-size: 22px;
+}
+
 .size-sm .suit-large {
-    font-size: clamp(20px, 4vh, 28px);
+    font-size: 28px;
 }
 
 .size-lg .suit-large {
     font-size: 44px;
 }
 
-/* Card back */
+/* Card back - wireframe style */
 .card-back {
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
-    border-color: rgba(163, 230, 53, 0.5);
+    background: linear-gradient(135deg, #0a1212 0%, #060d0d 100%);
+    border-color: rgba(56, 189, 186, 0.25);
     box-shadow:
-        4px 4px 0px rgba(163, 230, 53, 0.2),
-        0 0 20px rgba(163, 230, 53, 0.1);
+        2px 2px 8px rgba(0, 0, 0, 0.5),
+        inset 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .card-back:hover {
-    box-shadow:
-        6px 6px 0px rgba(163, 230, 53, 0.3),
-        0 0 30px rgba(163, 230, 53, 0.2);
+    border-color: rgba(56, 189, 186, 0.35);
 }
 
 .card-back-content {
@@ -287,26 +334,28 @@ const handleClick = () => {
 
 .card-back-pattern {
     position: absolute;
-    inset: 8px;
-    border: 2px solid rgba(163, 230, 53, 0.2);
+    inset: 6px;
+    border: 1px solid rgba(56, 189, 186, 0.2);
     border-radius: 2px;
-    opacity: 0.3;
 }
 
 .card-back-inner-border {
     position: absolute;
-    inset: 12px;
-    border: 1px solid rgba(163, 230, 53, 0.15);
+    inset: 10px;
+    border: 1px dashed rgba(56, 189, 186, 0.15);
     border-radius: 2px;
-    opacity: 0.2;
 }
 
 .card-back-icon {
-    font-size: 40px;
+    font-size: 32px;
     opacity: 0.25;
-    color: var(--color-accent);
+    color: rgba(56, 189, 186, 0.6);
     position: relative;
     z-index: 1;
+}
+
+.size-xs .card-back-icon {
+    font-size: 22px;
 }
 
 .size-sm .card-back-icon {
@@ -321,17 +370,17 @@ const handleClick = () => {
 .selectable-overlay {
     position: absolute;
     inset: 0;
-    border-radius: 4px;
-    background: rgba(163, 230, 53, 0);
+    border-radius: 8px;
+    background: rgba(56, 189, 186, 0);
     transition: background 0.2s ease;
     pointer-events: none;
 }
 
 .selectable:hover .selectable-overlay {
-    background: rgba(163, 230, 53, 0.15);
+    background: rgba(56, 189, 186, 0.1);
 }
 
 .selected .selectable-overlay {
-    background: rgba(163, 230, 53, 0.2);
+    background: rgba(56, 189, 186, 0.15);
 }
 </style>

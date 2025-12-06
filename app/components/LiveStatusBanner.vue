@@ -21,45 +21,50 @@ const isGameComplete = computed(() => gameStore.isGameComplete);
 <style scoped>
 .status-banner {
     display: inline-flex;
-    align-items: center;
-    padding: 0.75rem 1.25rem;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(107, 114, 128, 0.3);
-    border-radius: 0;
+    align-items: flex-start;
+    padding: 0.5rem 0.75rem;
+    background: rgba(10, 20, 20, 0.9);
+    border: 2px solid rgba(56, 189, 186, 0.3);
+    border-radius: 6px;
     font-family: "Courier New", monospace;
     transition: all 0.3s ease;
+    width: 100%;
+    max-width: 100%;
+    min-height: 60px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(56, 189, 186, 0.1);
 }
 
 .status-banner.is-streaming {
-    border-color: rgba(163, 230, 53, 0.6);
-    background: rgba(163, 230, 53, 0.08);
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.2);
+    border-color: rgba(56, 189, 186, 0.6);
+    background: rgba(56, 189, 186, 0.08);
+    box-shadow: 0 0 20px rgba(56, 189, 186, 0.2);
 }
 
 .status-banner.is-game-over {
-    border-color: rgba(163, 230, 53, 0.8);
-    background: rgba(163, 230, 53, 0.15);
+    border-color: rgba(56, 189, 186, 0.8);
+    background: rgba(56, 189, 186, 0.15);
     box-shadow:
-        0 0 30px rgba(163, 230, 53, 0.4),
-        0 0 60px rgba(163, 230, 53, 0.2),
-        inset 0 0 20px rgba(163, 230, 53, 0.1);
+        0 0 30px rgba(56, 189, 186, 0.4),
+        0 0 60px rgba(56, 189, 186, 0.2),
+        inset 0 0 20px rgba(56, 189, 186, 0.1);
     animation: game-over-glow 2s ease-in-out infinite;
 }
 
 @keyframes game-over-glow {
     0%, 100% {
         box-shadow:
-            0 0 30px rgba(163, 230, 53, 0.4),
-            0 0 60px rgba(163, 230, 53, 0.2),
-            inset 0 0 20px rgba(163, 230, 53, 0.1);
-        border-color: rgba(163, 230, 53, 0.8);
+            0 0 30px rgba(56, 189, 186, 0.4),
+            0 0 60px rgba(56, 189, 186, 0.2),
+            inset 0 0 20px rgba(56, 189, 186, 0.1);
+        border-color: rgba(56, 189, 186, 0.8);
     }
     50% {
         box-shadow:
-            0 0 40px rgba(163, 230, 53, 0.6),
-            0 0 80px rgba(163, 230, 53, 0.3),
-            inset 0 0 30px rgba(163, 230, 53, 0.15);
-        border-color: rgba(163, 230, 53, 1);
+            0 0 40px rgba(56, 189, 186, 0.6),
+            0 0 80px rgba(56, 189, 186, 0.3),
+            inset 0 0 30px rgba(56, 189, 186, 0.15);
+        border-color: rgba(56, 189, 186, 1);
     }
 }
 
@@ -72,7 +77,7 @@ const isGameComplete = computed(() => gameStore.isGameComplete);
 .status-dot {
     width: 8px;
     height: 8px;
-    background: var(--color-accent);
+    background: #38bdb8;
     border-radius: 50%;
     animation: pulse 1.5s ease-in-out infinite;
 }
@@ -89,20 +94,26 @@ const isGameComplete = computed(() => gameStore.isGameComplete);
 }
 
 .status-text {
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     letter-spacing: 0.025em;
     color: var(--color-text);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .status-banner.is-streaming .status-text {
-    color: var(--color-accent);
+    color: #38bdb8;
 }
 
 .status-banner.is-game-over .status-text {
     color: #fff;
     font-weight: 600;
     font-size: 1.0625rem;
-    text-shadow: 0 0 10px rgba(163, 230, 53, 0.6);
+    text-shadow: 0 0 10px rgba(56, 189, 186, 0.6);
 }
 </style>

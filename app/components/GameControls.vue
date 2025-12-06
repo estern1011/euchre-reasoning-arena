@@ -57,16 +57,17 @@ const buttonText = computed(() => {
 <style scoped>
 .controls-container {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
 }
 
 .auto-mode-button {
-    background: rgba(75, 85, 99, 0.2);
-    border: 2px solid rgba(75, 85, 99, 0.4);
+    background: rgba(56, 189, 186, 0.1);
+    border: 2px solid rgba(56, 189, 186, 0.3);
     color: var(--color-text-muted);
     padding: 0.5rem 0.875rem;
-    border-radius: 2px;
+    border-radius: 6px;
     font-family: "Courier New", monospace;
     font-size: 0.8125rem;
     cursor: pointer;
@@ -78,19 +79,19 @@ const buttonText = computed(() => {
 }
 
 .auto-mode-button:hover:not(:disabled) {
-    background: rgba(75, 85, 99, 0.3);
-    border-color: rgba(75, 85, 99, 0.6);
+    background: rgba(56, 189, 186, 0.15);
+    border-color: rgba(56, 189, 186, 0.5);
 }
 
 .auto-mode-button.active {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
-    color: var(--color-live);
+    background: rgba(56, 189, 186, 0.2);
+    border-color: rgba(56, 189, 186, 0.6);
+    color: #38bdb8;
 }
 
 .auto-mode-button.active:hover:not(:disabled) {
-    background: rgba(59, 130, 246, 0.3);
-    border-color: rgba(59, 130, 246, 0.7);
+    background: rgba(56, 189, 186, 0.25);
+    border-color: rgba(56, 189, 186, 0.7);
 }
 
 .auto-mode-button:disabled {
@@ -104,7 +105,7 @@ const buttonText = computed(() => {
 }
 
 .auto-mode-button.active .toggle-indicator {
-    color: var(--color-live);
+    color: #38bdb8;
     animation: pulse 2s ease-in-out infinite;
 }
 
@@ -114,11 +115,11 @@ const buttonText = computed(() => {
 }
 
 .play-next-button {
-    background: rgba(163, 230, 53, 0.1);
-    border: 2px solid rgba(163, 230, 53, 0.3);
-    color: var(--color-accent);
+    background: rgba(56, 189, 186, 0.1);
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    color: #38bdb8;
     padding: 0.5rem 1rem;
-    border-radius: 2px;
+    border-radius: 6px;
     font-family: "Courier New", monospace;
     font-size: 0.875rem;
     cursor: pointer;
@@ -130,9 +131,9 @@ const buttonText = computed(() => {
 }
 
 .play-next-button:hover:not(:disabled) {
-    background: rgba(163, 230, 53, 0.15);
-    border-color: rgba(163, 230, 53, 0.5);
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.2);
+    background: rgba(56, 189, 186, 0.15);
+    border-color: rgba(56, 189, 186, 0.6);
+    box-shadow: 0 0 15px rgba(56, 189, 186, 0.2);
 }
 
 .play-next-button:disabled {

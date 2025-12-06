@@ -1,34 +1,34 @@
 <template>
-    <div class="card-table">
-        <!-- North Position (name above, cards below) -->
-        <div class="player-position north" :class="{ 'is-thinking': isCurrentPlayer('north'), 'sitting-out': isSittingOut('north') }">
-            <PlayerInfo
-                position="north"
-                :model-name="formattedModels.north"
-                :is-thinking="isCurrentPlayer('north') && isStreaming"
-                :is-going-alone="goingAlone === 'north'"
-                :is-dealer="dealer === 'north'"
-            />
-            <PlayerHand :cards="playerHands.north" orientation="horizontal" />
-        </div>
+    <div class="board-scaler" ref="boardScaler">
+        <div class="card-table" :style="{ transform: `scale(${scale})` }">
+            <!-- North Position (top center) -->
+            <div class="player-position north" :class="{ 'is-thinking': isCurrentPlayer('north'), 'sitting-out': isSittingOut('north') }">
+                <PlayerPlaque
+                    position="north"
+                    :model-name="formattedModels.north"
+                    :is-thinking="isCurrentPlayer('north') && isStreaming"
+                    :is-dealer="dealer === 'north'"
+                    :tricks-won="tricksWon?.north ?? 0"
+                />
+                <PlayerHand :cards="playerHands.north" orientation="horizontal" :is-active="isCurrentPlayer('north')" />
+            </div>
 
-        <!-- West Position -->
-        <div class="player-position west" :class="{ 'is-thinking': isCurrentPlayer('west'), 'sitting-out': isSittingOut('west') }">
-            <PlayerInfo
-                position="west"
-                :model-name="formattedModels.west"
-                :is-thinking="isCurrentPlayer('west') && isStreaming"
-                :is-going-alone="goingAlone === 'west'"
-                :is-dealer="dealer === 'west'"
-            />
-            <PlayerHand :cards="playerHands.west" orientation="vertical" />
-        </div>
+            <!-- West Position (left side) -->
+            <div class="player-position west" :class="{ 'is-thinking': isCurrentPlayer('west'), 'sitting-out': isSittingOut('west') }">
+                <PlayerPlaque
+                    position="west"
+                    :model-name="formattedModels.west"
+                    :is-thinking="isCurrentPlayer('west') && isStreaming"
+                    :is-dealer="dealer === 'west'"
+                    :tricks-won="tricksWon?.west ?? 0"
+                />
+                <PlayerHand :cards="playerHands.west" orientation="vertical" :is-active="isCurrentPlayer('west')" />
+            </div>
 
-        <!-- Center Area with Diamond Formation -->
-        <div class="center-area">
-            <!-- Played Cards Diamond -->
-            <div v-if="hasAnyPlayedCard" class="played-cards-diamond">
-                <div class="diamond-north">
+            <!-- Center Area - played cards diamond -->
+            <div class="center-area">
+                <!-- North played card -->
+                <div class="played-card played-north">
                     <Card
                         v-if="playedCards.north"
                         :suit="playedCards.north.suit"
@@ -36,25 +36,35 @@
                         size="md"
                     />
                 </div>
-                <div class="diamond-middle">
-                    <div class="diamond-west">
-                        <Card
-                            v-if="playedCards.west"
-                            :suit="playedCards.west.suit"
-                            :rank="playedCards.west.rank"
-                            size="md"
-                        />
-                    </div>
-                    <div class="diamond-east">
-                        <Card
-                            v-if="playedCards.east"
-                            :suit="playedCards.east.suit"
-                            :rank="playedCards.east.rank"
-                            size="md"
-                        />
-                    </div>
+                <!-- West played card -->
+                <div class="played-card played-west">
+                    <Card
+                        v-if="playedCards.west"
+                        :suit="playedCards.west.suit"
+                        :rank="playedCards.west.rank"
+                        size="md"
+                    />
                 </div>
-                <div class="diamond-south">
+                <!-- Center: turned up card during trump selection -->
+                <div v-if="turnedUpCard && !hasAnyPlayedCard" class="turned-up-card-display">
+                    <div class="card-label">// turned_up</div>
+                    <Card
+                        :suit="turnedUpCard.suit"
+                        :rank="turnedUpCard.rank"
+                        size="md"
+                    />
+                </div>
+                <!-- East played card -->
+                <div class="played-card played-east">
+                    <Card
+                        v-if="playedCards.east"
+                        :suit="playedCards.east.suit"
+                        :rank="playedCards.east.rank"
+                        size="md"
+                    />
+                </div>
+                <!-- South played card -->
+                <div class="played-card played-south">
                     <Card
                         v-if="playedCards.south"
                         :suit="playedCards.south.suit"
@@ -64,49 +74,69 @@
                 </div>
             </div>
 
-            <!-- Turned Up Card (only during trump selection) -->
-            <div v-if="turnedUpCard && !hasAnyPlayedCard" class="turned-up-card-display">
-                <div class="card-label">// turned_up</div>
-                <Card
-                    :suit="turnedUpCard.suit"
-                    :rank="turnedUpCard.rank"
-                    size="md"
+            <!-- East Position (right side) -->
+            <div class="player-position east" :class="{ 'is-thinking': isCurrentPlayer('east'), 'sitting-out': isSittingOut('east') }">
+                <PlayerHand :cards="playerHands.east" orientation="vertical" :is-active="isCurrentPlayer('east')" />
+                <PlayerPlaque
+                    position="east"
+                    :model-name="formattedModels.east"
+                    :is-thinking="isCurrentPlayer('east') && isStreaming"
+                    :is-dealer="dealer === 'east'"
+                    :tricks-won="tricksWon?.east ?? 0"
                 />
             </div>
-        </div>
 
-        <!-- East Position (cards left, name right) -->
-        <div class="player-position east" :class="{ 'is-thinking': isCurrentPlayer('east'), 'sitting-out': isSittingOut('east') }">
-            <PlayerInfo
-                position="east"
-                :model-name="formattedModels.east"
-                :is-thinking="isCurrentPlayer('east') && isStreaming"
-                :is-going-alone="goingAlone === 'east'"
-                :is-dealer="dealer === 'east'"
-            />
-            <PlayerHand :cards="playerHands.east" orientation="vertical" />
-        </div>
-
-        <!-- South Position (cards above, name below) -->
-        <div class="player-position south" :class="{ 'is-thinking': isCurrentPlayer('south'), 'sitting-out': isSittingOut('south') }">
-            <PlayerHand :cards="playerHands.south" orientation="horizontal" />
-            <PlayerInfo
-                position="south"
-                :model-name="formattedModels.south"
-                :is-thinking="isCurrentPlayer('south') && isStreaming"
-                :is-going-alone="goingAlone === 'south'"
-                :is-dealer="dealer === 'south'"
-            />
+            <!-- South Position (bottom center) -->
+            <div class="player-position south" :class="{ 'is-thinking': isCurrentPlayer('south'), 'sitting-out': isSittingOut('south') }">
+                <PlayerHand :cards="playerHands.south" orientation="horizontal" :is-active="isCurrentPlayer('south')" />
+                <PlayerPlaque
+                    position="south"
+                    :model-name="formattedModels.south"
+                    :is-thinking="isCurrentPlayer('south') && isStreaming"
+                    :is-dealer="dealer === 'south'"
+                    :tricks-won="tricksWon?.south ?? 0"
+                />
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import Card from "~/components/Card.vue";
-import PlayerInfo from "~/components/PlayerInfo.vue";
+import PlayerPlaque from "~/components/PlayerPlaque.vue";
 import PlayerHand from "~/components/PlayerHand.vue";
 import type { Card as CardType, Position } from "~/types/game";
+
+// Fixed board dimensions (design size)
+const BOARD_WIDTH = 900;
+const BOARD_HEIGHT = 620;
+
+const boardScaler = ref<HTMLElement | null>(null);
+const scale = ref(1);
+
+const updateScale = () => {
+    if (!boardScaler.value) return;
+    const parent = boardScaler.value.parentElement;
+    if (!parent) return;
+
+    const parentWidth = parent.clientWidth;
+    const parentHeight = parent.clientHeight;
+
+    // Calculate scale to fit while maintaining aspect ratio
+    const scaleX = parentWidth / BOARD_WIDTH;
+    const scaleY = parentHeight / BOARD_HEIGHT;
+    scale.value = Math.min(scaleX, scaleY, 1.2); // Cap at 1.2x to avoid looking too large
+};
+
+onMounted(() => {
+    updateScale();
+    window.addEventListener('resize', updateScale);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('resize', updateScale);
+});
 
 interface PlayerHands {
     north: CardType[];
@@ -130,6 +160,13 @@ interface FormattedModels {
     west: string;
 }
 
+interface TricksWon {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+}
+
 interface Props {
     playerHands: PlayerHands;
     playedCards: PlayedCards;
@@ -139,6 +176,7 @@ interface Props {
     isStreaming: boolean;
     goingAlone?: Position | null;
     dealer?: Position | null;
+    tricksWon?: TricksWon;
 }
 
 const props = defineProps<Props>();
@@ -170,83 +208,70 @@ const isSittingOut = (position: Position) => {
 </script>
 
 <style scoped>
-.card-table {
-    position: relative;
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0px;
+/* Container that handles scaling - full width background */
+.board-scaler {
     flex: 1;
-    display: grid;
-    grid-template-areas:
-        ". north ."
-        "west center east"
-        ". south .";
-    grid-template-columns: clamp(150px, 15vw, 200px) 1fr clamp(150px, 15vw, 200px);
-    grid-template-rows: auto 1fr auto;
-    padding: 0.25rem;
-    gap: 0.25rem;
-    height: calc(100vh - 200px);
-    overflow: hidden;
-}
-
-.player-position {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: clamp(0.1rem, 0.4vh, 0.25rem);
+    overflow: visible;
+    min-height: 0;
+    background:
+        radial-gradient(ellipse at center, rgba(56, 189, 186, 0.02) 0%, transparent 70%),
+        rgba(10, 20, 20, 0.7);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
+}
+
+/* Fixed-size card table - all positions are absolute */
+.card-table {
     position: relative;
-    padding: clamp(0.1rem, 0.4vh, 0.25rem);
+    width: 900px;
+    height: 620px;
+    transform-origin: center center;
 }
 
+/* All player positions are absolutely positioned */
+.player-position {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* North: top center, column layout (plaque above cards) */
 .player-position.north {
-    grid-area: north;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: column;
+    gap: 4px;
 }
 
-.player-position.west {
-    grid-area: west;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 0.75rem;
-}
-
-.player-position.east {
-    grid-area: east;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-    gap: 0.75rem;
-}
-
+/* South: bottom center, column layout (cards above plaque) */
 .player-position.south {
-    grid-area: south;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: column;
+    gap: 4px;
 }
 
-.player-position.is-thinking {
-    background: rgba(163, 230, 53, 0.08);
-    border: 2px solid rgba(163, 230, 53, 0.6);
-    border-radius: 4px;
-    box-shadow:
-        0 0 15px rgba(163, 230, 53, 0.3),
-        0 0 30px rgba(163, 230, 53, 0.15),
-        inset 0 0 20px rgba(163, 230, 53, 0.05);
-    animation: thinking-pulse 2s ease-in-out infinite;
+/* West: left side, row layout (plaque left of cards) */
+.player-position.west {
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: row;
+    gap: 4px;
 }
 
-@keyframes thinking-pulse {
-    0%, 100% {
-        box-shadow:
-            0 0 15px rgba(163, 230, 53, 0.3),
-            0 0 30px rgba(163, 230, 53, 0.15),
-            inset 0 0 20px rgba(163, 230, 53, 0.05);
-        border-color: rgba(163, 230, 53, 0.6);
-    }
-    50% {
-        box-shadow:
-            0 0 25px rgba(163, 230, 53, 0.5),
-            0 0 50px rgba(163, 230, 53, 0.25),
-            inset 0 0 30px rgba(163, 230, 53, 0.08);
-        border-color: rgba(163, 230, 53, 0.9);
-    }
+/* East: right side, row layout (cards left of plaque) */
+.player-position.east {
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: row;
+    gap: 4px;
 }
 
 .player-position.sitting-out {
@@ -254,57 +279,63 @@ const isSittingOut = (position: Position) => {
     filter: grayscale(0.7);
 }
 
+/* Center area - positioned in the middle */
 .center-area {
-    grid-area: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    height: 300px;
 }
 
-.played-cards-diamond {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(0.5rem, 2vh, 1.5rem);
+/* Played cards positioned absolutely within center area */
+.played-card {
+    position: absolute;
 }
 
-.diamond-north {
-    display: flex;
-    justify-content: center;
+.played-north {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.diamond-middle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: clamp(4rem, 12vw, 10rem);
+.played-south {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.diamond-west,
-.diamond-east {
-    display: flex;
-    justify-content: center;
+.played-west {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-.diamond-south {
-    display: flex;
-    justify-content: center;
+.played-east {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
+/* Turned up card display in center */
 .turned-up-card-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: rgba(163, 230, 53, 0.03);
-    border: 1px solid rgba(163, 230, 53, 0.2);
-    border-radius: 2px;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(56, 189, 186, 0.03);
+    border: 1px solid rgba(56, 189, 186, 0.2);
+    border-radius: 4px;
 }
 
 .card-label {
-    font-size: 0.65rem;
+    font-size: 11px;
     color: var(--color-text-muted);
     font-family: "Courier New", monospace;
     letter-spacing: 0.5px;

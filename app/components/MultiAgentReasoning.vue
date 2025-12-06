@@ -101,10 +101,10 @@ const getModelName = (position: Position): string => {
 }
 
 .agent-cell {
-    border: 2px solid rgba(107, 114, 128, 0.3);
+    border: 2px solid rgba(56, 189, 186, 0.3);
     border-radius: 4px;
     padding: 1rem;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 40, 40, 0.4);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -112,20 +112,29 @@ const getModelName = (position: Position): string => {
 }
 
 .agent-cell.active {
-    border-color: rgba(163, 230, 53, 0.5);
-    background: rgba(163, 230, 53, 0.05);
-    box-shadow: 0 0 30px rgba(163, 230, 53, 0.2);
+    border-color: rgba(56, 229, 226, 0.8);
+    background: rgba(56, 189, 186, 0.15);
+    box-shadow:
+        0 0 30px rgba(56, 229, 226, 0.4),
+        0 0 60px rgba(56, 229, 226, 0.2),
+        inset 0 0 30px rgba(56, 229, 226, 0.1);
     animation: pulse-border 2s ease-in-out infinite;
 }
 
 @keyframes pulse-border {
     0%, 100% {
-        border-color: rgba(163, 230, 53, 0.5);
-        box-shadow: 0 0 30px rgba(163, 230, 53, 0.2);
+        border-color: rgba(56, 229, 226, 0.8);
+        box-shadow:
+            0 0 30px rgba(56, 229, 226, 0.4),
+            0 0 60px rgba(56, 229, 226, 0.2),
+            inset 0 0 30px rgba(56, 229, 226, 0.1);
     }
     50% {
-        border-color: rgba(163, 230, 53, 0.8);
-        box-shadow: 0 0 40px rgba(163, 230, 53, 0.3);
+        border-color: rgba(56, 229, 226, 1);
+        box-shadow:
+            0 0 40px rgba(56, 229, 226, 0.6),
+            0 0 80px rgba(56, 229, 226, 0.3),
+            inset 0 0 40px rgba(56, 229, 226, 0.15);
     }
 }
 
@@ -140,7 +149,7 @@ const getModelName = (position: Position): string => {
 .agent-name {
     font-weight: bold;
     letter-spacing: 1px;
-    color: var(--color-accent);
+    color: rgba(56, 229, 226, 1);
     font-size: 0.8125rem;
 }
 
@@ -149,10 +158,11 @@ const getModelName = (position: Position): string => {
 }
 
 .live-indicator {
-    color: var(--color-accent);
+    color: rgba(56, 229, 226, 1);
     font-size: 0.6875rem;
     font-weight: 600;
     animation: pulse 2s ease-in-out infinite;
+    text-shadow: 0 0 10px rgba(56, 229, 226, 0.5);
 }
 
 @keyframes pulse {

@@ -1,266 +1,234 @@
 <template>
     <div class="compact-arena">
-        <div class="arena-header">
-            <span class="keyword">const</span> gameState = {
-        </div>
+        <!-- Visual Card Table -->
+        <div class="mini-table">
+            <!-- North Position -->
+            <div class="mini-position north" :class="{ active: currentPlayer === 'north' }">
+                <div class="player-label-box">
+                    <span class="player-letter" :class="{ active: currentPlayer === 'north' }">N</span>
+                </div>
+                <div class="mini-cards">
+                    <Card
+                        v-for="(card, i) in playerHands.north"
+                        :key="i"
+                        :suit="card.suit"
+                        :rank="card.rank"
+                        :faceDown="false"
+                        size="sm"
+                    />
+                </div>
+            </div>
 
-        <!-- Current Trick -->
-        <div class="state-section">
-            <div class="section-label">// current_trick</div>
-            <div class="trick-display">
-                <div
-                    v-for="position in positions"
-                    :key="position"
-                    class="trick-card"
-                >
-                    <span class="position-abbr">{{ position.charAt(0).toUpperCase() }}:</span>
-                    <span v-if="playedCards[position]" :class="['card-text', getSuitClass(playedCards[position]!.suit)]">
-                        {{ formatCard(playedCards[position]!) }}
-                    </span>
-                    <span v-else class="empty-card">--</span>
+            <!-- West Position -->
+            <div class="mini-position west" :class="{ active: currentPlayer === 'west' }">
+                <div class="player-label-box">
+                    <span class="player-letter" :class="{ active: currentPlayer === 'west' }">W</span>
+                </div>
+                <div class="mini-cards vertical">
+                    <Card
+                        v-for="(card, i) in playerHands.west"
+                        :key="i"
+                        :suit="card.suit"
+                        :rank="card.rank"
+                        :faceDown="false"
+                        size="sm"
+                    />
+                </div>
+            </div>
+
+            <!-- Center - Turned Up Card -->
+            <div class="mini-center">
+                <Card
+                    v-if="turnedUpCard"
+                    :suit="turnedUpCard.suit"
+                    :rank="turnedUpCard.rank"
+                    :faceDown="false"
+                    size="sm"
+                />
+            </div>
+
+            <!-- East Position -->
+            <div class="mini-position east" :class="{ active: currentPlayer === 'east' }">
+                <div class="mini-cards vertical">
+                    <Card
+                        v-for="(card, i) in playerHands.east"
+                        :key="i"
+                        :suit="card.suit"
+                        :rank="card.rank"
+                        :faceDown="false"
+                        size="sm"
+                    />
+                </div>
+                <div class="player-label-box">
+                    <span class="player-letter" :class="{ active: currentPlayer === 'east' }">E</span>
+                </div>
+            </div>
+
+            <!-- South Position -->
+            <div class="mini-position south" :class="{ active: currentPlayer === 'south' }">
+                <div class="mini-cards">
+                    <Card
+                        v-for="(card, i) in playerHands.south"
+                        :key="i"
+                        :suit="card.suit"
+                        :rank="card.rank"
+                        :faceDown="false"
+                        size="sm"
+                    />
+                </div>
+                <div class="player-label-box">
+                    <span class="player-letter" :class="{ active: currentPlayer === 'south' }">S</span>
                 </div>
             </div>
         </div>
-
-        <!-- Game Info -->
-        <div class="state-section">
-            <div class="info-row">
-                <span class="info-label">turn:</span>
-                <span class="info-value highlight">{{ currentPlayer?.toUpperCase() || 'N/A' }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">trump:</span>
-                <span :class="['info-value', trumpSuitClass]">{{ trumpDisplay }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">trick:</span>
-                <span class="info-value">{{ currentTrick }}/5</span>
-            </div>
-        </div>
-
-        <!-- Player Hands (card counts) -->
-        <div class="state-section">
-            <div class="section-label">// hands</div>
-            <div class="hands-grid">
-                <div
-                    v-for="position in positions"
-                    :key="position"
-                    :class="['hand-entry', { active: position === currentPlayer }]"
-                >
-                    <span class="hand-position">{{ position.charAt(0).toUpperCase() }}</span>
-                    <span class="hand-cards">
-                        <span
-                            v-for="(card, index) in playerHands[position].slice(0, 5)"
-                            :key="index"
-                            :class="['mini-card', getSuitClass(card.suit)]"
-                        >{{ getSuitSymbol(card.suit) }}</span>
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Turned Up Card -->
-        <div v-if="turnedUpCard" class="state-section">
-            <div class="info-row">
-                <span class="info-label">turned_up:</span>
-                <span :class="['info-value', getSuitClass(turnedUpCard.suit)]">
-                    {{ formatCard(turnedUpCard) }}
-                </span>
-            </div>
-        </div>
-
-        <div class="closing-brace">}</div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Card, Position, Suit } from "~/types/game";
+import Card from "~/components/Card.vue";
+import type { Card as CardType, Position } from "~/types/game";
 
 interface PlayerHands {
-    north: Card[];
-    south: Card[];
-    east: Card[];
-    west: Card[];
-}
-
-interface PlayedCards {
-    north?: Card | null;
-    south?: Card | null;
-    east?: Card | null;
-    west?: Card | null;
+    north: CardType[];
+    south: CardType[];
+    east: CardType[];
+    west: CardType[];
 }
 
 interface Props {
     playerHands: PlayerHands;
-    playedCards: PlayedCards;
+    playedCards: Record<string, CardType | null>;
     currentPlayer: Position | null;
     trumpSuit: string;
     currentTrick: number;
-    turnedUpCard?: Card | null;
+    turnedUpCard?: CardType | null;
 }
 
-const props = defineProps<Props>();
-
-const positions: Position[] = ['north', 'east', 'south', 'west'];
-
-const formatCard = (card: Card): string => {
-    const rankMap: Record<string, string> = {
-        '9': '9', '10': '10', 'jack': 'J', 'queen': 'Q', 'king': 'K', 'ace': 'A'
-    };
-    const suitMap: Record<Suit, string> = {
-        hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠'
-    };
-    return `${rankMap[card.rank] || card.rank}${suitMap[card.suit]}`;
-};
-
-const getSuitSymbol = (suit: Suit): string => {
-    const symbols: Record<Suit, string> = {
-        hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠'
-    };
-    return symbols[suit];
-};
-
-const getSuitClass = (suit: Suit): string => {
-    return suit === 'hearts' || suit === 'diamonds' ? 'red-suit' : 'black-suit';
-};
-
-const trumpDisplay = computed(() => {
-    if (!props.trumpSuit || props.trumpSuit === '?') return '?';
-    return props.trumpSuit;
-});
-
-const trumpSuitClass = computed(() => {
-    if (props.trumpSuit === '♥' || props.trumpSuit === '♦') return 'red-suit';
-    return 'black-suit';
-});
+defineProps<Props>();
 </script>
 
 <style scoped>
 .compact-arena {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: 0.5rem;
     font-family: "Courier New", Consolas, Monaco, monospace;
-    font-size: 0.8125rem;
 }
 
-.arena-header {
-    font-weight: 500;
-    letter-spacing: 0.025em;
-    margin-bottom: 1rem;
-    color: var(--color-text);
-}
-
-.keyword {
-    color: var(--color-keyword);
-}
-
-.state-section {
-    margin-bottom: 1rem;
-    padding-left: 1rem;
-}
-
-.section-label {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.trick-display {
-    display: flex;
-    flex-wrap: wrap;
+.mini-table {
+    display: grid;
+    grid-template-areas:
+        ". north ."
+        "west center east"
+        ". south .";
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto 1fr auto;
     gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(56, 189, 186, 0.3);
+    border-radius: 4px;
+    min-height: 280px;
+    position: relative;
 }
 
-.trick-card {
+.mini-position {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 0.25rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
-.position-abbr {
-    color: var(--color-text-secondary);
-    font-weight: 600;
+.mini-position.north {
+    grid-area: north;
+    justify-self: center;
 }
 
-.card-text {
-    font-weight: bold;
+.mini-position.south {
+    grid-area: south;
+    justify-self: center;
 }
 
-.empty-card {
-    color: var(--color-text-placeholder);
+.mini-position.west {
+    grid-area: west;
+    justify-self: end;
+    flex-direction: row;
+    align-items: center;
 }
 
-.red-suit {
-    color: var(--color-error);
+.mini-position.east {
+    grid-area: east;
+    justify-self: start;
+    flex-direction: row;
+    align-items: center;
 }
 
-.black-suit {
-    color: var(--color-text);
+.mini-position.active {
+    background: rgba(56, 189, 186, 0.1);
 }
 
-.info-row {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.info-label {
-    color: var(--color-text-secondary);
-}
-
-.info-value {
-    color: var(--color-text);
-}
-
-.info-value.highlight {
-    color: var(--color-accent);
-    font-weight: bold;
-}
-
-.hands-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-}
-
-.hand-entry {
+.player-label-box {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 2px;
-    background: rgba(0, 0, 0, 0.2);
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    border-radius: 4px;
 }
 
-.hand-entry.active {
-    background: rgba(163, 230, 53, 0.1);
-    border-left: 2px solid var(--color-accent);
-}
-
-.hand-position {
+.player-letter {
+    font-size: 0.75rem;
+    font-weight: bold;
     color: var(--color-text-secondary);
-    font-weight: 600;
-    min-width: 1rem;
+    letter-spacing: 0.5px;
 }
 
-.hand-entry.active .hand-position {
+.player-letter.active {
     color: var(--color-accent);
+    text-shadow: 0 0 10px rgba(56, 189, 186, 0.5);
 }
 
-.hand-cards {
+.mini-cards {
     display: flex;
-    gap: 0.125rem;
 }
 
-.mini-card {
-    font-size: 0.875rem;
+/* Overlap effect for horizontal cards */
+.mini-cards :deep(.playing-card) {
+    margin-left: -18px;
 }
 
-.closing-brace {
-    font-size: 0.875rem;
-    color: var(--color-text);
-    margin-top: 0.5rem;
+.mini-cards :deep(.playing-card:first-child) {
+    margin-left: 0;
+}
+
+.mini-cards.vertical {
+    flex-direction: column;
+}
+
+/* Overlap effect for vertical cards */
+.mini-cards.vertical :deep(.playing-card) {
+    margin-left: 0;
+    margin-top: -30px;
+}
+
+.mini-cards.vertical :deep(.playing-card:first-child) {
+    margin-top: 0;
+}
+
+.mini-center {
+    grid-area: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: rgba(56, 189, 186, 0.08);
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    border-radius: 4px;
+    box-shadow: 0 0 15px rgba(56, 189, 186, 0.2);
 }
 </style>

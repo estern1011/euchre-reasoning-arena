@@ -250,14 +250,14 @@ const startGame = () => {
 }
 
 .score-selector:hover {
-    border-color: rgba(163, 230, 53, 0.5);
-    background: rgba(163, 230, 53, 0.05);
+    border-color: rgba(56, 189, 186, 0.5);
+    background: rgba(56, 189, 186, 0.05);
 }
 
 .score-selector:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.2);
+    box-shadow: 0 0 0 3px rgba(56, 189, 186, 0.2);
 }
 
 .score-selector option {
@@ -281,12 +281,12 @@ const startGame = () => {
 
 .card {
     background: rgba(0, 0, 0, 0.6);
-    border: 3px solid rgba(163, 230, 53, 0.3);
+    border: 3px solid rgba(56, 189, 186, 0.3);
     border-radius: 0px;
     overflow: hidden;
     backdrop-filter: blur(8px);
     box-shadow:
-        8px 8px 0px rgba(163, 230, 53, 0.2),
+        8px 8px 0px rgba(56, 189, 186, 0.2),
         0 0 40px rgba(0, 0, 0, 0.8);
     position: relative;
 }
@@ -299,7 +299,7 @@ const startGame = () => {
     right: -3px;
     bottom: -3px;
     background: linear-gradient(45deg,
-        rgba(163, 230, 53, 0.1) 0%,
+        rgba(56, 189, 186, 0.1) 0%,
         transparent 50%,
         rgba(192, 132, 252, 0.1) 100%
     );
@@ -330,10 +330,10 @@ const startGame = () => {
 .start-button-shell {
     position: relative;
     width: 100%;
-    background: rgba(163, 230, 53, 0.08);
-    border: 3px solid rgba(163, 230, 53, 0.5);
+    background: rgba(56, 189, 186, 0.08);
+    border: 3px solid rgba(56, 189, 186, 0.5);
     border-radius: 0px;
-    box-shadow: 8px 8px 0px rgba(163, 230, 53, 0.3);
+    box-shadow: 8px 8px 0px rgba(56, 189, 186, 0.3);
     transition:
         box-shadow 0.15s ease,
         transform 0.15s ease,
@@ -343,22 +343,22 @@ const startGame = () => {
 }
 
 .start-button-shell:hover {
-    background: rgba(163, 230, 53, 0.12);
-    border-color: rgba(163, 230, 53, 0.7);
-    box-shadow: 12px 12px 0px rgba(163, 230, 53, 0.4);
+    background: rgba(56, 189, 186, 0.12);
+    border-color: rgba(56, 189, 186, 0.7);
+    box-shadow: 12px 12px 0px rgba(56, 189, 186, 0.4);
     transform: translate(-4px, -4px);
 }
 
 .start-button-shell:active {
-    box-shadow: 4px 4px 0px rgba(163, 230, 53, 0.3);
+    box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.3);
     transform: translate(4px, 4px);
 }
 
 .start-button-shell:focus-within {
     border-color: var(--color-accent);
     box-shadow:
-        12px 12px 0px rgba(163, 230, 53, 0.5),
-        0 0 0 4px rgba(163, 230, 53, 0.2);
+        12px 12px 0px rgba(56, 189, 186, 0.5),
+        0 0 0 4px rgba(56, 189, 186, 0.2);
 }
 
 :global(.start-button) {

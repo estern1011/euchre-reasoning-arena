@@ -1,10 +1,10 @@
 :root {
-    /* Primary accent - lime green */
-    --color-accent: #a3e635;
-    --color-accent-muted: rgba(163, 230, 53, 0.5);
-    --color-accent-subtle: rgba(163, 230, 53, 0.2);
-    --color-accent-bg: rgba(163, 230, 53, 0.05);
-    --color-accent-bg-hover: rgba(163, 230, 53, 0.15);
+    /* Primary accent - cyan/teal */
+    --color-accent: #38bdb8;
+    --color-accent-muted: rgba(56, 189, 186, 0.5);
+    --color-accent-subtle: rgba(56, 189, 186, 0.2);
+    --color-accent-bg: rgba(56, 189, 186, 0.05);
+    --color-accent-bg-hover: rgba(56, 189, 186, 0.15);
 
     /* Status colors */
     --color-error: #ef4444;
