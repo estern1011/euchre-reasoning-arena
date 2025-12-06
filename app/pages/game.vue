@@ -420,6 +420,91 @@ const scoreTrumpDecisions = (handScores: [number, number]) => {
     }
 };
 
+// Call the analysis API after a hand completes
+const analyzeCompletedHand = async (handNumber: number, handScores: [number, number]) => {
+    const currentHand = gameStore.getCurrentHand();
+    if (!currentHand) {
+        console.warn('No hand record found for analysis');
+        return;
+    }
+
+    // Determine outcome
+    const nsPoints = handScores[0];
+    const ewPoints = handScores[1];
+    const winningTeam = nsPoints > 0 ? 'NS' : 'EW';
+    const points = Math.max(nsPoints, ewPoints);
+
+    // Determine calling team from trump decisions
+    const callerDecision = currentHand.trumpDecisions.find(
+        d => d.action === 'order_up' || d.action === 'call_trump'
+    );
+    const callingTeam = callerDecision
+        ? (['north', 'south'].includes(callerDecision.player) ? 'NS' : 'EW')
+        : winningTeam;
+
+    // Transform trump decisions to API format
+    const trumpDecisions = currentHand.trumpDecisions.map(d => ({
+        player: d.player,
+        action: d.action === 'pass' ? 'pass' as const :
+                d.action === 'order_up' ? 'call' as const : 'call_suit' as const,
+        confidence: d.confidence,
+        reasoning: d.reasoning,
+        suit: d.suit,
+    }));
+
+    // Transform tricks to API format
+    const tricks = currentHand.tricks
+        .filter(t => t.winner !== null)
+        .map(t => ({
+            plays: t.plays.map(p => ({
+                player: p.player,
+                card: p.card,
+                confidence: p.confidence,
+                reasoning: p.reasoning,
+            })),
+            winner: t.winner!,
+        }));
+
+    // Build outcome object
+    const wasEuchred = callingTeam !== winningTeam;
+    const wasMarch = points >= 2 && !wasEuchred;
+    const wasLoner = currentHand.goingAlone !== null;
+
+    const outcome = {
+        callingTeam: callingTeam as 'NS' | 'EW',
+        winningTeam: winningTeam as 'NS' | 'EW',
+        points,
+        wasEuchred,
+        wasMarch,
+        wasLoner,
+    };
+
+    try {
+        gameStore.setAnalyzing(true);
+
+        const response = await $fetch('/api/analyze-hand', {
+            method: 'POST',
+            body: {
+                handNumber,
+                trumpDecisions,
+                tricks,
+                outcome,
+                modelIds: gameStore.modelIds,
+                previousInsights: gameStore.evolvedInsights,
+            },
+        });
+
+        if (response.success) {
+            gameStore.updateInsights(response.insights, response.handSummary);
+        }
+    } catch (error) {
+        console.error('Hand analysis failed:', error);
+    } finally {
+        gameStore.setAnalyzing(false);
+        gameStore.incrementHandCount();
+    }
+};
+
 // View mode (arena or intelligence)
 const viewMode = computed(() => gameStore.viewMode);
 const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
@@ -657,6 +742,11 @@ const handlePlayNextRound = async () => {
                         // Score trump decisions based on hand outcome (Metacognition Arena)
                         scoreTrumpDecisions(message.handScores || [0, 0]);
                         gameStore.recordHandComplete(finalWinningTeam, message.handScores || [0, 0]);
+                        // Analyze the final hand (async, non-blocking)
+                        analyzeCompletedHand(
+                            message.handNumber || gameStore.handNumber,
+                            (message.handScores || [0, 0]) as [number, number]
+                        );
                     } else if (message.phase === 'hand_complete') {
                         activityLog.value.push(formatTrickComplete({
                             trickNumber: message.trickNumber!,
@@ -677,6 +767,8 @@ const handlePlayNextRound = async () => {
                         // Score trump decisions based on hand outcome (Metacognition Arena)
                         scoreTrumpDecisions(message.handScores!);
                         gameStore.recordHandComplete(handWinningTeam, message.handScores!);
+                        // Analyze the completed hand (async, non-blocking)
+                        analyzeCompletedHand(message.handNumber!, message.handScores! as [number, number]);
                     } else if (message.phase === 'playing_trick') {
                         activityLog.value.push(formatTrickComplete({
                             trickNumber: message.trickNumber!,

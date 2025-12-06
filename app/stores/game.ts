@@ -567,7 +567,6 @@ export const useGameStore = defineStore('game', {
     updateInsights(insights: EvolvedInsights, handSummary: string) {
       this.evolvedInsights = insights
       this.latestHandSummary = handSummary
-      this.completedHandsCount++
     },
 
     incrementHandCount() {

@@ -6,7 +6,7 @@
 
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { getModel } from '../ai-gateway';
+import { getModel, getModelConfig } from '../ai-agent/config';
 import { ANALYSIS_SYSTEM_PROMPT, buildAnalysisUserPrompt } from './prompts';
 import type { HandAnalysisInput, HandAnalysisOutput, EvolvedInsights } from './types';
 import { createEmptyInsights } from './types';

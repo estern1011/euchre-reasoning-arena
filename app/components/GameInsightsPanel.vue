@@ -15,7 +15,7 @@
             </div>
 
             <!-- Agent Patterns -->
-            <div class="insight-section patterns-section">
+            <div class="insight-section patterns-section" v-if="insights?.agentPatterns">
                 <div class="section-label">agent_patterns</div>
                 <div class="patterns-list">
                     <div
@@ -28,25 +28,25 @@
                             <span class="position-badge">{{ position.charAt(0).toUpperCase() }}</span>
                             <span class="model-name">{{ getModelName(position) }}</span>
                         </div>
-                        <div class="pattern-text">{{ insights.agentPatterns[position] }}</div>
+                        <div class="pattern-text">{{ insights.agentPatterns[position] || 'No pattern yet' }}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Decision Comparison -->
-            <div class="insight-section comparison-section" v-if="insights.decisionStyleComparison">
+            <div class="insight-section comparison-section" v-if="insights?.decisionStyleComparison">
                 <div class="section-label">style_comparison</div>
                 <div class="comparison-text">{{ insights.decisionStyleComparison }}</div>
             </div>
 
             <!-- Game Narrative -->
-            <div class="insight-section narrative-section" v-if="insights.gameNarrative">
+            <div class="insight-section narrative-section" v-if="insights?.gameNarrative">
                 <div class="section-label">narrative</div>
                 <div class="narrative-text">{{ insights.gameNarrative }}</div>
             </div>
 
             <!-- Key Moments -->
-            <div class="insight-section moments-section" v-if="insights.keyMoments && insights.keyMoments.length > 0">
+            <div class="insight-section moments-section" v-if="insights?.keyMoments && insights.keyMoments.length > 0">
                 <div class="section-label">key_moments</div>
                 <div class="moments-list">
                     <div
