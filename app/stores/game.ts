@@ -81,6 +81,10 @@ export const useGameStore = defineStore('game', {
       currentHandIndex: -1,
     } as GameHistory,
 
+    // Transaction tracking for error recovery
+    // Plays are added to tricks immediately for UI, but tracked here until committed
+    pendingPlayKeys: new Set<string>(),
+
     // Auto-mode state
     autoMode: false,
     autoModeDelay: 2000, // 2 seconds between rounds
@@ -466,11 +470,28 @@ export const useGameStore = defineStore('game', {
         console.warn('[GameStore] recordPlay: No active hand at index', this.gameHistory.currentHandIndex)
         return
       }
-      
+
+      // Guard: Don't record plays after hand should be complete (5 tricks with 4 plays each = 20 plays)
+      const totalPlays = hand.tricks.reduce((sum, t) => sum + t.plays.length, 0)
+      if (totalPlays >= 20) {
+        console.warn('[GameStore] recordPlay: Hand already has 20 plays, ignoring additional play')
+        return
+      }
+
+      // Guard: Check for duplicate play (same card already played in this hand)
+      const cardKey = `${hand.handNumber}-${play.card.rank}-${play.card.suit}`
+      const allPlaysInHand = hand.tricks.flatMap(t => t.plays)
+      const isDuplicate = allPlaysInHand.some(
+        p => `${hand.handNumber}-${p.card.rank}-${p.card.suit}` === cardKey
+      )
+      if (isDuplicate) {
+        console.warn('[GameStore] recordPlay: Duplicate card detected, ignoring')
+        return
+      }
+
       // Get or create current trick
       let currentTrick = hand.tricks[hand.tricks.length - 1]
       if (!currentTrick || currentTrick.plays.length === 4) {
-        // Start new trick
         currentTrick = {
           trickNumber: hand.tricks.length + 1,
           plays: [],
@@ -478,8 +499,40 @@ export const useGameStore = defineStore('game', {
         }
         hand.tricks.push(currentTrick)
       }
-      
+
       currentTrick.plays.push(play)
+
+      // Track this play as pending until round_complete confirms it
+      this.pendingPlayKeys.add(cardKey)
+    },
+
+    // Commit pending plays - called when round_complete confirms the plays
+    commitPendingPlays() {
+      this.pendingPlayKeys.clear()
+    },
+
+    // Rollback pending plays - called when an error occurs mid-round
+    rollbackPendingPlays() {
+      if (this.pendingPlayKeys.size === 0) return
+
+      const hand = this.gameHistory.hands[this.gameHistory.currentHandIndex]
+      if (!hand) {
+        this.pendingPlayKeys.clear()
+        return
+      }
+
+      // Remove plays that are still pending from tricks
+      for (const trick of hand.tricks) {
+        trick.plays = trick.plays.filter(p => {
+          const key = `${hand.handNumber}-${p.card.rank}-${p.card.suit}`
+          return !this.pendingPlayKeys.has(key)
+        })
+      }
+
+      // Remove empty tricks
+      hand.tricks = hand.tricks.filter(t => t.plays.length > 0)
+
+      this.pendingPlayKeys.clear()
     },
 
     recordTrickWinner(trickNumber: number, winner: Position) {
@@ -583,6 +636,7 @@ export const useGameStore = defineStore('game', {
       this.streamingReasoning = {}
       this.cardsPlayedThisRound = []
       this.gameHistory = { hands: [], currentHandIndex: -1 }
+      this.pendingPlayKeys = new Set()
       this.clearStreamingState()
       this.modelIds = { ...DEFAULT_MODEL_IDS }
       this.agentPerformance = {}

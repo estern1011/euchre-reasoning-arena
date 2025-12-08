@@ -65,11 +65,13 @@ export function buildAnalysisUserPrompt(input: HandAnalysisInput): string {
     prompt += `### Tricks Played (${tricks.length} tricks)\n`;
     for (let i = 0; i < tricks.length; i++) {
         const trick = tricks[i];
+        if (!trick) continue;
         const plays = trick.plays.map(p => {
             const confStr = p.confidence !== undefined ? ` (${p.confidence}%)` : '';
             return `${p.player.charAt(0).toUpperCase()}:${p.card.rank}${getSuitSymbol(p.card.suit)}${confStr}`;
         }).join(', ');
-        prompt += `- Trick ${i + 1}: ${plays} → Winner: ${trick.winner.toUpperCase()}\n`;
+        const winnerStr = trick.winner ? trick.winner.toUpperCase() : 'unknown';
+        prompt += `- Trick ${i + 1}: ${plays} → Winner: ${winnerStr}\n`;
     }
     prompt += '\n';
 

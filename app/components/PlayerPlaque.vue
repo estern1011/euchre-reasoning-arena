@@ -1,5 +1,5 @@
 <template>
-    <div class="player-plaque" :class="[position, { thinking: isThinking }]">
+    <div class="player-plaque" :class="plaqueClasses">
         <div class="plaque-header">
             <span class="position-label">{{ position.toUpperCase() }}</span>
             <span v-if="isDealer" class="dealer-indicator">D</span>
@@ -37,6 +37,13 @@ const formattedModel = computed(() => {
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join('-');
+});
+
+const plaqueClasses = computed(() => {
+    return {
+        [props.position]: true,
+        thinking: props.isThinking,
+    };
 });
 </script>
 

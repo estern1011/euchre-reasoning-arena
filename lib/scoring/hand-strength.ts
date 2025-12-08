@@ -29,20 +29,20 @@ import type { Card, Suit, Position } from '../game/types';
  */
 
 const TRUMP_POINTS: Record<string, number> = {
-    'J_right': 12,  // Right bower
-    'J_left': 11,   // Left bower
-    'A': 10,
-    'K': 9,
-    'Q': 8,
+    'jack_right': 12,  // Right bower
+    'jack_left': 11,   // Left bower
+    'ace': 10,
+    'king': 9,
+    'queen': 8,
     '10': 7,
     '9': 6,
 };
 
 const OFF_SUIT_POINTS: Record<string, number> = {
-    'A': 5,
-    'K': 4,
-    'Q': 3,
-    'J': 2,
+    'ace': 5,
+    'king': 4,
+    'queen': 3,
+    'jack': 2,
     '10': 1,
     '9': 0,
 };
@@ -67,13 +67,13 @@ export function getCardStrength(card: Card, trumpSuit: Suit): number {
     const leftBowerSuit = getLeftBowerSuit(trumpSuit);
 
     // Right bower - Jack of trump suit
-    if (card.suit === trumpSuit && card.rank === 'J') {
-        return TRUMP_POINTS['J_right'];
+    if (card.suit === trumpSuit && card.rank === 'jack') {
+        return TRUMP_POINTS['jack_right'] ?? 0;
     }
 
     // Left bower - Jack of same color suit
-    if (card.suit === leftBowerSuit && card.rank === 'J') {
-        return TRUMP_POINTS['J_left'];
+    if (card.suit === leftBowerSuit && card.rank === 'jack') {
+        return TRUMP_POINTS['jack_left'] ?? 0;
     }
 
     // Other trump cards

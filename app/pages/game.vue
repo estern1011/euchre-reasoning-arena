@@ -715,6 +715,8 @@ const handlePlayNextRound = async () => {
 
                 case 'round_complete':
                     gameStore.setGameState(message.gameState!);
+                    // Commit pending plays - they're now confirmed by the server
+                    gameStore.commitPendingPlays();
 
                     // Format activity log entry based on phase
                     if (message.phase === 'trump_selection_round_1' || message.phase === 'trump_selection_round_2') {
@@ -795,6 +797,8 @@ const handlePlayNextRound = async () => {
         }
     } catch (error) {
         console.error('Streaming Error:', error);
+        // Rollback any pending plays that weren't confirmed
+        gameStore.rollbackPendingPlays();
         const errorMsg = error instanceof Error ? error.message : 'An unknown error occurred';
         activityLog.value.push(formatErrorEntry(errorMsg));
     } finally {
