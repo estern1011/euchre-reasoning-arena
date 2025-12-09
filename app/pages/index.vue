@@ -39,7 +39,7 @@
                                 <span class="comma">,</span>
                             </div>
 
-                            <div class="model-row model-row-last">
+                            <div class="model-row">
                                 <label class="model-label">west:</label>
                                 <ModelSelector v-model="gameStore.modelIds.west" :options="modelOptions" />
                                 <span class="comma">,</span>
@@ -227,14 +227,6 @@ const startGame = () => {
     min-width: 0;
 }
 
-.model-row-last {
-    gap: 1rem;
-}
-
-.model-row-last::after {
-    content: '';
-    width: 1.125rem;
-}
 
 .model-label {
     font-size: 1rem;
