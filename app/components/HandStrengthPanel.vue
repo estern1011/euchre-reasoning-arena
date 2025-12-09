@@ -8,6 +8,14 @@
             <span class="round-indicator" v-if="showMatrix">
                 (round 2 - any suit)
             </span>
+            <button
+                v-if="showHelp"
+                class="info-btn"
+                @click="$emit('show-help')"
+                title="View hand strength calculation"
+            >
+                ?
+            </button>
         </div>
 
         <!-- Single suit view (Round 1) -->
@@ -79,12 +87,18 @@ interface Props {
     hands: Record<Position, Card[]>;
     trumpSuit?: Suit | null;
     showMatrix?: boolean;  // True for Round 2
+    showHelp?: boolean;    // Show ? button
 }
 
 const props = withDefaults(defineProps<Props>(), {
     trumpSuit: null,
     showMatrix: false,
+    showHelp: false,
 });
+
+defineEmits<{
+    'show-help': [];
+}>();
 
 const positions: Position[] = ['north', 'east', 'south', 'west'];
 const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
@@ -187,7 +201,29 @@ const getSuitColor = (suit: Suit): string => {
 .round-indicator {
     font-size: 0.75rem;
     color: var(--color-text-muted);
+}
+
+.info-btn {
     margin-left: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(56, 189, 186, 0.2);
+    border: 1px solid rgba(56, 189, 186, 0.4);
+    color: #38bdb8;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.info-btn:hover {
+    background: rgba(56, 189, 186, 0.3);
+    border-color: rgba(56, 189, 186, 0.6);
 }
 
 .trump-indicator .suit-symbol {

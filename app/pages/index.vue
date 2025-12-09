@@ -17,29 +17,34 @@
 
                 <div class="card-body">
                     <div class="model-grid">
-                        <div class="model-row">
-                            <label class="model-label">north:</label>
-                            <ModelSelector v-model="gameStore.modelIds.north" :options="modelOptions" />
-                            <span class="comma">,</span>
+                        <div v-if="loading" class="loading-message">
+                            Loading models...
                         </div>
+                        <template v-else>
+                            <div class="model-row">
+                                <label class="model-label">north:</label>
+                                <ModelSelector v-model="gameStore.modelIds.north" :options="modelOptions" />
+                                <span class="comma">,</span>
+                            </div>
 
-                        <div class="model-row">
-                            <label class="model-label">east:</label>
-                            <ModelSelector v-model="gameStore.modelIds.east" :options="modelOptions" />
-                            <span class="comma">,</span>
-                        </div>
+                            <div class="model-row">
+                                <label class="model-label">east:</label>
+                                <ModelSelector v-model="gameStore.modelIds.east" :options="modelOptions" />
+                                <span class="comma">,</span>
+                            </div>
 
-                        <div class="model-row">
-                            <label class="model-label">south:</label>
-                            <ModelSelector v-model="gameStore.modelIds.south" :options="modelOptions" />
-                            <span class="comma">,</span>
-                        </div>
+                            <div class="model-row">
+                                <label class="model-label">south:</label>
+                                <ModelSelector v-model="gameStore.modelIds.south" :options="modelOptions" />
+                                <span class="comma">,</span>
+                            </div>
 
-                        <div class="model-row model-row-last">
-                            <label class="model-label">west:</label>
-                            <ModelSelector v-model="gameStore.modelIds.west" :options="modelOptions" />
-                            <span class="comma">,</span>
-                        </div>
+                            <div class="model-row model-row-last">
+                                <label class="model-label">west:</label>
+                                <ModelSelector v-model="gameStore.modelIds.west" :options="modelOptions" />
+                                <span class="comma">,</span>
+                            </div>
+                        </template>
                     </div>
 
                     <div class="config-section">
@@ -76,21 +81,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Primitive } from "radix-vue";
 import { useGameStore } from '~/stores/game';
 import ModelSelector from '~/components/ModelSelector.vue';
 
 const gameStore = useGameStore()
 
-const modelOptions = [
-    { value: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
-    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-    { value: "openai/gpt-5-mini", label: "GPT-5 Mini" },
-    { value: "xai/grok-4.1-fast-non-reasoning", label: "Grok 4.1 Fast" },
-];
+interface ModelOption {
+    value: string;
+    label: string;
+}
+
+const modelOptions = ref<ModelOption[]>([]);
+const loading = ref(true);
 
 const winningScore = ref(10);
+
+// Fetch models from API on mount
+onMounted(async () => {
+    try {
+        const response = await fetch('/api/models');
+        const data = await response.json();
+        modelOptions.value = data.models.map((model: any) => ({
+            value: model.id,
+            label: model.name,
+        }));
+    } catch (error) {
+        console.error('Failed to fetch models:', error);
+        // Fallback to default models if API fails
+        modelOptions.value = [
+            { value: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
+            { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+            { value: "openai/gpt-5-mini", label: "GPT-5 mini" },
+        ];
+    } finally {
+        loading.value = false;
+    }
+});
 
 const startGame = () => {
     // Set winning score in the store before navigating
@@ -180,10 +208,23 @@ const startGame = () => {
     padding-left: 1.5rem;
 }
 
+.loading-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding: 2rem;
+}
+
 .model-row {
     display: flex;
     align-items: center;
     gap: 1rem;
+}
+
+.model-row :deep(.model-select-trigger) {
+    flex: 1;
+    min-width: 0;
 }
 
 .model-row-last {

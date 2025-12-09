@@ -68,6 +68,12 @@ export const GameStateSchema = z.object({
   handNumber: z.number().optional().default(1),
   gameScores: z.tuple([z.number(), z.number()]).optional().default([0, 0]),
   winningScore: z.number().optional().default(10),
+  // Database tracking (internal use, persisted across SSE requests)
+  _dbGameId: z.number().nullable().optional(),
+  _dbHandId: z.number().nullable().optional(),
+  _dbDecisionIds: z.record(z.string(), z.number()).optional(),
+  _gameStartTime: z.number().optional(),
+  _presetName: z.string().optional(),
 });
 
 // Model ID validation (must be in provider/model format)
@@ -93,6 +99,7 @@ export const NewGameRequestSchema = z.object({
 export const PlayNextRoundRequestSchema = z.object({
   gameState: GameStateSchema.optional(),
   modelIds: ModelIdsArraySchema.optional(),
+  presetName: z.string().optional(), // For tracking demo presets in database
 });
 
 // Type exports

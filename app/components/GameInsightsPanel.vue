@@ -230,7 +230,7 @@ const getModelName = (position: Position): string => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--color-text-secondary);
 }

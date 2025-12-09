@@ -152,7 +152,7 @@ watch(() => props.expanded, (val) => {
 }
 
 .section-title {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #38bdb8;
@@ -269,7 +269,7 @@ watch(() => props.expanded, (val) => {
 
 .explanation .hint {
     color: var(--color-text-muted);
-    font-size: 0.625rem;
+    font-size: 0.75rem;
 }
 
 /* Collapsed Summary */
@@ -281,7 +281,7 @@ watch(() => props.expanded, (val) => {
 }
 
 .summary-item {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     font-family: "Courier New", monospace;
     color: var(--color-text-muted);
     padding: 0.125rem 0.375rem;

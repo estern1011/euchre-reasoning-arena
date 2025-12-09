@@ -66,6 +66,9 @@ const modelValue = defineModel<string>();
     gap: 0.5rem;
     transition: all 0.15s ease;
     box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.15);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .model-select-trigger:hover {
@@ -86,6 +89,44 @@ const modelValue = defineModel<string>();
 .model-select-icon {
     font-size: 0.75rem;
     opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.model-select-content {
+    background: rgba(10, 10, 10, 0.98);
+    border: 2px solid rgba(56, 189, 186, 0.4);
+    border-radius: 0;
+    box-shadow: 8px 8px 0px rgba(56, 189, 186, 0.2);
+    z-index: 50;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.model-select-viewport {
+    padding: 0.25rem;
+}
+
+.model-select-item {
+    padding: 0.75rem 1rem;
+    font-family: "Courier New", monospace;
+    font-size: 0.875rem;
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s ease;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.model-select-item:hover,
+.model-select-item[data-highlighted] {
+    background: rgba(56, 189, 186, 0.15);
+    color: var(--color-accent);
+}
+
+.model-select-item[data-state="checked"] {
+    background: rgba(56, 189, 186, 0.2);
+    color: var(--color-accent);
 }
 </style>
 

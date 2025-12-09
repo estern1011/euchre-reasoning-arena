@@ -6,18 +6,18 @@
             </div>
             <div class="header-center">
                 <div class="mode-switcher">
-                    <button
-                        :class="['mode-tab', { active: viewMode === 'arena' }]"
-                        @click="setViewMode('arena')"
+                    <NuxtLink
+                        to="/game"
+                        class="mode-tab active"
                     >
                         // Arena
-                    </button>
-                    <button
-                        :class="['mode-tab', { active: viewMode === 'analysis' }]"
-                        @click="setViewMode('analysis')"
+                    </NuxtLink>
+                    <NuxtLink
+                        to="/analysis"
+                        class="mode-tab"
                     >
                         // Analysis
-                    </button>
+                    </NuxtLink>
                 </div>
             </div>
             <div class="header-right">
@@ -31,16 +31,14 @@
         </header>
 
         <div class="game-content">
-            <!-- Left Panel: Changes based on mode -->
+            <!-- Left Panel: Arena View -->
             <main class="main-panel" aria-label="Game board">
-                <!-- Arena Mode: Show Game Board -->
-                <template v-if="viewMode === 'arena'">
-                    <div class="panel-header">
-                        <span class="comment">// </span>arena
-                    </div>
+                <div class="panel-header">
+                    <span class="comment">// </span>arena
+                </div>
 
-                    <!-- Table View / Game Summary -->
-                    <div v-if="!gameStore.isGameComplete" class="table-view">
+                <!-- Table View / Game Summary -->
+                <div v-if="!gameStore.isGameComplete" class="table-view">
                         <!-- Game Info (top left) -->
                         <div class="game-info-overlay">
                             <div class="game-info-box" :class="{ 'game-complete': gameStore.isGameComplete }">
@@ -69,125 +67,38 @@
                         :model-ids="gameStore.modelIds"
                         @new-game="handleNewGame"
                     />
-                </template>
-
-                <!-- Analysis Mode: Performance Scoreboard and Tool Panel -->
-                <template v-else>
-                    <div class="panel-header">
-                        <span class="comment">// </span>analysis
-                    </div>
-
-                    <div class="analysis-grid">
-                        <!-- Top Left: Performance Scoreboard -->
-                        <div class="grid-panel">
-                            <PerformanceScoreboard
-                                :current-player="gameStore.currentThinkingPlayer"
-                                :show-scoring-info="true"
-                                @show-scoring-rules="showScoringModal = true"
-                            />
-                        </div>
-
-                        <!-- Top Right: Tool Usage -->
-                        <div class="grid-panel">
-                            <ToolPanel :show-available-tools="true" />
-                        </div>
-
-                        <!-- Bottom Left: Hand Strength -->
-                        <div class="grid-panel">
-                            <HandStrengthPanel
-                                :hands="gameStore.playerHands"
-                                :trump-suit="potentialTrumpSuit"
-                                :show-matrix="isRoundTwo"
-                            />
-                        </div>
-
-                        <!-- Bottom Right: Game Insights -->
-                        <div class="grid-panel">
-                            <GameInsightsPanel
-                                :insights="gameStore.evolvedInsights"
-                                :hand-summary="gameStore.latestHandSummary"
-                                :hand-number="gameStore.completedHandsCount"
-                                :model-ids="gameStore.modelIds"
-                                :is-analyzing="gameStore.isAnalyzing"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Reasoning History Button -->
-                    <div class="history-section-inline">
-                        <button
-                            class="history-button"
-                            type="button"
-                            @click="showReasoningModal = true"
-                        >
-                            <span class="button-text">viewHistory()</span>
-                            <span class="badge">{{ gameStore.totalDecisions }}</span>
-                        </button>
-                    </div>
-                </template>
             </main>
 
-            <!-- Right Panel: Changes based on mode -->
+            <!-- Right Panel: Intelligence Sidebar -->
             <aside class="side-panel" aria-label="Game information">
-                <!-- Arena Mode: Show Intelligence sidebar -->
-                <template v-if="viewMode === 'arena'">
-                    <div class="panel-header">
-                        <span class="comment">// </span>intelligence
-                    </div>
+                <div class="panel-header">
+                    <span class="comment">// </span>intelligence
+                </div>
 
-                    <!-- Activity Log (on top) -->
-                    <ActivityLog :entries="activityLog" class="activity-log-fixed" />
+                <!-- Activity Log (on top) -->
+                <ActivityLog :entries="activityLog" class="activity-log-fixed" />
 
-                    <!-- Tool Panel (Metacognition Arena) -->
-                    <ToolPanel class="tool-section-sidebar" />
+                <!-- Tool Panel (Metacognition Arena) -->
+                <ToolPanel class="tool-section-sidebar" />
 
-                    <!-- Real-Time Streaming Reasoning -->
-                    <StreamingReasoning
-                        :player="gameStore.displayedReasoningPlayer"
-                        :reasoning="gameStore.displayedReasoningPlayer ? (gameStore.streamingReasoning[gameStore.displayedReasoningPlayer] ?? '') : ''"
-                        class="reasoning-fixed"
-                    />
+                <!-- Real-Time Streaming Reasoning -->
+                <StreamingReasoning
+                    :player="gameStore.displayedReasoningPlayer"
+                    :reasoning="gameStore.displayedReasoningPlayer ? (gameStore.streamingReasoning[gameStore.displayedReasoningPlayer] ?? '') : ''"
+                    class="reasoning-fixed"
+                />
 
-                    <!-- Reasoning History Button -->
-                    <div class="history-section">
-                        <button
-                            class="history-button"
-                            type="button"
-                            @click="showReasoningModal = true"
-                        >
-                            <span class="button-text">viewHistory()</span>
-                            <span class="cursor-prompt">&gt;_</span>
-                        </button>
-                    </div>
-                </template>
-
-                <!-- Analysis Mode: Show Compact Arena sidebar -->
-                <template v-else>
-                    <div class="panel-header">
-                        <span class="comment">// </span>arena
-                    </div>
-
-                    <!-- Game Info Box (compact) -->
-                    <div class="game-info-container compact">
-                        <div class="game-info-box">
-                            <LiveStatusBanner />
-                            <GameMetaInfo />
-                        </div>
-                    </div>
-
-                    <!-- Compact Arena View -->
-                    <CompactArena
-                        :player-hands="gameStore.playerHands"
-                        :played-cards="gameStore.activePlayedCards"
-                        :current-player="gameStore.currentThinkingPlayer"
-                        :trump-suit="trumpSuit"
-                        :current-trick="currentTrick"
-                        :turned-up-card="gameStore.turnedUpCard"
-                    />
-
-                    <!-- Activity Log (condensed) -->
-                    <ActivityLog :entries="activityLog" />
-                </template>
+                <!-- Reasoning History Button -->
+                <div class="history-section">
+                    <button
+                        class="history-button"
+                        type="button"
+                        @click="showReasoningModal = true"
+                    >
+                        <span class="button-text">viewHistory()</span>
+                        <span class="cursor-prompt">&gt;_</span>
+                    </button>
+                </div>
             </aside>
         </div>
 
@@ -198,103 +109,17 @@
         />
 
         <!-- Scoring Rules Modal -->
-        <div v-if="showScoringModal" class="modal-overlay" @click.self="showScoringModal = false">
-            <div class="scoring-modal">
-                <div class="modal-header">
-                    <span class="comment">// </span>scoring_rules
-                    <button class="close-btn" @click="showScoringModal = false">&times;</button>
-                </div>
-                <div class="scoring-content">
-                    <!-- Confidence Scoring -->
-                    <div class="scoring-section">
-                        <div class="section-title">confidence_scoring</div>
-                        <div class="scoring-table">
-                            <div class="table-header">
-                                <span class="col-confidence">confidence</span>
-                                <span class="col-correct">correct</span>
-                                <span class="col-wrong">wrong</span>
-                            </div>
-                            <div class="table-row">
-                                <span class="col-confidence high">HIGH (≥70%)</span>
-                                <span class="col-correct positive">+3</span>
-                                <span class="col-wrong negative">-2</span>
-                            </div>
-                            <div class="table-row">
-                                <span class="col-confidence medium">MED (40-69%)</span>
-                                <span class="col-correct positive">+2</span>
-                                <span class="col-wrong negative">-1</span>
-                            </div>
-                            <div class="table-row">
-                                <span class="col-confidence low">LOW (&lt;40%)</span>
-                                <span class="col-correct positive">+1</span>
-                                <span class="col-wrong neutral">0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Trump Weighting -->
-                    <div class="scoring-section">
-                        <div class="section-title">trump_multipliers</div>
-                        <div class="multiplier-list">
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">trump_call</span>
-                                <span class="multiplier-value">3x</span>
-                            </div>
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">trump_pass</span>
-                                <span class="multiplier-value">0.5x</span>
-                            </div>
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">march (5 tricks)</span>
-                                <span class="multiplier-value bonus">+1.5x</span>
-                            </div>
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">loner_march</span>
-                                <span class="multiplier-value bonus">+2x</span>
-                            </div>
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">euchred</span>
-                                <span class="multiplier-value penalty">2x penalty</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tool Costs -->
-                    <div class="scoring-section">
-                        <div class="section-title">tool_costs</div>
-                        <div class="multiplier-list">
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">👥 ask_audience</span>
-                                <span class="multiplier-value penalty">-2 pts</span>
-                            </div>
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">📚 situation_lookup</span>
-                                <span class="multiplier-value penalty">-1 pt</span>
-                            </div>
-                            <div class="multiplier-item">
-                                <span class="multiplier-label">🎯 fifty_fifty</span>
-                                <span class="multiplier-value penalty">-3 pts</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Calibration Explanation -->
-                    <div class="scoring-section">
-                        <div class="section-title">calibration</div>
-                        <div class="explanation">
-                            <p class="formula">calibration = 100 - |avg_confidence - actual_accuracy|</p>
-                            <p class="hint">// perfect calibration: confidence matches win rate</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <ScoringModal
+            v-if="showScoringModal"
+            @close="showScoringModal = false"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, onUnmounted } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
+import ScoringModal from "~/components/ScoringModal.vue";
 import LiveStatusBanner from "~/components/LiveStatusBanner.vue";
 import GameMetaInfo from "~/components/GameMetaInfo.vue";
 import GameControls from "~/components/GameControls.vue";
@@ -302,14 +127,9 @@ import GameBoard from "~/components/GameBoard.vue";
 import GameSummary from "~/components/GameSummary.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
-import CompactArena from "~/components/CompactArena.vue";
-import PerformanceScoreboard from "~/components/PerformanceScoreboard.vue";
 import ToolPanel from "~/components/ToolPanel.vue";
-import RecentDecisions from "~/components/RecentDecisions.vue";
-import HandStrengthPanel from "~/components/HandStrengthPanel.vue";
-import GameInsightsPanel from "~/components/GameInsightsPanel.vue";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
-import { useGameStore, type ViewMode } from "~/stores/game";
+import { useGameStore } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
 import { useGameApi } from "~/composables/useGameApi";
 import { formatSuit } from "../../lib/game/formatting";
@@ -505,48 +325,12 @@ const analyzeCompletedHand = async (handNumber: number, handScores: [number, num
     }
 };
 
-// View mode (arena or intelligence)
-const viewMode = computed(() => gameStore.viewMode);
-const setViewMode = (mode: ViewMode) => gameStore.setViewMode(mode);
-
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
 
 // Modals
 const showReasoningModal = ref(false);
 const showScoringModal = ref(false);
-
-// Computed values for display (still needed for CompactArena)
-const currentTrick = computed(() => {
-    return gameStore.completedTricks?.length || 0;
-});
-
-const trumpSuit = computed(() => {
-    if (!gameStore.trump) return "?";
-    return formatSuit(gameStore.trump);
-});
-
-// For hand strength panel - determine the potential trump suit
-const potentialTrumpSuit = computed(() => {
-    // If trump is already set, use that
-    if (gameStore.trump) {
-        return gameStore.trump;
-    }
-    // Otherwise, use the turned-up card's suit (Round 1)
-    if (gameStore.turnedUpCard) {
-        return gameStore.turnedUpCard.suit;
-    }
-    return null;
-});
-
-// Check if we're in Round 2 (everyone passed first round)
-const isRoundTwo = computed(() => {
-    const state = gameStore.gameState;
-    if (!state) return false;
-    // Round 2 is when trump is not set but we've gone through all 4 players once
-    // The gameState.trumpRound will be 2 in round 2
-    return state.trumpRound === 2;
-});
 
 // Calculate tricks won by each player from completedTricks
 const tricksWonByPlayer = computed(() => {
@@ -992,6 +776,7 @@ onMounted(() => {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s ease;
+    text-decoration: none;
     letter-spacing: 0.025em;
 }
 

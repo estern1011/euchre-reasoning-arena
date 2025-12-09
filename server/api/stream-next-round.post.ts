@@ -12,6 +12,18 @@ import type {
 } from "../../lib/game/types";
 import { getDefaultModelIdsArray } from "../../lib/config/defaults";
 import { PlayNextRoundRequestSchema } from "../schemas/game-schemas";
+import {
+  ensureTracking,
+  logTrumpBidDecision,
+  logDiscardDecision,
+  logCardPlayDecision,
+  updateTrickOutcomes,
+  updateTrumpBidOutcomes,
+  startNewHand,
+  completeHandTracking,
+  completeGameTracking,
+  type TrackedGameState,
+} from "../services/game-tracker";
 
 /**
  * SSE streaming endpoint for real-time AI reasoning
@@ -38,8 +50,8 @@ export default defineEventHandler(async (event) => {
     ? (body.gameState as GameState)
     : createNewGame(body.modelIds || getDefaultModelIdsArray());
 
-  // Use a mutable reference for game state updates
-  let game: GameState = initialGame;
+  // Use a mutable reference for game state updates with tracking
+  let game: TrackedGameState = ensureTracking(initialGame, body.presetName);
 
   const decisions: any[] = [];
 
@@ -102,6 +114,16 @@ export default defineEventHandler(async (event) => {
               duration: bidResult.duration,
             });
 
+            // Log trump bid to database
+            logTrumpBidDecision(game, currentBidder, playerObj.modelId, {
+              action: bidResult.action,
+              suit: bidResult.suit,
+              goingAlone: bidResult.goingAlone,
+              reasoning: bidResult.reasoning,
+              confidence: bidResult.confidence,
+              duration: bidResult.duration,
+            });
+
             const aiDecision = {
               player: currentBidder,
               modelId: playerObj.modelId,
@@ -125,6 +147,11 @@ export default defineEventHandler(async (event) => {
 
             // If trump was set and dealer has 6 cards, they need to discard
             if (game.phase === "playing") {
+              // Update trump bid outcomes - maker's bid was successful
+              if (game.trumpCaller) {
+                updateTrumpBidOutcomes(game, game.trumpCaller);
+              }
+
               const dealerObj = game.players.find(
                 (p: { position: Position }) => p.position === game.dealer
               )!;
@@ -154,6 +181,14 @@ export default defineEventHandler(async (event) => {
                   player: game.dealer,
                   modelId: dealerObj.modelId,
                   action: "discard",
+                  card: discardResult.card,
+                  reasoning: discardResult.reasoning,
+                  confidence: discardResult.confidence,
+                  duration: discardResult.duration,
+                });
+
+                // Log discard to database
+                logDiscardDecision(game, game.dealer, dealerObj.modelId, {
                   card: discardResult.card,
                   reasoning: discardResult.reasoning,
                   confidence: discardResult.confidence,
@@ -274,6 +309,17 @@ export default defineEventHandler(async (event) => {
               toolUsed: playResult.toolUsed,
             });
 
+            // Log card play to database
+            logCardPlayDecision(game, currentPlayer, playerObj.modelId, {
+              card: playResult.card,
+              reasoning: playResult.reasoning,
+              confidence: playResult.confidence,
+              duration: playResult.duration,
+              toolUsed: playResult.toolUsed?.tool, // Extract tool name from ToolResult
+              illegalAttempt: playResult.illegalAttempt,
+              isFallback: playResult.isFallback,
+            });
+
             const aiDecision = {
               player: currentPlayer,
               modelId: playerObj.modelId,
@@ -299,8 +345,23 @@ export default defineEventHandler(async (event) => {
           const trickWinner = lastTrick.winner as Position;
           const trickNumber = game.completedTricks.length;
 
+          // Update decision outcomes now that we know who won the trick
+          updateTrickOutcomes(game, trickWinner, trickNumber);
+
           // Check if this trick completed a hand or game
           if (game.phase === "game_complete") {
+            // Complete hand tracking first
+            completeHandTracking(
+              game,
+              game.scores[0],
+              game.scores[1],
+              game.scores[0], // Last hand points = tricks won
+              game.scores[1]
+            );
+
+            // Complete game tracking with calibration calculation
+            completeGameTracking(game, game.gameScores[0], game.gameScores[1]);
+
             // Game is fully complete - a team reached the winning score
             sendEvent("round_complete", {
               gameState: game,
@@ -314,6 +375,15 @@ export default defineEventHandler(async (event) => {
               winningTeam: game.gameScores[0] > game.gameScores[1] ? 0 : 1,
             });
           } else if (game.phase === "hand_complete") {
+            // Complete hand tracking
+            completeHandTracking(
+              game,
+              game.scores[0],
+              game.scores[1],
+              game.scores[0],
+              game.scores[1]
+            );
+
             // Hand is complete but game continues
             sendEvent("round_complete", {
               gameState: game,
@@ -337,6 +407,9 @@ export default defineEventHandler(async (event) => {
           }
         } else if (game.phase === "hand_complete") {
           // Hand is complete, need to start a new hand
+          // Start tracking new hand in database
+          game = startNewHand(game);
+
           sendEvent("round_complete", {
             gameState: game,
             phase: "hand_complete",
@@ -346,6 +419,9 @@ export default defineEventHandler(async (event) => {
             handNumber: game.handNumber,
           });
         } else if (game.phase === "game_complete") {
+          // Complete game tracking if not already done
+          completeGameTracking(game, game.gameScores[0], game.gameScores[1]);
+
           // Game is complete
           sendEvent("round_complete", {
             gameState: game,

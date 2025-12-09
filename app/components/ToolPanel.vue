@@ -173,10 +173,26 @@ const getToolUsageForAgent = (position: Position, toolId: string): number => {
     return count;
 };
 
-// Get total tool cost for an agent
+// Get total tool cost for an agent (calculated from game history)
 const getTotalToolCost = (position: Position): number => {
-    const perf = gameStore.agentPerformance[position];
-    return perf?.toolCostTotal ?? 0;
+    let totalCost = 0;
+    for (const hand of gameStore.gameHistory.hands) {
+        // Check trump decisions
+        for (const decision of hand.trumpDecisions) {
+            if (decision.player === position && decision.toolUsed) {
+                totalCost += decision.toolUsed.cost;
+            }
+        }
+        // Check card plays in tricks
+        for (const trick of hand.tricks) {
+            for (const play of trick.plays) {
+                if (play.player === position && play.toolUsed) {
+                    totalCost += play.toolUsed.cost;
+                }
+            }
+        }
+    }
+    return totalCost;
 };
 
 const phases = [
@@ -363,7 +379,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 }
 
 .phase-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-text-muted);
@@ -449,7 +465,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 
 .result-duration {
     margin-left: auto;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     font-family: "Courier New", monospace;
 }
@@ -475,7 +491,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 }
 
 .response-model {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     min-width: 80px;
 }
@@ -493,7 +509,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 }
 
 .lookup-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
 }
@@ -510,7 +526,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 }
 
 .fifty-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
 }
@@ -532,7 +548,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 
 .raw-result {
     margin: 0;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-secondary);
     overflow-x: auto;
 }
@@ -553,7 +569,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
     padding: 0.375rem 0.5rem;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 4px 4px 0 0;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-text-muted);
@@ -626,7 +642,7 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 }
 
 .totals-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-text-muted);

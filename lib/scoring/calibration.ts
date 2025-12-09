@@ -181,6 +181,9 @@ export interface AgentPerformance {
   // Scoring
   totalScore: number;
   calibrationScore: number; // Separate tracking for calibration quality
+
+  // Brier score components (for proper statistical calibration)
+  brierScoreSum: number;  // Sum of (predicted - actual)^2
 }
 
 /**
@@ -201,6 +204,7 @@ export function createInitialPerformance(modelId: string, position: string): Age
     toolCostTotal: 0,
     totalScore: 0,
     calibrationScore: 0,
+    brierScoreSum: 0,
   };
 }
 
@@ -217,6 +221,11 @@ export function updatePerformance(
   const isHighConfidence = confidence >= CONFIDENCE_THRESHOLDS.HIGH;
   const isLowConfidence = confidence < CONFIDENCE_THRESHOLDS.LOW;
 
+  // Calculate Brier score component: (predicted - actual)^2
+  const predicted = confidence / 100; // Convert 0-100 to 0-1
+  const actual = wasCorrect ? 1 : 0;
+  const brierComponent = Math.pow(predicted - actual, 2);
+
   return {
     ...performance,
     totalDecisions: performance.totalDecisions + 1,
@@ -230,6 +239,7 @@ export function updatePerformance(
     toolCostTotal: performance.toolCostTotal + (toolUsed?.cost ?? 0),
     totalScore: performance.totalScore + score.totalScore,
     calibrationScore: performance.calibrationScore + score.calibrationBonus,
+    brierScoreSum: performance.brierScoreSum + brierComponent,
   };
 }
 
@@ -249,6 +259,20 @@ export function calculateCalibrationAccuracy(performance: AgentPerformance): num
 
   // Convert error to accuracy score (0 error = 100 score)
   return Math.max(0, 100 - calibrationError);
+}
+
+/**
+ * Calculate Brier score (proper scoring rule for probabilistic predictions)
+ * Returns a value from 0-1 where 0 is perfectly calibrated
+ *
+ * Brier Score = (1/n) * Σ(predicted - actual)²
+ * - 0.0 = perfect predictions
+ * - 0.25 = random guessing (50% confidence on binary outcomes)
+ * - 1.0 = perfectly wrong
+ */
+export function calculateBrierScore(performance: AgentPerformance): number {
+  if (performance.totalDecisions === 0) return 0;
+  return performance.brierScoreSum / performance.totalDecisions;
 }
 
 /**

@@ -409,7 +409,7 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .stat-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
 }
@@ -442,7 +442,7 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .assessment {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
 }
@@ -532,7 +532,7 @@ const getEfficiencyClass = (efficiency: string): string => {
     margin-left: auto;
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
 }
 
 .efficiency.good {
@@ -575,7 +575,7 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .summary-stat .stat-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;

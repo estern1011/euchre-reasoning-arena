@@ -431,6 +431,14 @@ export const useGameStore = defineStore('game', {
 
     // Game history actions
     startNewHandRecord(handNumber: number, dealer: Position, turnedUpCard: Card | null) {
+      // Guard against duplicate hands
+      const existingIndex = this.gameHistory.hands.findIndex(h => h.handNumber === handNumber)
+      if (existingIndex !== -1) {
+        // Hand already exists, just update the current index
+        this.gameHistory.currentHandIndex = existingIndex
+        return
+      }
+
       const newHand: HandRecord = {
         handNumber,
         dealer,

@@ -713,7 +713,7 @@ onBeforeUnmount(() => {
 .fallback-badge {
     background: rgba(239, 68, 68, 0.2);
     color: #f87171;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     padding: 1px 4px;
     border-radius: 2px;
     border: 1px solid rgba(239, 68, 68, 0.3);
@@ -820,7 +820,7 @@ onBeforeUnmount(() => {
 }
 
 .card-player {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     font-weight: 500;
 }

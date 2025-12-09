@@ -28,3 +28,7 @@ logs
 
 # Test coverage reports
 coverage/
+*.db
+
+# Database files
+data/

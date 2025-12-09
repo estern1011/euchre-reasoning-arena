@@ -48,6 +48,10 @@
                             :class="getCalibrationClass(position)"
                         ></div>
                     </div>
+                    <div class="brier-row">
+                        <span class="brier-label">brier</span>
+                        <span class="brier-value" :class="getBrierClass(position)">{{ getBrierScore(position) }}</span>
+                    </div>
                 </div>
 
                 <div class="confidence-breakdown" v-if="hasDecisions(position)">
@@ -71,7 +75,7 @@
 import { computed } from 'vue';
 import type { Position } from '~/types/game';
 import { useGameStore } from '~/stores/game';
-import { calculateCalibrationAccuracy } from '../../lib/scoring/calibration';
+import { calculateCalibrationAccuracy, calculateBrierScore } from '../../lib/scoring/calibration';
 
 interface Props {
     currentPlayer?: Position | null;
@@ -130,6 +134,24 @@ const getCalibrationClass = (position: Position): string => {
     if (percent >= 80) return 'excellent';
     if (percent >= 60) return 'good';
     if (percent >= 40) return 'fair';
+    return 'poor';
+};
+
+const getBrierScore = (position: Position): string => {
+    const perf = getPerformance(position);
+    if (!perf || perf.totalDecisions === 0) return '--';
+    const brier = calculateBrierScore(perf);
+    return brier.toFixed(3);
+};
+
+const getBrierClass = (position: Position): string => {
+    const perf = getPerformance(position);
+    if (!perf || perf.totalDecisions === 0) return 'neutral';
+    const brier = calculateBrierScore(perf);
+    // Lower is better: 0 = perfect, 0.25 = random, 1 = terrible
+    if (brier <= 0.1) return 'excellent';
+    if (brier <= 0.2) return 'good';
+    if (brier <= 0.3) return 'fair';
     return 'poor';
 };
 </script>
@@ -243,7 +265,7 @@ const getCalibrationClass = (position: Position): string => {
 }
 
 .stat-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -279,7 +301,7 @@ const getCalibrationClass = (position: Position): string => {
 }
 
 .calibration-label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -329,7 +351,7 @@ const getCalibrationClass = (position: Position): string => {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     margin-bottom: 0.125rem;
 }
 
@@ -351,6 +373,47 @@ const getCalibrationClass = (position: Position): string => {
 }
 
 .breakdown-separator {
+    color: var(--color-text-muted);
+}
+
+.brier-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.375rem;
+    padding-top: 0.25rem;
+}
+
+.brier-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.brier-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: "Courier New", monospace;
+}
+
+.brier-value.excellent {
+    color: #a3e635;
+}
+
+.brier-value.good {
+    color: #38bdb8;
+}
+
+.brier-value.fair {
+    color: #fbbf24;
+}
+
+.brier-value.poor {
+    color: #f87171;
+}
+
+.brier-value.neutral {
     color: var(--color-text-muted);
 }
 </style>

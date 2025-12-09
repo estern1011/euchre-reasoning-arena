@@ -2,6 +2,17 @@ export type Suit = "hearts" | "diamonds" | "clubs" | "spades";
 export type Rank = "9" | "10" | "jack" | "queen" | "king" | "ace";
 export type Position = "north" | "east" | "south" | "west";
 
+/**
+ * Mapping from position to team index for database storage
+ * North/South = indices 0,2 (team 0), East/West = indices 1,3 (team 1)
+ */
+export const POSITION_INDEX: Record<Position, number> = {
+  north: 0,
+  east: 1,
+  south: 2,
+  west: 3,
+};
+
 export type GamePhase = "trump_selection" | "playing" | "hand_complete" | "game_complete";
 
 export type TrumpBidAction = "order_up" | "call_trump" | "pass";
