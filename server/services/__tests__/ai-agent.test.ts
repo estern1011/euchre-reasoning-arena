@@ -4,6 +4,7 @@ import {
   makeCardPlayDecisionStreaming,
   makeTrumpBidDecision,
   makeTrumpBidDecisionStreaming,
+  makeDiscardDecision,
   makeDiscardDecisionStreaming,
   clearGatewayCache,
   type CardPlayResult,
@@ -342,6 +343,100 @@ describe("makeTrumpBidDecision parsing", () => {
     expect(result.suit).toBe("spades");
     // Verify dealer schema was used (no pass option)
     expect(result.action).not.toBe("pass");
+  });
+});
+
+describe("makeDiscardDecision (non-streaming)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    process.env.AI_GATEWAY_API_KEY = "test-key";
+  });
+
+  it("discards a valid card from hand without streaming", async () => {
+    const game = createGameWithTrump(modelIds, "hearts");
+    const dealerHand: Card[] = [
+      { suit: "hearts", rank: "jack" },
+      { suit: "hearts", rank: "ace" },
+      { suit: "diamonds", rank: "9" },
+      { suit: "clubs", rank: "king" },
+      { suit: "spades", rank: "queen" },
+      { suit: "diamonds", rank: "10" },
+    ];
+    game.players = game.players.map((p) =>
+      p.position === game.dealer ? { ...p, hand: dealerHand } : p,
+    );
+
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "The 9 of diamonds is my weakest card.",
+        rank: "9",
+        suit: "diamonds",
+        confidence: 75,
+      },
+    });
+
+    const result = await makeDiscardDecision(game, "m1");
+
+    expect(result.card).toEqual({ suit: "diamonds", rank: "9" });
+    expect(result.reasoning).toContain("weakest");
+    expect(result.confidence).toBe(75);
+    expect((generateObject as any).mock.calls.length).toBe(1);
+    expect((streamObject as any).mock.calls.length).toBe(0);
+  });
+
+  it("falls back to first card when discard not in hand (non-streaming)", async () => {
+    const game = createGameWithTrump(modelIds, "hearts");
+    const dealerHand: Card[] = [
+      { suit: "hearts", rank: "jack" },
+      { suit: "hearts", rank: "ace" },
+      { suit: "diamonds", rank: "9" },
+      { suit: "clubs", rank: "king" },
+      { suit: "spades", rank: "queen" },
+      { suit: "diamonds", rank: "10" },
+    ];
+    game.players = game.players.map((p) =>
+      p.position === game.dealer ? { ...p, hand: dealerHand } : p,
+    );
+
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "Discarding a card I don't have.",
+        rank: "ace",
+        suit: "spades",
+      },
+    });
+
+    const result = await makeDiscardDecision(game, "m1");
+
+    // Should fall back to first card in hand
+    expect(result.card).toEqual({ suit: "hearts", rank: "jack" });
+  });
+
+  it("uses default confidence when not provided", async () => {
+    const game = createGameWithTrump(modelIds, "hearts");
+    const dealerHand: Card[] = [
+      { suit: "hearts", rank: "9" },
+      { suit: "clubs", rank: "king" },
+      { suit: "spades", rank: "queen" },
+      { suit: "diamonds", rank: "10" },
+      { suit: "diamonds", rank: "ace" },
+      { suit: "clubs", rank: "ace" },
+    ];
+    game.players = game.players.map((p) =>
+      p.position === game.dealer ? { ...p, hand: dealerHand } : p,
+    );
+
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "Discarding 9 of hearts.",
+        rank: "9",
+        suit: "hearts",
+        // No confidence field
+      },
+    });
+
+    const result = await makeDiscardDecision(game, "m1");
+    expect(result.confidence).toBe(50); // Default
   });
 });
 
