@@ -10,7 +10,7 @@ export type { TrumpBidResult, CardPlayResult, DiscardResult } from "./types";
 // Re-export functions
 export { makeTrumpBidDecision, makeTrumpBidDecisionStreaming } from "./trump-bid";
 export { makeCardPlayDecision, makeCardPlayDecisionStreaming } from "./card-play";
-export { makeDiscardDecisionStreaming } from "./discard";
+export { makeDiscardDecision, makeDiscardDecisionStreaming } from "./discard";
 
 // Re-export config utilities (for testing)
 export { clearGatewayCache } from "./config";
