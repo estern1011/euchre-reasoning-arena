@@ -5,7 +5,7 @@ import { cardToString, cardsEqual } from "../../../lib/game/card";
 import { logger, generateCorrelationId } from "./logger";
 import { getModel, withRetry, createTimeout, buildTelemetryConfig, getModelConfig } from "./config";
 import { CardPlaySchema, type CardPlayResponse } from "./schemas";
-import { buildCardPlaySystemPrompt } from "./prompts";
+import { buildCardPlaySystemPrompt, type PromptOptions } from "./prompts";
 import type { CardPlayResult } from "./types";
 import { mapUsageToTokenUsage } from "./types";
 import { executeTool, shouldUseTool, buildToolContext } from "../tools";
@@ -117,6 +117,7 @@ function prepareCardPlayContext(
   player: Position,
   modelId: string,
   customPrompt?: string,
+  promptOptions?: PromptOptions,
 ): CardPlayContext | CardPlayResult {
   const gameContext = formatGameStateForCardPlay(game, player);
   const playerObj = game.players.find((p) => p.position === player)!;
@@ -142,7 +143,7 @@ function prepareCardPlayContext(
   }
 
   const validCardsList = validCards.map(formatCardForPrompt).join(", ");
-  const systemPrompt = customPrompt || buildCardPlaySystemPrompt(validCardsList);
+  const systemPrompt = customPrompt || buildCardPlaySystemPrompt(validCardsList, promptOptions);
 
   return {
     game,
@@ -217,14 +218,15 @@ interface CardPlayOptions {
   customPrompt?: string;
   onToken?: (token: string) => void;
   toolCallbacks?: ToolCallbacks;
+  promptOptions?: PromptOptions;
 }
 
 async function makeCardPlayDecisionInternal(options: CardPlayOptions): Promise<CardPlayResult> {
-  const { game, player, modelId, customPrompt, onToken, toolCallbacks } = options;
+  const { game, player, modelId, customPrompt, onToken, toolCallbacks, promptOptions } = options;
   const correlationId = generateCorrelationId();
   let toolUsed: ToolResult | undefined;
   const startTime = Date.now();
-  const ctxOrResult = prepareCardPlayContext(game, player, modelId, customPrompt);
+  const ctxOrResult = prepareCardPlayContext(game, player, modelId, customPrompt, promptOptions);
 
   // Early return for trivial cases
   if ("card" in ctxOrResult) {
@@ -394,8 +396,9 @@ export async function makeCardPlayDecision(
   player: Position,
   modelId: string,
   customPrompt?: string,
+  promptOptions?: PromptOptions,
 ): Promise<CardPlayResult> {
-  return makeCardPlayDecisionInternal({ game, player, modelId, customPrompt });
+  return makeCardPlayDecisionInternal({ game, player, modelId, customPrompt, promptOptions });
 }
 
 export async function makeCardPlayDecisionStreaming(
@@ -405,6 +408,7 @@ export async function makeCardPlayDecisionStreaming(
   onToken: (token: string) => void,
   customPrompt?: string,
   toolCallbacks?: ToolCallbacks,
+  promptOptions?: PromptOptions,
 ): Promise<CardPlayResult> {
-  return makeCardPlayDecisionInternal({ game, player, modelId, customPrompt, onToken, toolCallbacks });
+  return makeCardPlayDecisionInternal({ game, player, modelId, customPrompt, onToken, toolCallbacks, promptOptions });
 }

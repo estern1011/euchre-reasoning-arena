@@ -96,11 +96,19 @@ export const NewGameRequestSchema = z.object({
   winningScore: z.number().min(1).max(100).optional().default(10),
 });
 
+// Game options that affect AI behavior
+export const GameOptionsSchema = z.object({
+  strategyHints: z.boolean().optional().default(true), // Include strategy hints in prompts
+});
+
 export const PlayNextRoundRequestSchema = z.object({
   gameState: GameStateSchema.optional(),
   modelIds: ModelIdsArraySchema.optional(),
   presetName: z.string().optional(), // For tracking demo presets in database
+  options: GameOptionsSchema.optional(),
 });
+
+export type GameOptions = z.infer<typeof GameOptionsSchema>;
 
 // Type exports
 export type NewGameRequest = z.infer<typeof NewGameRequestSchema>;

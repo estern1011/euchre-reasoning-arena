@@ -74,6 +74,7 @@ export const useGameStore = defineStore('game', {
     isInitialized: false,
     viewMode: 'arena' as ViewMode,
     configuredWinningScore: 10, // User-configured winning score
+    strategyHints: true, // Include strategy hints in prompts
 
     // Game history
     gameHistory: {
@@ -302,6 +303,10 @@ export const useGameStore = defineStore('game', {
 
     setWinningScore(score: number) {
       this.configuredWinningScore = score
+    },
+
+    setStrategyHints(enabled: boolean) {
+      this.strategyHints = enabled
     },
 
     // Auto-mode actions

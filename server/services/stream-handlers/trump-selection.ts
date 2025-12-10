@@ -61,7 +61,9 @@ export async function handleTrumpSelection(ctx: StreamContext): Promise<PhaseRes
           player: currentBidder,
           token,
         });
-      }
+      },
+      undefined, // customPrompt
+      ctx.promptOptions
     );
 
     ctx.sendEvent("decision_made", {
@@ -172,7 +174,8 @@ async function handleDealerDiscard(
         player: game.dealer,
         token,
       });
-    }
+    },
+    ctx.promptOptions
   );
 
   ctx.sendEvent("decision_made", {

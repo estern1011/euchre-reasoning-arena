@@ -10,6 +10,7 @@ import {
   handleGameComplete,
   type StreamContext,
 } from "../services/stream-handlers";
+import type { PromptOptions } from "../services/ai-agent/prompts";
 
 /**
  * SSE streaming endpoint for real-time AI reasoning
@@ -33,6 +34,11 @@ export default defineEventHandler(async (event) => {
 
   const body = parseResult.data;
 
+  // Extract options (with defaults)
+  const promptOptions: PromptOptions = {
+    strategyHints: body.options?.strategyHints ?? true,
+  };
+
   // Initialize game state
   const initialGame: GameState = body.gameState
     ? (body.gameState as GameState)
@@ -45,12 +51,12 @@ export default defineEventHandler(async (event) => {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const sendEvent = (type: string, data: any) => {
+      const sendEvent = (type: string, data: Record<string, unknown>) => {
         const message = `data: ${JSON.stringify({ type, ...data })}\n\n`;
         controller.enqueue(encoder.encode(message));
       };
 
-      const ctx: StreamContext = { sendEvent, game };
+      const ctx: StreamContext = { sendEvent, game, promptOptions };
 
       try {
         await processGamePhase(ctx);

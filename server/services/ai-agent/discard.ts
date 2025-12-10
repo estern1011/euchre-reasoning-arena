@@ -4,7 +4,7 @@ import { cardToString } from "../../../lib/game/card";
 import { logger, generateCorrelationId } from "./logger";
 import { getModel, withRetry, createTimeout, buildTelemetryConfig, getModelConfig } from "./config";
 import { DiscardSchema, type DiscardResponse } from "./schemas";
-import { buildDiscardSystemPrompt } from "./prompts";
+import { buildDiscardSystemPrompt, type PromptOptions } from "./prompts";
 import type { DiscardResult } from "./types";
 import { mapUsageToTokenUsage } from "./types";
 
@@ -41,7 +41,7 @@ interface DiscardContext {
   systemPrompt: string;
 }
 
-function prepareDiscardContext(game: GameState, modelId: string): DiscardContext {
+function prepareDiscardContext(game: GameState, modelId: string, promptOptions?: PromptOptions): DiscardContext {
   if (!game.dealer) {
     throw new Error("Dealer not set in game state");
   }
@@ -64,7 +64,7 @@ function prepareDiscardContext(game: GameState, modelId: string): DiscardContext
   }
 
   const handList = hand.map(formatCardForPrompt).join(", ");
-  const systemPrompt = buildDiscardSystemPrompt(handList, game.trump);
+  const systemPrompt = buildDiscardSystemPrompt(handList, game.trump, promptOptions);
 
   return { player, modelId, hand, handList, systemPrompt };
 }
@@ -131,13 +131,14 @@ interface DiscardOptions {
   game: GameState;
   modelId: string;
   onToken?: (token: string) => void;
+  promptOptions?: PromptOptions;
 }
 
 async function makeDiscardDecisionInternal(options: DiscardOptions): Promise<DiscardResult> {
-  const { game, modelId, onToken } = options;
+  const { game, modelId, onToken, promptOptions } = options;
   const correlationId = generateCorrelationId();
   const startTime = Date.now();
-  const ctx = prepareDiscardContext(game, modelId);
+  const ctx = prepareDiscardContext(game, modelId, promptOptions);
   const isStreaming = !!onToken;
 
   logger.info(`Discard ${isStreaming ? "streaming " : ""}starting`, {
@@ -259,6 +260,7 @@ export async function makeDiscardDecisionStreaming(
   game: GameState,
   modelId: string,
   onToken: (token: string) => void,
+  promptOptions?: PromptOptions,
 ): Promise<DiscardResult> {
-  return makeDiscardDecisionInternal({ game, modelId, onToken });
+  return makeDiscardDecisionInternal({ game, modelId, onToken, promptOptions });
 }

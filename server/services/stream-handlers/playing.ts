@@ -49,7 +49,8 @@ export async function handlePlayingPhase(ctx: StreamContext): Promise<PhaseResul
         });
       },
       undefined, // customPrompt
-      toolCallbacks
+      toolCallbacks,
+      ctx.promptOptions
     );
 
     // Send illegal attempt event if one occurred
