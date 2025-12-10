@@ -1,8 +1,9 @@
 /**
  * Simple in-memory rate limiting middleware
  *
- * Implements a sliding window rate limiter to protect API endpoints
- * from abuse. Uses token bucket algorithm per IP address.
+ * Implements a token bucket algorithm to protect API endpoints
+ * from abuse. Each IP address gets its own token bucket that
+ * refills continuously at a fixed rate.
  *
  * Note: For production at scale, replace with Redis-based rate limiting.
  */
@@ -12,11 +13,10 @@ interface RateLimitEntry {
   lastRefill: number;
 }
 
-// Configuration
 const RATE_LIMIT_CONFIG = {
-  maxTokens: 60, // Max requests per window
+  maxTokens: 60, // Maximum tokens (bucket capacity)
   refillRate: 1, // Tokens added per second
-  windowMs: 60_000, // 1 minute window
+  cleanupThresholdMs: 120_000, // Cleanup entries inactive for 2 minutes
 };
 
 // In-memory store (replace with Redis for multi-instance deployments)
@@ -31,7 +31,7 @@ function cleanupStaleEntries(): void {
   if (now - lastCleanup < CLEANUP_INTERVAL) return;
 
   lastCleanup = now;
-  const staleThreshold = now - RATE_LIMIT_CONFIG.windowMs * 2;
+  const staleThreshold = now - RATE_LIMIT_CONFIG.cleanupThresholdMs;
 
   for (const [key, entry] of rateLimitStore) {
     if (entry.lastRefill < staleThreshold) {
@@ -57,10 +57,16 @@ function getClientIP(event: any): string {
 }
 
 function refillTokens(entry: RateLimitEntry, now: number): void {
-  const elapsed = (now - entry.lastRefill) / 1000; // Convert to seconds
+  const elapsed = (now - entry.lastRefill) / 1000;
   const tokensToAdd = elapsed * RATE_LIMIT_CONFIG.refillRate;
   entry.tokens = Math.min(RATE_LIMIT_CONFIG.maxTokens, entry.tokens + tokensToAdd);
   entry.lastRefill = now;
+}
+
+function setRateLimitHeaders(event: any, remaining: number, resetSeconds: number): void {
+  setResponseHeader(event, "X-RateLimit-Limit", String(RATE_LIMIT_CONFIG.maxTokens));
+  setResponseHeader(event, "X-RateLimit-Remaining", String(remaining));
+  setResponseHeader(event, "X-RateLimit-Reset", String(resetSeconds));
 }
 
 export default defineEventHandler((event) => {
@@ -96,11 +102,10 @@ export default defineEventHandler((event) => {
   // Check if request can proceed
   if (entry.tokens < 1) {
     const retryAfter = Math.ceil((1 - entry.tokens) / RATE_LIMIT_CONFIG.refillRate);
+    const resetTime = Math.ceil(now / 1000) + retryAfter;
 
-    setResponseHeader(event, "Retry-After", String(retryAfter));
-    setResponseHeader(event, "X-RateLimit-Limit", String(RATE_LIMIT_CONFIG.maxTokens));
-    setResponseHeader(event, "X-RateLimit-Remaining", "0");
-    setResponseHeader(event, "X-RateLimit-Reset", String(Math.ceil(now / 1000) + retryAfter));
+    setResponseHeader(event, "Retry-After", retryAfter);
+    setRateLimitHeaders(event, 0, resetTime);
 
     throw createError({
       statusCode: 429,
@@ -109,15 +114,8 @@ export default defineEventHandler((event) => {
     });
   }
 
-  // Consume a token
   entry.tokens -= 1;
 
-  // Add rate limit headers
-  setResponseHeader(event, "X-RateLimit-Limit", String(RATE_LIMIT_CONFIG.maxTokens));
-  setResponseHeader(event, "X-RateLimit-Remaining", String(Math.floor(entry.tokens)));
-  setResponseHeader(
-    event,
-    "X-RateLimit-Reset",
-    String(Math.ceil(now / 1000) + Math.ceil(RATE_LIMIT_CONFIG.maxTokens / RATE_LIMIT_CONFIG.refillRate))
-  );
+  const resetTime = Math.ceil(now / 1000) + Math.ceil(RATE_LIMIT_CONFIG.maxTokens / RATE_LIMIT_CONFIG.refillRate);
+  setRateLimitHeaders(event, Math.floor(entry.tokens), resetTime);
 });

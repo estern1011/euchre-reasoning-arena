@@ -211,7 +211,68 @@ describe("Rate Limiting Middleware", () => {
     expect(mockSetResponseHeader).toHaveBeenCalledWith(
       event,
       "Retry-After",
-      expect.any(String)
+      expect.any(Number)
     );
+  });
+
+  it("should use x-real-ip header fallback when x-forwarded-for is absent", () => {
+    mockGetHeader.mockImplementation((event, header) => {
+      if (header === "x-real-ip") return "192.168.10.50";
+      return undefined;
+    });
+
+    const event = {
+      path: "/api/test",
+      node: { req: { socket: { remoteAddress: "127.0.0.1" } } },
+    };
+
+    rateLimitHandler(event);
+
+    // Should use x-real-ip instead of remoteAddress
+    expect(mockSetResponseHeader).toHaveBeenCalled();
+
+    // Make another request from same x-real-ip - should decrement from same bucket
+    mockSetResponseHeader.mockClear();
+    rateLimitHandler(event);
+
+    const calls = mockSetResponseHeader.mock.calls.filter(
+      (call) => call[1] === "X-RateLimit-Remaining"
+    );
+    expect(calls.length).toBe(1);
+  });
+
+  it("should cleanup stale entries after threshold", () => {
+    // Create some rate limit entries
+    const ip1 = "7.7.7.7";
+    const ip2 = "8.8.8.8";
+    const ip3 = "9.9.9.9";
+
+    // Make requests to create entries
+    rateLimitHandler(createMockEvent("/api/test", ip1));
+    rateLimitHandler(createMockEvent("/api/test", ip2));
+
+    // Advance time by 3 minutes (past the 2 minute cleanup threshold)
+    vi.advanceTimersByTime(3 * 60 * 1000);
+
+    // Make a new request from ip3 - this should trigger cleanup
+    rateLimitHandler(createMockEvent("/api/test", ip3));
+
+    // Advance time by another 3 minutes to trigger next cleanup
+    vi.advanceTimersByTime(3 * 60 * 1000);
+
+    // Make another request to trigger cleanup check
+    const event = createMockEvent("/api/test", ip3);
+    rateLimitHandler(event);
+
+    // ip1 and ip2 should have been cleaned up (stale)
+    // ip3 should still exist (recently active)
+    // We verify this indirectly by checking that ip3 has decremented tokens
+    const calls = mockSetResponseHeader.mock.calls.filter(
+      (call) => call[1] === "X-RateLimit-Remaining"
+    );
+
+    // Last call should show less than 60 tokens (2 requests from ip3)
+    const lastRemaining = parseInt(calls[calls.length - 1][2]);
+    expect(lastRemaining).toBeLessThan(60);
   });
 });

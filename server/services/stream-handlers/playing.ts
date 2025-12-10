@@ -22,7 +22,11 @@ export async function handlePlayingPhase(ctx: StreamContext): Promise<PhaseResul
     const currentPlayer = getNextPlayer(game);
     const playerObj = game.players.find(
       (p: { position: Position }) => p.position === currentPlayer
-    )!;
+    );
+
+    if (!playerObj) {
+      throw new Error(`Player not found for position: ${currentPlayer}`);
+    }
 
     ctx.sendEvent("player_thinking", {
       player: currentPlayer,

@@ -25,6 +25,10 @@ function findCardInHand(rank: Rank, suit: Suit, hand: Card[]): Card | undefined 
   return hand.find((c) => c.rank === rank && c.suit === suit);
 }
 
+function buildRetryNote(chosenCardStr: string, validCardsList: string): string {
+  return `IMPORTANT: Your previous selection (${chosenCardStr}) was ILLEGAL. You MUST choose exactly one card from this list: ${validCardsList}. Do not choose any other card.`;
+}
+
 // =============================================================================
 // Context Preparation
 // =============================================================================
@@ -33,17 +37,90 @@ interface DiscardContext {
   player: string;
   modelId: string;
   hand: Card[];
+  handList: string;
   systemPrompt: string;
 }
 
 function prepareDiscardContext(game: GameState, modelId: string): DiscardContext {
-  const player = game.dealer!;
-  const dealerObj = game.players.find((p) => p.position === player)!;
-  const hand = dealerObj.hand;
-  const handStr = hand.map(formatCardForPrompt).join(", ");
-  const systemPrompt = buildDiscardSystemPrompt(handStr, game.trump!);
+  if (!game.dealer) {
+    throw new Error("Dealer not set in game state");
+  }
 
-  return { player, modelId, hand, systemPrompt };
+  const player = game.dealer;
+  const dealerObj = game.players.find((p) => p.position === player);
+
+  if (!dealerObj) {
+    throw new Error(`Dealer not found for position: ${player}`);
+  }
+
+  const hand = dealerObj.hand;
+
+  if (hand.length === 0) {
+    throw new Error(`Dealer has empty hand for position: ${player}`);
+  }
+
+  if (!game.trump) {
+    throw new Error("Trump not set in game state during discard");
+  }
+
+  const handList = hand.map(formatCardForPrompt).join(", ");
+  const systemPrompt = buildDiscardSystemPrompt(handList, game.trump);
+
+  return { player, modelId, hand, handList, systemPrompt };
+}
+
+// =============================================================================
+// Result Processing
+// =============================================================================
+
+interface ProcessedResult {
+  card: Card;
+  reasoning: string;
+  confidence: number;
+  illegalAttempt?: { card: Card; reasoning: string };
+  isFallback?: boolean;
+  isValid: boolean;
+}
+
+function processDiscardResult(
+  response: DiscardResponse,
+  ctx: DiscardContext,
+  previousAttempt?: { card: Card; reasoning: string },
+): ProcessedResult {
+  const card = findCardInHand(response.rank as Rank, response.suit as Suit, ctx.hand);
+  const isValid = !!card;
+  const confidence = response.confidence ?? 50; // Default to 50% if not provided
+
+  if (isValid && !previousAttempt) {
+    return { card: card!, reasoning: response.reasoning, confidence, isValid: true };
+  }
+
+  if (isValid && previousAttempt) {
+    return { card: card!, reasoning: response.reasoning, confidence, illegalAttempt: previousAttempt, isValid: true };
+  }
+
+  // Invalid after retry - fallback
+  if (previousAttempt) {
+    if (ctx.hand.length === 0) {
+      throw new Error("Cannot discard from empty hand");
+    }
+    const fallbackCard = ctx.hand[0]!;
+    logger.warn(
+      `[AI-Agent] Illegal card persisted after retry from ${ctx.player} (${ctx.modelId}). Falling back to first card in hand.`,
+    );
+    return {
+      card: fallbackCard,
+      reasoning: response.reasoning + `\n\n[Fell back to first card in hand: ${formatCardForPrompt(fallbackCard)}]`,
+      confidence,
+      illegalAttempt: previousAttempt,
+      isFallback: true,
+      isValid: true, // Fallback is always valid
+    };
+  }
+
+  // First attempt invalid - need retry
+  const attemptedCard = { rank: response.rank as Rank, suit: response.suit as Suit };
+  return { card: attemptedCard as Card, reasoning: response.reasoning, confidence, isValid: false };
 }
 
 // =============================================================================
@@ -70,95 +147,100 @@ async function makeDiscardDecisionInternal(options: DiscardOptions): Promise<Dis
     action: "discard",
   });
 
-  const timeout = createTimeout();
-  let usage: LanguageModelUsage | undefined;
-  let response: DiscardResponse;
+  const model = getModel(modelId);
 
-  try {
-    if (isStreaming) {
-      const { partialObjectStream, object: finalObjectPromise, usage: usagePromise } = await withRetry(
-        async () =>
-          streamObject({
-            model: getModel(modelId),
-            schema: DiscardSchema,
-            schemaName: "Discard",
-            schemaDescription: "A discard decision in Euchre",
-            ...getModelConfig(modelId),
-            abortSignal: timeout.signal,
-            experimental_telemetry: buildTelemetryConfig("discard_stream", { player: ctx.player, modelId }),
-            messages: [
-              { role: "system", content: ctx.systemPrompt },
-              { role: "user", content: "Which card do you discard?" },
-            ],
-          }),
-        `Discard stream for ${ctx.player} (${modelId})`,
-      );
+  const attemptDecision = async (retryNote?: string): Promise<{ response: DiscardResponse; usage?: LanguageModelUsage }> => {
+    const userContent = retryNote ? `Which card do you discard?\n\n${retryNote}` : "Which card do you discard?";
+    const timeout = createTimeout();
 
-      // Stream reasoning tokens
-      let lastReasoning = "";
-      for await (const partial of partialObjectStream) {
-        if (partial.reasoning && partial.reasoning !== lastReasoning) {
-          const newText = partial.reasoning.slice(lastReasoning.length);
-          if (newText) onToken!(newText);
-          lastReasoning = partial.reasoning;
+    try {
+      if (isStreaming) {
+        const { partialObjectStream, object: finalObjectPromise, usage: usagePromise } = await withRetry(
+          async () =>
+            streamObject({
+              model,
+              schema: DiscardSchema,
+              schemaName: "Discard",
+              schemaDescription: "A discard decision in Euchre",
+              ...getModelConfig(modelId),
+              abortSignal: timeout.signal,
+              experimental_telemetry: buildTelemetryConfig("discard_stream", { player: ctx.player, modelId }),
+              messages: [
+                { role: "system", content: ctx.systemPrompt },
+                { role: "user", content: userContent },
+              ],
+            }),
+          `Discard stream for ${ctx.player} (${modelId})`,
+        );
+
+        // Stream reasoning tokens
+        let lastReasoning = "";
+        for await (const partial of partialObjectStream) {
+          if (partial.reasoning && partial.reasoning !== lastReasoning) {
+            const newText = partial.reasoning.slice(lastReasoning.length);
+            if (newText) onToken!(newText);
+            lastReasoning = partial.reasoning;
+          }
         }
+
+        const [response, usage] = await Promise.all([finalObjectPromise, usagePromise]);
+        return { response, usage };
+      } else {
+        const { object, usage } = await withRetry(
+          () =>
+            generateObject({
+              model,
+              schema: DiscardSchema,
+              schemaName: "Discard",
+              schemaDescription: "A discard decision in Euchre",
+              ...getModelConfig(modelId),
+              abortSignal: timeout.signal,
+              experimental_telemetry: buildTelemetryConfig("discard", { player: ctx.player, modelId }),
+              messages: [
+                { role: "system", content: ctx.systemPrompt },
+                { role: "user", content: userContent },
+              ],
+            }),
+          `Discard for ${ctx.player} (${modelId})`,
+        );
+        return { response: object, usage };
       }
-
-      [response, usage] = await Promise.all([finalObjectPromise, usagePromise]);
-    } else {
-      const result = await withRetry(
-        () =>
-          generateObject({
-            model: getModel(modelId),
-            schema: DiscardSchema,
-            schemaName: "Discard",
-            schemaDescription: "A discard decision in Euchre",
-            ...getModelConfig(modelId),
-            abortSignal: timeout.signal,
-            experimental_telemetry: buildTelemetryConfig("discard", { player: ctx.player, modelId }),
-            messages: [
-              { role: "system", content: ctx.systemPrompt },
-              { role: "user", content: "Which card do you discard?" },
-            ],
-          }),
-        `Discard for ${ctx.player} (${modelId})`,
-      );
-
-      response = result.object;
-      usage = result.usage;
+    } finally {
+      timeout.cleanup();
     }
-  } finally {
-    timeout.cleanup();
+  };
+
+  // First attempt
+  const { response: firstResponse, usage } = await attemptDecision();
+  let result = processDiscardResult(firstResponse, ctx);
+
+  // Retry if invalid card selected
+  if (!result.isValid) {
+    const chosenCardStr = `${firstResponse.rank} of ${firstResponse.suit}`;
+    logger.warn("Illegal card selected, retrying", { correlationId, player: ctx.player, modelId, attemptedCard: chosenCardStr });
+
+    const { response: retryResponse } = await attemptDecision(buildRetryNote(chosenCardStr, ctx.handList));
+    result = processDiscardResult(retryResponse, ctx, { card: result.card, reasoning: result.reasoning });
   }
 
-  const discardedCard = findCardInHand(response.rank as Rank, response.suit as Suit, ctx.hand);
-
-  if (!discardedCard) {
-    logger.warn("Discard card not in hand, using first card", {
-      correlationId,
-      player: ctx.player,
-      modelId,
-      attemptedCard: `${response.rank} of ${response.suit}`,
-    });
-  }
-
-  const finalCard = discardedCard ?? ctx.hand[0]!;
   const duration = Date.now() - startTime;
-
   logger.info(`Discard ${isStreaming ? "streaming " : ""}completed`, {
     correlationId,
     player: ctx.player,
     modelId,
-    card: cardToString(finalCard),
+    card: cardToString(result.card),
     duration,
     tokenUsage: mapUsageToTokenUsage(usage),
+    isFallback: result.isFallback,
   });
 
   return {
-    card: finalCard,
-    reasoning: response.reasoning,
-    confidence: response.confidence ?? 50,
+    card: result.card,
+    reasoning: result.reasoning,
+    confidence: result.confidence,
     duration,
+    illegalAttempt: result.illegalAttempt,
+    isFallback: result.isFallback,
   };
 }
 

@@ -398,9 +398,19 @@ describe("makeDiscardDecision (non-streaming)", () => {
       p.position === game.dealer ? { ...p, hand: dealerHand } : p,
     );
 
+    // First attempt: invalid card
     (generateObject as any).mockResolvedValueOnce({
       object: {
         reasoning: "Discarding a card I don't have.",
+        rank: "ace",
+        suit: "spades",
+      },
+    });
+
+    // Second attempt (retry): still invalid
+    (generateObject as any).mockResolvedValueOnce({
+      object: {
+        reasoning: "Still trying an invalid card.",
         rank: "ace",
         suit: "spades",
       },
@@ -410,6 +420,8 @@ describe("makeDiscardDecision (non-streaming)", () => {
 
     // Should fall back to first card in hand
     expect(result.card).toEqual({ suit: "hearts", rank: "jack" });
+    expect(result.isFallback).toBe(true);
+    expect(result.illegalAttempt).toBeDefined();
   });
 
   it("uses default confidence when not provided", async () => {
@@ -496,6 +508,7 @@ describe("makeDiscardDecisionStreaming", () => {
       p.position === game.dealer ? { ...p, hand: dealerHand } : p,
     );
 
+    // First attempt: invalid card
     (streamObject as any).mockResolvedValueOnce({
       partialObjectStream: createMockStream([]),
       object: Promise.resolve({
@@ -506,10 +519,23 @@ describe("makeDiscardDecisionStreaming", () => {
       usage: Promise.resolve({ promptTokens: 100, completionTokens: 50, totalTokens: 150 }),
     });
 
+    // Second attempt (retry): still invalid
+    (streamObject as any).mockResolvedValueOnce({
+      partialObjectStream: createMockStream([]),
+      object: Promise.resolve({
+        reasoning: "Still trying an invalid card.",
+        rank: "ace",
+        suit: "spades",
+      }),
+      usage: Promise.resolve({ promptTokens: 100, completionTokens: 50, totalTokens: 150 }),
+    });
+
     const result = await makeDiscardDecisionStreaming(game, "m1", () => {});
 
     // Should fall back to first card in hand
     expect(result.card).toEqual({ suit: "hearts", rank: "jack" });
+    expect(result.isFallback).toBe(true);
+    expect(result.illegalAttempt).toBeDefined();
   });
 });
 

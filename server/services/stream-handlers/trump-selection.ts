@@ -15,22 +15,35 @@ import type { StreamContext, PhaseResult, DecisionRecord } from "./types";
 export async function handleTrumpSelection(ctx: StreamContext): Promise<PhaseResult> {
   let game = ctx.game;
   const decisions: DecisionRecord[] = [];
-  const round = game.trumpSelection!.round;
+
+  if (!game.trumpSelection) {
+    throw new Error("Trump selection phase not initialized");
+  }
+
+  const round = game.trumpSelection.round;
   const bidsNeeded = 4;
 
   const currentRoundBids =
     round === 1
-      ? game.trumpSelection!.bids.filter(
+      ? game.trumpSelection.bids.filter(
           (b: { action: TrumpBidAction }) =>
             b.action === "order_up" || b.action === "pass"
         )
-      : game.trumpSelection!.bids.slice(4);
+      : game.trumpSelection.bids.slice(4);
 
   for (let i = currentRoundBids.length; i < bidsNeeded; i++) {
-    const currentBidder = game.trumpSelection!.currentBidder;
+    if (!game.trumpSelection) {
+      throw new Error("Trump selection phase not initialized during bidding");
+    }
+
+    const currentBidder = game.trumpSelection.currentBidder;
     const playerObj = game.players.find(
       (p: { position: Position }) => p.position === currentBidder
-    )!;
+    );
+
+    if (!playerObj) {
+      throw new Error(`Player not found for position: ${currentBidder}`);
+    }
 
     ctx.sendEvent("player_thinking", {
       player: currentBidder,
@@ -133,7 +146,11 @@ async function handleDealerDiscard(
 ): Promise<TrackedGameState> {
   const dealerObj = game.players.find(
     (p: { position: Position }) => p.position === game.dealer
-  )!;
+  );
+
+  if (!dealerObj) {
+    throw new Error(`Dealer not found for position: ${game.dealer}`);
+  }
 
   if (dealerObj.hand.length !== 6) {
     return game;

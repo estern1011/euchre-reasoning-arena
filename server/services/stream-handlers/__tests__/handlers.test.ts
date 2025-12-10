@@ -84,10 +84,10 @@ vi.mock("../../../../lib/game/game", async (importOriginal) => {
 
 const modelIds: [string, string, string, string] = ["model-1", "model-2", "model-3", "model-4"];
 
-function createMockContext(): { ctx: StreamContext; events: Array<{ type: string; data: any }> } {
-  const events: Array<{ type: string; data: any }> = [];
+function createMockContext(): { ctx: StreamContext; events: Array<{ type: string; data: Record<string, unknown> }> } {
+  const events: Array<{ type: string; data: Record<string, unknown> }> = [];
   const ctx: StreamContext = {
-    sendEvent: (type: string, data: any) => {
+    sendEvent: (type: string, data: Record<string, unknown>) => {
       events.push({ type, data });
     },
     game: createNewGame(modelIds) as TrackedGameState,
@@ -95,11 +95,11 @@ function createMockContext(): { ctx: StreamContext; events: Array<{ type: string
   return { ctx, events };
 }
 
-function createPlayingContext(): { ctx: StreamContext; events: Array<{ type: string; data: any }> } {
-  const events: Array<{ type: string; data: any }> = [];
+function createPlayingContext(): { ctx: StreamContext; events: Array<{ type: string; data: Record<string, unknown> }> } {
+  const events: Array<{ type: string; data: Record<string, unknown> }> = [];
   const game = createGameWithTrump(modelIds, "hearts") as TrackedGameState;
   const ctx: StreamContext = {
-    sendEvent: (type: string, data: any) => {
+    sendEvent: (type: string, data: Record<string, unknown>) => {
       events.push({ type, data });
     },
     game,
@@ -132,6 +132,16 @@ describe("Trump Selection Handler", () => {
     const { handleTrumpSelection } = await import("../trump-selection");
     expect(handleTrumpSelection).toBeDefined();
     expect(typeof handleTrumpSelection).toBe("function");
+  });
+
+  it("should throw when trumpSelection is undefined", async () => {
+    const { handleTrumpSelection } = await import("../trump-selection");
+    const { ctx, events } = createMockContext();
+
+    // Remove trumpSelection to trigger error
+    ctx.game.trumpSelection = undefined as any;
+
+    await expect(handleTrumpSelection(ctx)).rejects.toThrow("Trump selection phase not initialized");
   });
 
   it("should send player_thinking event for each bidder", async () => {
@@ -198,6 +208,18 @@ describe("Trump Selection Handler", () => {
     expect(roundCompleteEvents[0].data).toHaveProperty("gameState");
     expect(roundCompleteEvents[0].data).toHaveProperty("phase");
     expect(roundCompleteEvents[0].data).toHaveProperty("decisions");
+  });
+
+  it("should propagate error when AI agent fails", async () => {
+    const { makeTrumpBidDecisionStreaming } = await import("../../ai-agent");
+    const { handleTrumpSelection } = await import("../trump-selection");
+
+    // Mock AI agent to reject with error
+    (makeTrumpBidDecisionStreaming as any).mockRejectedValue(new Error("AI service unavailable"));
+
+    const { ctx, events } = createMockContext();
+
+    await expect(handleTrumpSelection(ctx)).rejects.toThrow("AI service unavailable");
   });
 });
 
@@ -326,6 +348,29 @@ describe("Playing Phase Handler", () => {
     expect(roundCompleteEvents.length).toBe(1);
     expect(roundCompleteEvents[0].data).toHaveProperty("trickWinner");
     expect(roundCompleteEvents[0].data).toHaveProperty("trickNumber");
+  });
+
+  it("should throw when player is not found", async () => {
+    const { handlePlayingPhase } = await import("../playing");
+    const { getNextPlayer } = await import("../../../../lib/game/game");
+    const { ctx, events } = createPlayingContext();
+
+    // Mock getNextPlayer to return a position that doesn't exist
+    (getNextPlayer as any).mockReturnValue("invalid-position" as any);
+
+    await expect(handlePlayingPhase(ctx)).rejects.toThrow("Player not found for position:");
+  });
+
+  it("should propagate error when AI agent fails", async () => {
+    const { makeCardPlayDecisionStreaming } = await import("../../ai-agent");
+    const { handlePlayingPhase } = await import("../playing");
+
+    // Mock AI agent to reject with error
+    (makeCardPlayDecisionStreaming as any).mockRejectedValue(new Error("Model timeout"));
+
+    const { ctx, events } = createPlayingContext();
+
+    await expect(handlePlayingPhase(ctx)).rejects.toThrow("Model timeout");
   });
 });
 
