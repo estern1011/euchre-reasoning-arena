@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createNewGame, createGameWithTrump } from "../../../../lib/game/game";
 import type { StreamContext, DecisionRecord } from "../types";
 import type { TrackedGameState } from "../../game-tracker";
+import type { GameState, Position, Card } from "../../../../lib/game/types";
 
 /**
  * Tests for SSE stream phase handlers
@@ -26,6 +27,60 @@ vi.mock("../../game-tracker", () => ({
   completeHandTracking: vi.fn(),
   completeGameTracking: vi.fn(),
 }));
+
+// Mock game functions used in playing phase to avoid validation errors
+vi.mock("../../../../lib/game/game", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../lib/game/game")>();
+  return {
+    ...actual,
+    // Mock playCard to skip validation and simulate trick completion
+    playCard: vi.fn((game: GameState, player: Position, card: Card, reasoning?: string) => {
+      // Remove card from player's hand
+      const playerIndex = game.players.findIndex((p) => p.position === player);
+      const playerObj = game.players[playerIndex]!;
+      const updatedPlayers = [...game.players];
+      updatedPlayers[playerIndex] = {
+        ...playerObj,
+        hand: playerObj.hand.filter((c) => !(c.rank === card.rank && c.suit === card.suit)),
+      };
+
+      // Add to current trick
+      const updatedTrick = {
+        ...game.currentTrick,
+        plays: [...game.currentTrick.plays, { player, card, reasoning }],
+      };
+
+      // Check if trick complete (4 plays or 3 if going alone)
+      const expectedPlays = game.goingAlone ? 3 : 4;
+      if (updatedTrick.plays.length === expectedPlays) {
+        // Trick complete - add to completed tricks with winner
+        return {
+          ...game,
+          players: updatedPlayers,
+          currentTrick: { leadPlayer: player, plays: [], winner: undefined },
+          completedTricks: [
+            ...game.completedTricks,
+            { ...updatedTrick, winner: player },
+          ],
+        };
+      }
+
+      return {
+        ...game,
+        players: updatedPlayers,
+        currentTrick: updatedTrick,
+      };
+    }),
+    // Mock getNextPlayer to cycle through positions based on leadPlayer
+    getNextPlayer: vi.fn((game: GameState): Position => {
+      const positions: Position[] = ["north", "east", "south", "west"];
+      const currentPlays = game.currentTrick.plays.length;
+      const leadPlayer = (game.currentTrick as any).leadPlayer as Position;
+      const leaderIndex = positions.indexOf(leadPlayer);
+      return positions[(leaderIndex + currentPlays) % 4];
+    }),
+  };
+});
 
 const modelIds: [string, string, string, string] = ["model-1", "model-2", "model-3", "model-4"];
 
