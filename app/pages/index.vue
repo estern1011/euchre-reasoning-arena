@@ -56,6 +56,18 @@
                                 <option :value="10">10</option>
                             </select>
                         </div>
+                        <div class="config-row">
+                            <label class="config-label">strategyHints:</label>
+                            <button
+                                type="button"
+                                class="toggle-button"
+                                :class="{ active: strategyHints }"
+                                @click="strategyHints = !strategyHints"
+                            >
+                                {{ strategyHints ? 'true' : 'false' }}
+                            </button>
+                            <span class="hint-text">{{ strategyHints ? '// guided mode' : '// raw reasoning' }}</span>
+                        </div>
                     </div>
 
                     <div class="closing-brace">}</div>
@@ -97,6 +109,7 @@ const modelOptions = ref<ModelOption[]>([]);
 const loading = ref(true);
 
 const winningScore = ref(10);
+const strategyHints = ref(true);
 
 // Fetch models from API on mount
 onMounted(async () => {
@@ -121,8 +134,9 @@ onMounted(async () => {
 });
 
 const startGame = () => {
-    // Set winning score in the store before navigating
+    // Set game options in the store before navigating
     gameStore.setWinningScore(winningScore.value);
+    gameStore.setStrategyHints(strategyHints.value);
     navigateTo("/game");
 };
 </script>
@@ -259,6 +273,11 @@ const startGame = () => {
     display: flex;
     align-items: center;
     gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.config-row:last-child {
+    margin-bottom: 0;
 }
 
 .config-label {
@@ -296,6 +315,42 @@ const startGame = () => {
 .score-selector option {
     background: #0a0a0a;
     color: var(--color-text);
+}
+
+.toggle-button {
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(107, 114, 128, 0.3);
+    border-radius: 0;
+    color: #f87171;
+    font-family: "Courier New", monospace;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.toggle-button:hover {
+    border-color: rgba(56, 189, 186, 0.5);
+    background: rgba(56, 189, 186, 0.05);
+}
+
+.toggle-button.active {
+    color: #a3e635;
+    border-color: rgba(163, 230, 53, 0.4);
+    background: rgba(163, 230, 53, 0.1);
+}
+
+.toggle-button.active:hover {
+    border-color: rgba(163, 230, 53, 0.6);
+    background: rgba(163, 230, 53, 0.15);
+}
+
+.hint-text {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    font-style: italic;
 }
 
 .live-badge {

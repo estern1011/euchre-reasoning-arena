@@ -4,17 +4,24 @@ import type { SSEMessage } from "../../lib/types/sse";
 
 export type { SSEMessage } from "../../lib/types/sse";
 
+export interface StreamOptions {
+  strategyHints?: boolean;
+}
+
 export function useGameStreaming() {
   const isStreaming = ref(false);
 
-  async function* streamGameRound(gameState: GameState): AsyncGenerator<SSEMessage> {
+  async function* streamGameRound(
+    gameState: GameState,
+    options: StreamOptions = {}
+  ): AsyncGenerator<SSEMessage> {
     isStreaming.value = true;
 
     try {
       const response = await fetch("/api/stream-next-round", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameState }),
+        body: JSON.stringify({ gameState, options }),
       });
 
       if (!response.ok) {

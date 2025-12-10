@@ -8,7 +8,7 @@ import {
   createRound2SchemaExcludingSuit,
   createRound2DealerSchemaExcludingSuit,
 } from "./schemas";
-import { buildTrumpBidSystemPrompt } from "./prompts";
+import { buildTrumpBidSystemPrompt, type PromptOptions } from "./prompts";
 import type { TrumpBidResult } from "./types";
 import { mapUsageToTokenUsage } from "./types";
 
@@ -30,7 +30,7 @@ function isDealerMustCall(game: GameState, player: Position): boolean {
 }
 
 /** Get the appropriate schema and config based on bidding context */
-function getTrumpBidConfig(game: GameState, player: Position) {
+function getTrumpBidConfig(game: GameState, player: Position, promptOptions?: PromptOptions) {
   const { round, turnedUpCard } = game.trumpSelection!;
   const mustCall = isDealerMustCall(game, player);
   const excludedSuit = turnedUpCard.suit;
@@ -40,7 +40,7 @@ function getTrumpBidConfig(game: GameState, player: Position) {
       schema: TrumpBidRound1Schema,
       schemaName: "TrumpBidRound1",
       schemaDescription: "Round 1 trump bid: order_up or pass",
-      systemPrompt: buildTrumpBidSystemPrompt(1, excludedSuit, false),
+      systemPrompt: buildTrumpBidSystemPrompt(1, excludedSuit, false, promptOptions),
     };
   }
 
@@ -49,7 +49,7 @@ function getTrumpBidConfig(game: GameState, player: Position) {
       schema: createRound2DealerSchemaExcludingSuit(excludedSuit),
       schemaName: "TrumpBidRound2Dealer",
       schemaDescription: `Round 2 dealer must call trump (not ${excludedSuit})`,
-      systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, true),
+      systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, true, promptOptions),
     };
   }
 
@@ -57,7 +57,7 @@ function getTrumpBidConfig(game: GameState, player: Position) {
     schema: createRound2SchemaExcludingSuit(excludedSuit),
     schemaName: "TrumpBidRound2",
     schemaDescription: `Round 2 trump bid: call_trump (not ${excludedSuit}) or pass`,
-    systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, false),
+    systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, false, promptOptions),
   };
 }
 
@@ -71,14 +71,15 @@ interface TrumpBidOptions {
   modelId: string;
   customPrompt?: string;
   onToken?: (token: string) => void;
+  promptOptions?: PromptOptions;
 }
 
 async function makeTrumpBidDecisionInternal(options: TrumpBidOptions): Promise<TrumpBidResult> {
-  const { game, player, modelId, customPrompt, onToken } = options;
+  const { game, player, modelId, customPrompt, onToken, promptOptions } = options;
   const correlationId = generateCorrelationId();
   const startTime = Date.now();
   const gameContext = formatTrumpSelectionForAI(game, player);
-  const config = getTrumpBidConfig(game, player);
+  const config = getTrumpBidConfig(game, player, promptOptions);
   const round = game.trumpSelection!.round;
   const isStreaming = !!onToken;
 
@@ -179,8 +180,9 @@ export async function makeTrumpBidDecision(
   player: Position,
   modelId: string,
   customPrompt?: string,
+  promptOptions?: PromptOptions,
 ): Promise<TrumpBidResult> {
-  return makeTrumpBidDecisionInternal({ game, player, modelId, customPrompt });
+  return makeTrumpBidDecisionInternal({ game, player, modelId, customPrompt, promptOptions });
 }
 
 export async function makeTrumpBidDecisionStreaming(
@@ -189,6 +191,7 @@ export async function makeTrumpBidDecisionStreaming(
   modelId: string,
   onToken: (token: string) => void,
   customPrompt?: string,
+  promptOptions?: PromptOptions,
 ): Promise<TrumpBidResult> {
-  return makeTrumpBidDecisionInternal({ game, player, modelId, customPrompt, onToken });
+  return makeTrumpBidDecisionInternal({ game, player, modelId, customPrompt, onToken, promptOptions });
 }

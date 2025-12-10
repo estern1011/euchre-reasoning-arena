@@ -45,6 +45,11 @@ export default defineEventHandler(async (event) => {
 
   const body = parseResult.data;
 
+  // Extract options (with defaults)
+  const promptOptions = {
+    strategyHints: body.options?.strategyHints ?? true,
+  };
+
   // Initialize game state - always defined after this point
   const initialGame: GameState = body.gameState
     ? (body.gameState as GameState)
@@ -101,7 +106,9 @@ export default defineEventHandler(async (event) => {
                   player: currentBidder,
                   token,
                 });
-              }
+              },
+              undefined, // customPrompt
+              promptOptions
             );
             sendEvent("decision_made", {
               player: currentBidder,
@@ -174,7 +181,8 @@ export default defineEventHandler(async (event) => {
                       player: game.dealer,
                       token,
                     });
-                  }
+                  },
+                  promptOptions
                 );
 
                 sendEvent("decision_made", {
@@ -285,6 +293,7 @@ export default defineEventHandler(async (event) => {
               },
               undefined, // customPrompt
               toolCallbacks,
+              promptOptions
             );
 
             // Send illegal attempt event if one occurred

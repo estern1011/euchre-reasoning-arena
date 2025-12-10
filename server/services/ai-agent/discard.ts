@@ -4,7 +4,7 @@ import { cardToString, cardsEqual } from "../../../lib/game/card";
 import { logger, generateCorrelationId } from "./logger";
 import { getModel, withRetry, createTimeout, buildTelemetryConfig, getModelConfig } from "./config";
 import { DiscardSchema, type DiscardResponse } from "./schemas";
-import { buildDiscardSystemPrompt } from "./prompts";
+import { buildDiscardSystemPrompt, type PromptOptions } from "./prompts";
 import type { DiscardResult } from "./types";
 import { mapUsageToTokenUsage } from "./types";
 
@@ -24,6 +24,7 @@ export async function makeDiscardDecisionStreaming(
   game: GameState,
   modelId: string,
   onToken: (token: string) => void,
+  promptOptions?: PromptOptions,
 ): Promise<DiscardResult> {
   const correlationId = generateCorrelationId();
   const startTime = Date.now();
@@ -31,7 +32,7 @@ export async function makeDiscardDecisionStreaming(
   const dealerObj = game.players.find((p) => p.position === player)!;
   const hand = dealerObj.hand;
   const handStr = hand.map(formatCardForPrompt).join(", ");
-  const systemPrompt = buildDiscardSystemPrompt(handStr, game.trump!);
+  const systemPrompt = buildDiscardSystemPrompt(handStr, game.trump!, promptOptions);
 
   logger.info("Discard starting", { correlationId, player, modelId, action: "discard" });
 

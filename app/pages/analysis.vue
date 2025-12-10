@@ -2,7 +2,9 @@
     <div class="analysis-container">
         <header class="analysis-header">
             <div class="header-left">
-                <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+                <NuxtLink to="/" class="logo-link">
+                    <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+                </NuxtLink>
             </div>
             <div class="header-center">
                 <div class="mode-switcher">
@@ -547,6 +549,15 @@ function getToolIcon(tool: string): string {
     display: flex;
     align-items: center;
     flex: 1;
+}
+
+.logo-link {
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.logo-link:hover {
+    opacity: 0.8;
 }
 
 .header-left h1 {

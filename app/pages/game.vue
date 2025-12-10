@@ -2,7 +2,9 @@
     <div class="game-container">
         <header class="game-header">
             <div class="header-left">
-                <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+                <NuxtLink to="/" class="logo-link">
+                    <h1><span class="bracket">&lt;</span>euchre.<span class="accent">arena</span><span class="bracket"> /&gt;</span></h1>
+                </NuxtLink>
             </div>
             <div class="header-center">
                 <div class="mode-switcher">
@@ -88,8 +90,17 @@
                     class="reasoning-fixed"
                 />
 
-                <!-- Reasoning History Button -->
+                <!-- Action Buttons -->
                 <div class="history-section">
+                    <button
+                        class="history-button prompt-button-action"
+                        type="button"
+                        :disabled="!gameStore.gameState"
+                        @click="showPromptModal = true"
+                    >
+                        <span class="button-text">viewPrompt()</span>
+                        <span class="cursor-prompt">&gt;_</span>
+                    </button>
                     <button
                         class="history-button"
                         type="button"
@@ -113,6 +124,12 @@
             v-if="showScoringModal"
             @close="showScoringModal = false"
         />
+
+        <!-- Prompt Viewer Modal -->
+        <PromptModal
+            :is-open="showPromptModal"
+            @close="showPromptModal = false"
+        />
     </div>
 </template>
 
@@ -120,6 +137,7 @@
 import { ref, onMounted, computed, watch, onUnmounted } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
 import ScoringModal from "~/components/ScoringModal.vue";
+import PromptModal from "~/components/PromptModal.vue";
 import LiveStatusBanner from "~/components/LiveStatusBanner.vue";
 import GameMetaInfo from "~/components/GameMetaInfo.vue";
 import GameControls from "~/components/GameControls.vue";
@@ -331,6 +349,7 @@ const activityLog = ref<string[]>([]);
 // Modals
 const showReasoningModal = ref(false);
 const showScoringModal = ref(false);
+const showPromptModal = ref(false);
 
 // Calculate tricks won by each player from completedTricks
 const tricksWonByPlayer = computed(() => {
@@ -374,7 +393,9 @@ const handlePlayNextRound = async () => {
     gameStore.startStreaming();
 
     try {
-        for await (const message of streamGameRound(gameStore.gameState)) {
+        for await (const message of streamGameRound(gameStore.gameState, {
+            strategyHints: gameStore.strategyHints,
+        })) {
             switch (message.type) {
                 case 'player_thinking':
                     gameStore.setThinkingPlayer(message.player!);
@@ -735,6 +756,15 @@ onMounted(() => {
     display: flex;
     align-items: center;
     flex: 1;
+}
+
+.logo-link {
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.logo-link:hover {
+    opacity: 0.8;
 }
 
 .header-center {
@@ -1175,6 +1205,7 @@ onMounted(() => {
     display: flex;
     justify-content: flex-end;
     flex-shrink: 0;
+    gap: 0.5rem;
 }
 
 .history-button {
@@ -1203,6 +1234,17 @@ onMounted(() => {
 
 .history-button:active {
     background: rgba(56, 189, 186, 0.15);
+}
+
+.history-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.history-button:disabled:hover {
+    background: rgba(56, 189, 186, 0.05);
+    border-color: rgba(56, 189, 186, 0.3);
+    color: #38bdb8;
 }
 
 .history-button .badge {
