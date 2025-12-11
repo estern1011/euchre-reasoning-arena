@@ -32,6 +32,8 @@ export interface DiscardResult {
   reasoning: string;
   confidence: number;
   duration: number;
+  illegalAttempt?: { card: Card; reasoning: string };
+  isFallback?: boolean;
   toolUsed?: ToolResult;
 }
 

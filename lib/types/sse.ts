@@ -111,6 +111,11 @@ export interface SSEToolResult {
   duration: number;
 }
 
+export interface SSEResponsePhase {
+  type: "response_phase";
+  player: Position;
+}
+
 export interface SSERoundComplete {
   type: "round_complete";
   gameState: GameState;
@@ -149,7 +154,8 @@ export type SSEMessage =
   | SSEError
   | SSEToolRequest
   | SSEToolProgress
-  | SSEToolResult;
+  | SSEToolResult
+  | SSEResponsePhase;
 
 // Type guard functions
 export function isPlayerThinking(msg: SSEMessage): msg is SSEPlayerThinking {
@@ -187,4 +193,8 @@ export function isToolProgress(msg: SSEMessage): msg is SSEToolProgress {
 
 export function isToolResult(msg: SSEMessage): msg is SSEToolResult {
   return msg.type === "tool_result";
+}
+
+export function isResponsePhase(msg: SSEMessage): msg is SSEResponsePhase {
+  return msg.type === "response_phase";
 }
