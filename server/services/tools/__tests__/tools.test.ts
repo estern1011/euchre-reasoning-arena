@@ -6,6 +6,9 @@ import {
   type AskAudienceResult,
   type SituationLookupResult,
   type FiftyFiftyResult,
+  type HandStrengthResult,
+  type CardCounterResult,
+  type TrumpTrackerResult,
 } from "../types";
 import { shouldUseTool, buildToolContext } from "../index";
 import type { GameState, Position } from "../../../../lib/game/types";
@@ -16,16 +19,22 @@ import type { GameState, Position } from "../../../../lib/game/types";
 
 describe("Tool Definitions", () => {
   describe("TOOL_DEFINITIONS", () => {
-    it("should have all three tools defined", () => {
+    it("should have all six tools defined", () => {
       expect(TOOL_DEFINITIONS.ask_audience).toBeDefined();
       expect(TOOL_DEFINITIONS.situation_lookup).toBeDefined();
       expect(TOOL_DEFINITIONS.fifty_fifty).toBeDefined();
+      expect(TOOL_DEFINITIONS.hand_strength).toBeDefined();
+      expect(TOOL_DEFINITIONS.card_counter).toBeDefined();
+      expect(TOOL_DEFINITIONS.trump_tracker).toBeDefined();
     });
 
     it("should have correct costs", () => {
       expect(TOOL_DEFINITIONS.ask_audience.cost).toBe(2);
       expect(TOOL_DEFINITIONS.situation_lookup.cost).toBe(1);
       expect(TOOL_DEFINITIONS.fifty_fifty.cost).toBe(3);
+      expect(TOOL_DEFINITIONS.hand_strength.cost).toBe(1);
+      expect(TOOL_DEFINITIONS.card_counter.cost).toBe(1);
+      expect(TOOL_DEFINITIONS.trump_tracker.cost).toBe(1);
     });
 
     it("should have required fields for each tool", () => {
@@ -36,6 +45,12 @@ describe("Tool Definitions", () => {
         expect(tool.description).toBeDefined();
         expect(tool.icon).toBeDefined();
       }
+    });
+
+    it("should have correct icons for new metacognition tools", () => {
+      expect(TOOL_DEFINITIONS.hand_strength.icon).toBe("💪");
+      expect(TOOL_DEFINITIONS.card_counter.icon).toBe("🔢");
+      expect(TOOL_DEFINITIONS.trump_tracker.icon).toBe("🎯");
     });
   });
 
@@ -48,6 +63,9 @@ describe("Tool Definitions", () => {
       expect(getToolCost("ask_audience")).toBe(2);
       expect(getToolCost("situation_lookup")).toBe(1);
       expect(getToolCost("fifty_fifty")).toBe(3);
+      expect(getToolCost("hand_strength")).toBe(1);
+      expect(getToolCost("card_counter")).toBe(1);
+      expect(getToolCost("trump_tracker")).toBe(1);
     });
   });
 });
@@ -62,6 +80,9 @@ describe("Tool Registry", () => {
       expect(shouldUseTool("ask_audience")).toBe(true);
       expect(shouldUseTool("situation_lookup")).toBe(true);
       expect(shouldUseTool("fifty_fifty")).toBe(true);
+      expect(shouldUseTool("hand_strength")).toBe(true);
+      expect(shouldUseTool("card_counter")).toBe(true);
+      expect(shouldUseTool("trump_tracker")).toBe(true);
     });
   });
 
@@ -198,6 +219,127 @@ describe("Tool Result Types", () => {
       expect(result.winningOptions).toBe(2);
       expect(result.revealedWinners).toHaveLength(2);
       expect(result.eliminatedLosers).toHaveLength(2);
+    });
+  });
+
+  describe("HandStrengthResult", () => {
+    it("should have correct structure", () => {
+      const result: HandStrengthResult = {
+        currentTrump: {
+          suit: "hearts",
+          strength: 25,
+          category: "strong",
+          percent: 50,
+        },
+        allSuits: [
+          { suit: "hearts", strength: 25, category: "strong", percent: 50 },
+          { suit: "diamonds", strength: 18, category: "medium", percent: 36 },
+          { suit: "clubs", strength: 12, category: "weak", percent: 24 },
+          { suit: "spades", strength: 10, category: "weak", percent: 20 },
+        ],
+        bestSuit: "hearts",
+        recommendation: "Strong hand for hearts (25 pts). Consider ordering up.",
+      };
+
+      expect(result.bestSuit).toBe("hearts");
+      expect(result.allSuits).toHaveLength(4);
+      expect(result.currentTrump?.category).toBe("strong");
+      expect(result.recommendation).toContain("Strong hand");
+    });
+
+    it("should allow currentTrump to be undefined", () => {
+      const result: HandStrengthResult = {
+        allSuits: [
+          { suit: "hearts", strength: 25, category: "strong", percent: 50 },
+        ],
+        bestSuit: "hearts",
+        recommendation: "Best potential trump: hearts",
+      };
+
+      expect(result.currentTrump).toBeUndefined();
+    });
+  });
+
+  describe("CardCounterResult", () => {
+    it("should have correct structure", () => {
+      const result: CardCounterResult = {
+        bySuit: [
+          {
+            suit: "hearts",
+            played: [{ rank: "ace", suit: "hearts" }],
+            remaining: [{ rank: "king", suit: "hearts" }],
+            count: { played: 1, remaining: 1 },
+          },
+          {
+            suit: "diamonds",
+            played: [],
+            remaining: [{ rank: "ace", suit: "diamonds" }],
+            count: { played: 0, remaining: 1 },
+          },
+          {
+            suit: "clubs",
+            played: [{ rank: "9", suit: "clubs" }],
+            remaining: [],
+            count: { played: 1, remaining: 0 },
+          },
+          {
+            suit: "spades",
+            played: [],
+            remaining: [],
+            count: { played: 0, remaining: 0 },
+          },
+        ],
+        totalPlayed: 2,
+        totalRemaining: 2,
+        summary: "hearts: 1 played, 1 out; diamonds: none played yet",
+      };
+
+      expect(result.bySuit).toHaveLength(4);
+      expect(result.totalPlayed).toBe(2);
+      expect(result.totalRemaining).toBe(2);
+      expect(result.summary).toContain("hearts");
+    });
+  });
+
+  describe("TrumpTrackerResult", () => {
+    it("should have correct structure", () => {
+      const result: TrumpTrackerResult = {
+        trumpSuit: "hearts",
+        trumpPlayed: [
+          { rank: "jack", suit: "hearts" },
+          { rank: "ace", suit: "hearts" },
+        ],
+        trumpRemaining: [
+          { rank: "jack", suit: "diamonds" },
+          { rank: "king", suit: "hearts" },
+        ],
+        leftBowerPlayed: false,
+        rightBowerPlayed: true,
+        playersLikelyVoid: ["east", "west"],
+        summary: "Trump: hearts. 2/7 trump played. Right bower played, left bower still out.",
+      };
+
+      expect(result.trumpSuit).toBe("hearts");
+      expect(result.trumpPlayed).toHaveLength(2);
+      expect(result.trumpRemaining).toHaveLength(2);
+      expect(result.rightBowerPlayed).toBe(true);
+      expect(result.leftBowerPlayed).toBe(false);
+      expect(result.playersLikelyVoid).toContain("east");
+      expect(result.summary).toContain("hearts");
+    });
+
+    it("should allow empty void players", () => {
+      const result: TrumpTrackerResult = {
+        trumpSuit: "spades",
+        trumpPlayed: [],
+        trumpRemaining: [{ rank: "jack", suit: "spades" }],
+        leftBowerPlayed: false,
+        rightBowerPlayed: false,
+        playersLikelyVoid: [],
+        summary: "Trump: spades. 0/7 trump played.",
+      };
+
+      expect(result.playersLikelyVoid).toHaveLength(0);
     });
   });
 
