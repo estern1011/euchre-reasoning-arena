@@ -36,6 +36,27 @@ export const TOOL_DEFINITIONS: Record<Exclude<ToolOption, "none">, ToolDefinitio
     description: "Reveal which cards in your hand can win this trick",
     icon: "⚡",
   },
+  hand_strength: {
+    name: "Hand Strength",
+    id: "hand_strength",
+    cost: 1,
+    description: "Calculate your hand's strength for each potential trump suit",
+    icon: "💪",
+  },
+  card_counter: {
+    name: "Card Counter",
+    id: "card_counter",
+    cost: 1,
+    description: "See all cards played this hand and what remains unplayed",
+    icon: "🔢",
+  },
+  trump_tracker: {
+    name: "Trump Tracker",
+    id: "trump_tracker",
+    cost: 1,
+    description: "Track which trump cards have been played and who may be void",
+    icon: "🎯",
+  },
 };
 
 export function getToolCost(tool: ToolOption): number {
@@ -76,7 +97,7 @@ export interface ToolContext {
 export interface ToolResult {
   tool: Exclude<ToolOption, "none">;
   success: boolean;
-  result: AskAudienceResult | SituationLookupResult | FiftyFiftyResult;
+  result: AskAudienceResult | SituationLookupResult | FiftyFiftyResult | HandStrengthResult | CardCounterResult | TrumpTrackerResult;
   cost: number;
   duration: number;
 }
@@ -124,6 +145,53 @@ export interface FiftyFiftyResult {
   winningOptions: number;
   revealedWinners: Card[];
   eliminatedLosers: Card[];
+}
+
+/**
+ * Hand Strength tool result
+ */
+export interface HandStrengthBySuit {
+  suit: Suit;
+  strength: number;
+  category: "strong" | "medium" | "weak";
+  percent: number;
+}
+
+export interface HandStrengthResult {
+  currentTrump?: HandStrengthBySuit;
+  allSuits: HandStrengthBySuit[];
+  bestSuit: Suit;
+  recommendation: string;
+}
+
+/**
+ * Card Counter tool result
+ */
+export interface CardsBySuit {
+  suit: Suit;
+  played: Card[];
+  remaining: Card[];
+  count: { played: number; remaining: number };
+}
+
+export interface CardCounterResult {
+  bySuit: CardsBySuit[];
+  totalPlayed: number;
+  totalRemaining: number;
+  summary: string;
+}
+
+/**
+ * Trump Tracker tool result
+ */
+export interface TrumpTrackerResult {
+  trumpSuit: Suit;
+  trumpPlayed: Card[];
+  trumpRemaining: Card[];
+  leftBowerPlayed: boolean;
+  rightBowerPlayed: boolean;
+  playersLikelyVoid: string[];
+  summary: string;
 }
 
 /**

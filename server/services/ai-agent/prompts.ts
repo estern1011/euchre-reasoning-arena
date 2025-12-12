@@ -21,6 +21,9 @@ METACOGNITION (Important!):
    - ask_audience: Poll 3 other AI models for their opinions (-2 pts)
    - situation_lookup: Query similar historical situations (-1 pt)
    - fifty_fifty: Reveal which cards can win the trick (-3 pts)
+   - hand_strength: Calculate your hand's strength for each trump suit (-1 pt)
+   - card_counter: See all cards played this hand and what remains (-1 pt)
+   - trump_tracker: Track trump cards played and who may be void (-1 pt)
    - none: No tool needed (recommended if confident)
 
 SCORING: High confidence + correct = +3 pts. High confidence + wrong = -3 pts (overconfidence penalty!).

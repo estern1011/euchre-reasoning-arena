@@ -4,6 +4,9 @@ import { TOOL_DEFINITIONS, getToolCost } from "./types";
 import { executeAskAudience } from "./ask-audience";
 import { executeFiftyFifty } from "./fifty-fifty";
 import { executeSituationLookup } from "./situation-lookup";
+import { executeHandStrength } from "./hand-strength";
+import { executeCardCounter } from "./card-counter";
+import { executeTrumpTracker } from "./trump-tracker";
 
 /**
  * Tool Registry for Metacognition Arena
@@ -42,6 +45,15 @@ export async function executeTool(
         break;
       case "fifty_fifty":
         result = await executeFiftyFifty(request, callbacks);
+        break;
+      case "hand_strength":
+        result = await executeHandStrength(request, callbacks);
+        break;
+      case "card_counter":
+        result = await executeCardCounter(request, callbacks);
+        break;
+      case "trump_tracker":
+        result = await executeTrumpTracker(request, callbacks);
         break;
       default:
         throw new Error(`Unknown tool: ${request.tool}`);
