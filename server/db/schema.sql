@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS decisions (
 
   -- Metacognition features
   confidence INTEGER NOT NULL CHECK(confidence >= 0 AND confidence <= 100),
-  tool_requested TEXT, -- e.g., "ask_audience", "situation_lookup", "fifty_fifty", "none"
+  tool_requested TEXT, -- e.g., "ask_audience", "ask_partner", "fifty_fifty", "none"
   tool_used TEXT, -- What tool was actually executed (if any)
 
   -- Decision outcome
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS tool_executions (
   decision_id INTEGER NOT NULL REFERENCES decisions(id) ON DELETE CASCADE,
 
   -- Tool details
-  tool_name TEXT NOT NULL CHECK(tool_name IN ('ask_audience', 'situation_lookup', 'fifty_fifty')),
+  tool_name TEXT NOT NULL CHECK(tool_name IN ('ask_audience', 'ask_partner', 'fifty_fifty')),
   agent_position INTEGER NOT NULL CHECK(agent_position IN (0, 1, 2, 3)),
 
   -- Execution details

@@ -22,12 +22,12 @@ export const TOOL_DEFINITIONS: Record<Exclude<ToolOption, "none">, ToolDefinitio
     description: "Poll 3 models asking what move they would make",
     icon: "👥",
   },
-  situation_lookup: {
-    name: "Situation Lookup",
-    id: "situation_lookup",
-    cost: 1,
-    description: "Query similar historical hands to see what worked",
-    icon: "📊",
+  ask_partner: {
+    name: "Ask Partner",
+    id: "ask_partner",
+    cost: 2,
+    description: "Ask your partner for advice (they can't see your hand)",
+    icon: "🤝",
   },
   fifty_fifty: {
     name: "50/50",
@@ -76,7 +76,7 @@ export interface ToolContext {
 export interface ToolResult {
   tool: Exclude<ToolOption, "none">;
   success: boolean;
-  result: AskAudienceResult | SituationLookupResult | FiftyFiftyResult;
+  result: AskAudienceResult | AskPartnerResult | FiftyFiftyResult;
   cost: number;
   duration: number;
 }
@@ -101,19 +101,15 @@ export interface AskAudienceResult {
 }
 
 /**
- * Situation Lookup tool result
+ * Ask Partner tool result
  */
-export interface HistoricalSituation {
-  decision: string;
-  successRate: number;
-  occurrences: number;
-  sampleReasoning?: string;
-}
-
-export interface SituationLookupResult {
-  situationsFound: number;
-  recommendations: HistoricalSituation[];
-  confidence: number;
+export interface AskPartnerResult {
+  partnerPosition: Position;
+  partnerModelId: string;
+  partnerModelName: string;
+  question: string;
+  partnerAdvice: string;
+  partnerConfidence: number;
 }
 
 /**

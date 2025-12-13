@@ -1,3 +1,5 @@
+/// <reference types="bun-types" />
+
 /**
  * Database client for Metacognition Arena
  * SQLite database for tracking games, decisions, and calibration metrics

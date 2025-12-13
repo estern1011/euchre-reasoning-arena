@@ -13,6 +13,13 @@ import type { EvolvedInsights } from '../../server/services/analysis/types'
 
 export type ViewMode = 'arena' | 'analysis'
 
+// Agent reflection after a hand (What I Learned)
+export interface AgentReflection {
+  handNumber: number
+  reflection: string  // 1-2 sentence insight
+  timestamp: number
+}
+
 // Tool usage record for history
 export interface ToolUsageRecord {
   tool: string
@@ -123,6 +130,10 @@ export const useGameStore = defineStore('game', {
     latestHandSummary: null as string | null,
     isAnalyzing: false,
     completedHandsCount: 0,
+
+    // Agent Reflections ("What I Learned" - in-game learning)
+    agentReflections: {} as Partial<Record<Position, AgentReflection[]>>,
+    isGeneratingReflections: false,
   }),
 
   getters: {
@@ -639,6 +650,35 @@ export const useGameStore = defineStore('game', {
       this.completedHandsCount++
     },
 
+    // Agent Reflections actions
+    setGeneratingReflections(generating: boolean) {
+      this.isGeneratingReflections = generating
+    },
+
+    addReflection(player: Position, handNumber: number, reflection: string) {
+      if (!this.agentReflections[player]) {
+        this.agentReflections[player] = []
+      }
+      this.agentReflections[player].push({
+        handNumber,
+        reflection,
+        timestamp: Date.now(),
+      })
+    },
+
+    getReflections(player: Position): AgentReflection[] {
+      return this.agentReflections[player] || []
+    },
+
+    // Get formatted reflections for injection into prompts (last 3)
+    getReflectionsForPrompt(player: Position): string {
+      const reflections = this.agentReflections[player] || []
+      if (reflections.length === 0) return ''
+
+      const recent = reflections.slice(-3)
+      return recent.map(r => `- Hand ${r.handNumber}: "${r.reflection}"`).join('\n')
+    },
+
     reset() {
       this.clearGameState()
       this.viewMode = 'arena'
@@ -657,6 +697,8 @@ export const useGameStore = defineStore('game', {
       this.latestHandSummary = null
       this.isAnalyzing = false
       this.completedHandsCount = 0
+      this.agentReflections = {}
+      this.isGeneratingReflections = false
     },
   },
 })

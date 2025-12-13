@@ -1,11 +1,12 @@
 import { ref } from "vue";
-import type { GameState } from "~/types/game";
+import type { GameState, Position } from "~/types/game";
 import type { SSEMessage } from "../../lib/types/sse";
 
 export type { SSEMessage } from "../../lib/types/sse";
 
 export interface StreamOptions {
   strategyHints?: boolean;
+  agentReflections?: Partial<Record<Position, string[]>>;  // Per-agent reflections from previous hands
 }
 
 export function useGameStreaming() {

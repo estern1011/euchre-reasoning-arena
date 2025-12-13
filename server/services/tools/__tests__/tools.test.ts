@@ -4,7 +4,7 @@ import {
   getToolCost,
   type ToolResult,
   type AskAudienceResult,
-  type SituationLookupResult,
+  type AskPartnerResult,
   type FiftyFiftyResult,
 } from "../types";
 import { shouldUseTool, buildToolContext } from "../index";
@@ -18,13 +18,13 @@ describe("Tool Definitions", () => {
   describe("TOOL_DEFINITIONS", () => {
     it("should have all three tools defined", () => {
       expect(TOOL_DEFINITIONS.ask_audience).toBeDefined();
-      expect(TOOL_DEFINITIONS.situation_lookup).toBeDefined();
+      expect(TOOL_DEFINITIONS.ask_partner).toBeDefined();
       expect(TOOL_DEFINITIONS.fifty_fifty).toBeDefined();
     });
 
     it("should have correct costs", () => {
       expect(TOOL_DEFINITIONS.ask_audience.cost).toBe(2);
-      expect(TOOL_DEFINITIONS.situation_lookup.cost).toBe(1);
+      expect(TOOL_DEFINITIONS.ask_partner.cost).toBe(2);
       expect(TOOL_DEFINITIONS.fifty_fifty.cost).toBe(3);
     });
 
@@ -46,7 +46,7 @@ describe("Tool Definitions", () => {
 
     it("should return correct cost for each tool", () => {
       expect(getToolCost("ask_audience")).toBe(2);
-      expect(getToolCost("situation_lookup")).toBe(1);
+      expect(getToolCost("ask_partner")).toBe(2);
       expect(getToolCost("fifty_fifty")).toBe(3);
     });
   });
@@ -60,7 +60,7 @@ describe("Tool Registry", () => {
 
     it("should return true for valid tools", () => {
       expect(shouldUseTool("ask_audience")).toBe(true);
-      expect(shouldUseTool("situation_lookup")).toBe(true);
+      expect(shouldUseTool("ask_partner")).toBe(true);
       expect(shouldUseTool("fifty_fifty")).toBe(true);
     });
   });
@@ -159,23 +159,20 @@ describe("Tool Result Types", () => {
     });
   });
 
-  describe("SituationLookupResult", () => {
+  describe("AskPartnerResult", () => {
     it("should have correct structure", () => {
-      const result: SituationLookupResult = {
-        situationsFound: 5,
-        recommendations: [
-          {
-            decision: "ace of hearts",
-            successRate: 0.8,
-            occurrences: 10,
-            sampleReasoning: "Usually wins the trick",
-          },
-        ],
-        confidence: 75,
+      const result: AskPartnerResult = {
+        partnerPosition: "south",
+        partnerModelId: "anthropic/claude-3-haiku",
+        partnerModelName: "Claude 3 Haiku",
+        question: "What should I do?",
+        partnerAdvice: "Lead with your strongest trump",
+        partnerConfidence: 80,
       };
 
-      expect(result.situationsFound).toBe(5);
-      expect(result.recommendations).toHaveLength(1);
+      expect(result.partnerPosition).toBe("south");
+      expect(result.partnerAdvice).toBe("Lead with your strongest trump");
+      expect(result.partnerConfidence).toBe(80);
     });
   });
 

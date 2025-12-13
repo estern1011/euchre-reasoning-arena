@@ -1,4 +1,4 @@
-import type { Suit } from "../../../lib/game/types";
+import type { Suit, Position } from "../../../lib/game/types";
 
 /**
  * System prompts for AI agent decisions
@@ -7,6 +7,22 @@ import type { Suit } from "../../../lib/game/types";
 
 export interface PromptOptions {
   strategyHints?: boolean;  // Include strategy hints (default: true)
+  agentReflections?: Partial<Record<Position, string[]>>;  // Per-agent reflections from previous hands
+}
+
+/**
+ * Format reflections for injection into prompt (used by position-specific prompts)
+ */
+function formatReflections(reflections: string[] | undefined): string {
+  if (!reflections || reflections.length === 0) return '';
+
+  const recent = reflections.slice(-3);  // Last 3 reflections
+  const formattedReflections = recent.map(r => `- ${r}`).join('\n');
+
+  return `
+WHAT YOU LEARNED FROM PREVIOUS HANDS:
+${formattedReflections}
+Apply these lessons to this decision.`;
 }
 
 // Metacognition prompt section (shared across all decision types)
@@ -19,7 +35,7 @@ METACOGNITION (Important!):
 
 2. You may REQUEST A TOOL if uncertain (costs points but can help):
    - ask_audience: Poll 3 other AI models for their opinions (-2 pts)
-   - situation_lookup: Query similar historical situations (-1 pt)
+   - ask_partner: Ask your partner for advice (they can't see your hand) (-2 pts)
    - fifty_fifty: Reveal which cards can win the trick (-3 pts)
    - none: No tool needed (recommended if confident)
 
@@ -31,8 +47,10 @@ export function buildTrumpBidSystemPrompt(
   turnedUpSuit: Suit,
   isDealerMustCall: boolean,
   options: PromptOptions = {},
+  player?: Position,
 ): string {
-  const { strategyHints = true } = options;
+  const { strategyHints = true, agentReflections } = options;
+  const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
 
   if (round === 1) {
     const strategy = strategyHints
@@ -43,7 +61,7 @@ export function buildTrumpBidSystemPrompt(
 The turned-up card is ${turnedUpSuit}. You may:
 - order_up: Make ${turnedUpSuit} trump (dealer picks up the card)
 - pass: Decline
-${strategy}
+${strategy}${reflections}
 ${METACOGNITION_PROMPT}`;
   }
 
@@ -55,7 +73,7 @@ ${METACOGNITION_PROMPT}`;
 
 The ${turnedUpSuit} was turned down. You are the dealer and MUST call trump.
 Choose any suit EXCEPT ${turnedUpSuit}.
-${strategy}
+${strategy}${reflections}
 ${METACOGNITION_PROMPT}`;
   }
 
@@ -67,22 +85,24 @@ ${METACOGNITION_PROMPT}`;
 The ${turnedUpSuit} was turned down. You may:
 - call_trump: Name any suit EXCEPT ${turnedUpSuit}
 - pass: Decline
-${strategy}
+${strategy}${reflections}
 ${METACOGNITION_PROMPT}`;
 }
 
 export function buildCardPlaySystemPrompt(
   validCardsList: string,
   options: PromptOptions = {},
+  player?: Position,
 ): string {
-  const { strategyHints = true } = options;
+  const { strategyHints = true, agentReflections } = options;
+  const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
   const strategy = strategyHints
     ? `\nStrategy: Lead trump to draw out opponent trump. Save high trump for critical moments. Support partner's plays.`
     : '';
   return `You are an expert Euchre player. Select a card to play.
 
 VALID CARDS: ${validCardsList}
-${strategy}
+${strategy}${reflections}
 ${METACOGNITION_PROMPT}`;
 }
 
@@ -90,8 +110,10 @@ export function buildDiscardSystemPrompt(
   handStr: string,
   trump: Suit,
   options: PromptOptions = {},
+  player?: Position,
 ): string {
-  const { strategyHints = true } = options;
+  const { strategyHints = true, agentReflections } = options;
+  const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
   const strategy = strategyHints
     ? `\nStrategy: Never discard trump. Discard weakest off-suit card (9s or 10s). Keep aces and kings.`
     : '';
@@ -99,6 +121,6 @@ export function buildDiscardSystemPrompt(
 
 Trump: ${trump}
 Your hand: ${handStr}
-${strategy}
+${strategy}${reflections}
 ${METACOGNITION_PROMPT}`;
 }

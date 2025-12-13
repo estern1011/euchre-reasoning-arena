@@ -10,7 +10,7 @@ export const SUITS = ["hearts", "diamonds", "clubs", "spades"] as const;
 export const RANKS = ["9", "10", "jack", "queen", "king", "ace"] as const;
 
 // Tool options available to agents (Metacognition Arena)
-export const TOOL_OPTIONS = ["none", "ask_audience", "situation_lookup", "fifty_fifty"] as const;
+export const TOOL_OPTIONS = ["none", "ask_audience", "ask_partner", "fifty_fifty"] as const;
 export type ToolOption = typeof TOOL_OPTIONS[number];
 
 // =============================================================================

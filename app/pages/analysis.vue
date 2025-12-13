@@ -72,6 +72,11 @@
                 <div class="panel panel-tools">
                     <ToolPanel :show-available-tools="true" />
                 </div>
+
+                <!-- Agent Reflections -->
+                <div class="panel panel-reflections">
+                    <AgentReflectionsPanel />
+                </div>
             </div>
 
             <!-- Right: Activity Log / Game State -->
@@ -487,8 +492,8 @@ function getToolIcon(tool: string): string {
     switch (tool) {
         case "ask_audience":
             return "👥";
-        case "situation_lookup":
-            return "📖";
+        case "ask_partner":
+            return "🤝";
         case "fifty_fifty":
             return "50/50";
         default:

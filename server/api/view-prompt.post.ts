@@ -65,7 +65,8 @@ export default defineEventHandler(async (event): Promise<ViewPromptResponse> => 
         trumpSelection.round as 1 | 2,
         trumpSelection.turnedUpCard.suit,
         isDealerMustCall,
-        promptOptions
+        promptOptions,
+        player
       );
 
       const gameContext = formatTrumpSelectionForAI(gameState, player);
@@ -86,7 +87,7 @@ export default defineEventHandler(async (event): Promise<ViewPromptResponse> => 
       const validCards = getValidCardsForPlay(gameState, player);
       const validCardsList = validCards.map(formatCardForPrompt).join(", ");
 
-      const systemPrompt = buildCardPlaySystemPrompt(validCardsList, promptOptions);
+      const systemPrompt = buildCardPlaySystemPrompt(validCardsList, promptOptions, player);
       const gameContext = formatGameStateForCardPlay(gameState, player);
 
       sections.push(

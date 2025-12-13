@@ -876,16 +876,33 @@ export function formatGameStateForCardPlay(
           .join("\n")
       : "  (leading the trick)";
 
+  // Format completed tricks history
+  const completedTricksStr =
+    game.completedTricks.length > 0
+      ? game.completedTricks
+          .map((trick, idx) => {
+            const plays = trick.plays
+              .map((p) => `${p.player}: ${cardToString(p.card)}`)
+              .join(", ");
+            return `  Trick ${idx + 1} (won by ${trick.winner}): ${plays}`;
+          })
+          .join("\n")
+      : "";
+
+  const trickHistorySection = completedTricksStr
+    ? `\nCompleted tricks:\n${completedTricksStr}\n`
+    : "";
+
   return `
 Trump: ${game.trump}
 Your position: ${playerPosition} (Team ${player.team})
 Your partner: ${partner?.position}
-
+${trickHistorySection}
 Current trick (lead: ${game.currentTrick.leadPlayer}):
 ${currentTrickStr}
 
 Score: Team 0: ${game.scores[0]}, Team 1: ${game.scores[1]}
-Tricks completed: ${game.completedTricks.length}/${TRICKS_PER_HAND}
+Tricks this hand: ${game.completedTricks.length}/${TRICKS_PER_HAND}
   `.trim();
 }
 
