@@ -1,11 +1,12 @@
 <template>
     <div class="reflections-panel">
-        <div class="panel-header">
-            <span class="comment">// </span>what_i_learned
-            <span class="reflections-count" v-if="totalReflections > 0">
-                {{ totalReflections }} reflections
-            </span>
-        </div>
+        <BasePanelHeader title="what_i_learned">
+            <template #actions>
+                <span class="reflections-count" v-if="totalReflections > 0">
+                    {{ totalReflections }} reflections
+                </span>
+            </template>
+        </BasePanelHeader>
 
         <div class="reflections-content" v-if="hasReflections">
             <div

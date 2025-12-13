@@ -1,11 +1,12 @@
 <template>
     <div class="recent-decisions">
-        <div class="panel-header">
-            <span class="comment">// </span>recent_decisions
-            <span class="decision-count" v-if="recentDecisions.length > 0">
-                {{ recentDecisions.length }}
-            </span>
-        </div>
+        <BasePanelHeader title="recent_decisions">
+            <template #actions>
+                <span class="decision-count" v-if="recentDecisions.length > 0">
+                    {{ recentDecisions.length }}
+                </span>
+            </template>
+        </BasePanelHeader>
 
         <div class="decisions-list" v-if="recentDecisions.length > 0">
             <div

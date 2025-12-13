@@ -30,20 +30,22 @@
                             </span>
                             <span class="stat-label">perf pts</span>
                         </div>
-                        <div class="stat calibration">
-                            <span class="stat-value">{{ agent.calibrationAccuracy }}%</span>
-                            <span class="stat-label">calibration</span>
+                        <div class="stat brier">
+                            <span class="stat-value" :class="getBrierClass(agent.brierLabel)">
+                                {{ agent.brierScore.toFixed(3) }}
+                            </span>
+                            <span class="stat-label">brier</span>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Calibration Analysis -->
+        <!-- Brier Score Analysis -->
         <section class="report-section">
             <div class="section-header">
                 <span class="section-icon">📊</span>
-                <span class="section-title">Calibration Analysis</span>
+                <span class="section-title">Probability Calibration</span>
             </div>
             <div class="calibration-grid">
                 <div
@@ -53,11 +55,15 @@
                 >
                     <div class="card-header">
                         <span class="position">{{ agent.position.toUpperCase() }}</span>
-                        <span class="assessment" :class="getAssessmentClass(agent.assessment)">
-                            {{ agent.assessment }}
+                        <span class="brier-badge" :class="getBrierClass(agent.brierLabel)">
+                            {{ agent.brierLabel || '--' }}
                         </span>
                     </div>
                     <div class="card-stats">
+                        <div class="stat-row">
+                            <span class="label">Brier Score:</span>
+                            <span class="value" :class="getBrierClass(agent.brierLabel)">{{ agent.brierScore.toFixed(3) }}</span>
+                        </div>
                         <div class="stat-row">
                             <span class="label">Avg Confidence:</span>
                             <span class="value">{{ agent.avgConfidence }}%</span>
@@ -113,8 +119,8 @@
                     <span class="stat-label">Hands Played</span>
                 </div>
                 <div class="summary-stat">
-                    <span class="stat-value">{{ avgCalibration }}%</span>
-                    <span class="stat-label">Avg Calibration</span>
+                    <span class="stat-value" :class="getBrierClass(avgBrierLabel)">{{ avgBrier }}</span>
+                    <span class="stat-label">Avg Brier</span>
                 </div>
                 <div class="summary-stat">
                     <span class="stat-value">{{ totalToolsUsed }}</span>
@@ -130,9 +136,9 @@ import { computed } from 'vue';
 import type { Position } from '~/types/game';
 import { useGameStore } from '~/stores/game';
 import {
-    calculateCalibrationAccuracy,
-    getCalibrationAssessment,
-    type AgentPerformance,
+    calculateBrierScore,
+    getBrierRating,
+    type BrierRating,
 } from '../../lib/scoring/calibration';
 
 const gameStore = useGameStore();
@@ -143,12 +149,12 @@ interface RankedAgent {
     position: Position;
     modelName: string;
     totalScore: number;
-    calibrationAccuracy: number;
+    brierScore: number;
+    brierLabel: BrierRating | '';
     avgConfidence: number;
     accuracy: number;
     highConfidenceCorrect: number;
     highConfidenceWrong: number;
-    assessment: string;
     toolsUsed: number;
     toolCostTotal: number;
     toolEfficiency: string;
@@ -165,22 +171,22 @@ const rankedAgents = computed((): RankedAgent[] => {
                 position: pos,
                 modelName,
                 totalScore: 0,
-                calibrationAccuracy: 50,
+                brierScore: 0.25,
+                brierLabel: '',
                 avgConfidence: 50,
                 accuracy: 0,
                 highConfidenceCorrect: 0,
                 highConfidenceWrong: 0,
-                assessment: 'No data',
                 toolsUsed: 0,
                 toolCostTotal: 0,
                 toolEfficiency: 'N/A',
             };
         }
 
-        const calibrationAccuracy = Math.round(calculateCalibrationAccuracy(perf));
+        const brierScore = calculateBrierScore(perf);
+        const brierLabel = getBrierRating(brierScore);
         const avgConfidence = Math.round(perf.totalConfidence / perf.totalDecisions);
         const accuracy = Math.round((perf.correctDecisions / perf.totalDecisions) * 100);
-        const assessment = getCalibrationAssessment(perf);
 
         // Tool efficiency: good if tools helped, bad if wasted
         let toolEfficiency = 'N/A';
@@ -195,12 +201,12 @@ const rankedAgents = computed((): RankedAgent[] => {
             position: pos,
             modelName,
             totalScore: perf.totalScore,
-            calibrationAccuracy,
+            brierScore,
+            brierLabel,
             avgConfidence,
             accuracy,
             highConfidenceCorrect: perf.highConfidenceCorrect,
             highConfidenceWrong: perf.highConfidenceWrong,
-            assessment,
             toolsUsed: perf.toolsUsed,
             toolCostTotal: perf.toolCostTotal,
             toolEfficiency,
@@ -230,26 +236,34 @@ const handsPlayed = computed(() => {
     return gameStore.gameHistory.hands.length;
 });
 
-const avgCalibration = computed(() => {
-    const agents = rankedAgents.value.filter((a) => a.calibrationAccuracy !== 50);
-    if (agents.length === 0) return 50;
-    return Math.round(agents.reduce((sum, a) => sum + a.calibrationAccuracy, 0) / agents.length);
-});
-
 const totalToolsUsed = computed(() => {
     return rankedAgents.value.reduce((sum, a) => sum + a.toolsUsed, 0);
 });
 
+const avgBrier = computed(() => {
+    const agents = rankedAgents.value.filter((a) => a.brierLabel !== '');
+    if (agents.length === 0) return '--';
+    const avg = agents.reduce((sum, a) => sum + a.brierScore, 0) / agents.length;
+    return avg.toFixed(3);
+});
+
+const avgBrierLabel = computed(() => {
+    const agents = rankedAgents.value.filter((a) => a.brierLabel !== '');
+    if (agents.length === 0) return '';
+    const avg = agents.reduce((sum, a) => sum + a.brierScore, 0) / agents.length;
+    return getBrierRating(avg);
+});
+
+const getBrierClass = (label: string): string => {
+    if (label === 'excellent') return 'excellent';
+    if (label === 'good') return 'good';
+    if (label === 'fair') return 'fair';
+    return 'poor';
+};
+
 const getScoreClass = (score: number): string => {
     if (score > 0) return 'positive';
     if (score < 0) return 'negative';
-    return 'neutral';
-};
-
-const getAssessmentClass = (assessment: string): string => {
-    if (assessment.includes('Excellent') || assessment.includes('Good')) return 'good';
-    if (assessment.includes('Overconfident') || assessment.includes('Underconfident')) return 'warning';
-    if (assessment.includes('Needs')) return 'poor';
     return 'neutral';
 };
 
@@ -441,30 +455,53 @@ const getEfficiencyClass = (efficiency: string): string => {
     color: var(--color-text-secondary);
 }
 
-.assessment {
-    font-size: 0.75rem;
+.brier-badge {
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
 }
 
-.assessment.good {
+.brier-badge.excellent {
     background: rgba(163, 230, 53, 0.2);
     color: #a3e635;
 }
 
-.assessment.warning {
+.brier-badge.good {
+    background: rgba(56, 189, 186, 0.2);
+    color: #38bdb8;
+}
+
+.brier-badge.fair {
     background: rgba(251, 191, 36, 0.2);
     color: #fbbf24;
 }
 
-.assessment.poor {
+.brier-badge.poor {
     background: rgba(248, 113, 113, 0.2);
     color: #f87171;
 }
 
-.assessment.neutral {
-    background: rgba(107, 114, 128, 0.2);
-    color: var(--color-text-secondary);
+/* Brier value colors */
+.stat-value.excellent,
+.value.excellent {
+    color: #a3e635;
+}
+
+.stat-value.good,
+.value.good {
+    color: #38bdb8;
+}
+
+.stat-value.fair,
+.value.fair {
+    color: #fbbf24;
+}
+
+.stat-value.poor,
+.value.poor {
+    color: #f87171;
 }
 
 .card-stats {

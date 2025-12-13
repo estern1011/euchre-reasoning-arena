@@ -513,9 +513,10 @@ export const useGameStore = defineStore('game', {
         return
       }
 
-      // Get or create current trick
+      // Get or create current trick (3 plays when going alone, 4 otherwise)
+      const playsPerTrick = hand.goingAlone ? 3 : 4
       let currentTrick = hand.tricks[hand.tricks.length - 1]
-      if (!currentTrick || currentTrick.plays.length === 4) {
+      if (!currentTrick || currentTrick.plays.length === playsPerTrick) {
         currentTrick = {
           trickNumber: hand.tricks.length + 1,
           plays: [],

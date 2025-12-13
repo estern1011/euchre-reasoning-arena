@@ -1,181 +1,133 @@
 <template>
-    <div class="modal-overlay" @click.self="$emit('close')">
-        <div class="strength-modal">
-            <div class="modal-header">
-                <span class="comment">// </span>hand_strength_calculation
-                <button class="close-btn" @click="$emit('close')">&times;</button>
+    <BaseModal
+        :is-open="isOpen"
+        title="hand_strength_calculation"
+        size="md"
+        @close="$emit('close')"
+    >
+        <div class="strength-content">
+            <!-- Trump Card Values -->
+            <div class="strength-section">
+                <div class="section-title">trump_card_values</div>
+                <div class="scoring-table">
+                    <div class="table-header">
+                        <span class="col-card">card</span>
+                        <span class="col-points">points</span>
+                    </div>
+                    <div class="table-row bower">
+                        <span class="col-card">Right Bower (J of trump)</span>
+                        <span class="col-points">12</span>
+                    </div>
+                    <div class="table-row bower">
+                        <span class="col-card">Left Bower (J same color)</span>
+                        <span class="col-points">11</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">Ace of trump</span>
+                        <span class="col-points">10</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">King of trump</span>
+                        <span class="col-points">9</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">Queen of trump</span>
+                        <span class="col-points">8</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">10 of trump</span>
+                        <span class="col-points">7</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">9 of trump</span>
+                        <span class="col-points">6</span>
+                    </div>
+                </div>
             </div>
-            <div class="strength-content">
-                <!-- Trump Card Values -->
-                <div class="strength-section">
-                    <div class="section-title">trump_card_values</div>
-                    <div class="scoring-table">
-                        <div class="table-header">
-                            <span class="col-card">card</span>
-                            <span class="col-points">points</span>
-                        </div>
-                        <div class="table-row bower">
-                            <span class="col-card">Right Bower (J of trump)</span>
-                            <span class="col-points">12</span>
-                        </div>
-                        <div class="table-row bower">
-                            <span class="col-card">Left Bower (J same color)</span>
-                            <span class="col-points">11</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">Ace of trump</span>
-                            <span class="col-points">10</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">King of trump</span>
-                            <span class="col-points">9</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">Queen of trump</span>
-                            <span class="col-points">8</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">10 of trump</span>
-                            <span class="col-points">7</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">9 of trump</span>
-                            <span class="col-points">6</span>
-                        </div>
+
+            <!-- Off-Suit Card Values -->
+            <div class="strength-section">
+                <div class="section-title">off_suit_values</div>
+                <div class="scoring-table">
+                    <div class="table-header">
+                        <span class="col-card">card</span>
+                        <span class="col-points">points</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">Ace</span>
+                        <span class="col-points off-suit">5</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">King</span>
+                        <span class="col-points off-suit">4</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">Queen</span>
+                        <span class="col-points off-suit">3</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">Jack</span>
+                        <span class="col-points off-suit">2</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">10</span>
+                        <span class="col-points off-suit">1</span>
+                    </div>
+                    <div class="table-row">
+                        <span class="col-card">9</span>
+                        <span class="col-points off-suit">0</span>
                     </div>
                 </div>
+            </div>
 
-                <!-- Off-Suit Card Values -->
-                <div class="strength-section">
-                    <div class="section-title">off_suit_values</div>
-                    <div class="scoring-table">
-                        <div class="table-header">
-                            <span class="col-card">card</span>
-                            <span class="col-points">points</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">Ace</span>
-                            <span class="col-points off-suit">5</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">King</span>
-                            <span class="col-points off-suit">4</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">Queen</span>
-                            <span class="col-points off-suit">3</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">Jack</span>
-                            <span class="col-points off-suit">2</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">10</span>
-                            <span class="col-points off-suit">1</span>
-                        </div>
-                        <div class="table-row">
-                            <span class="col-card">9</span>
-                            <span class="col-points off-suit">0</span>
-                        </div>
+            <!-- Strength Categories -->
+            <div class="strength-section">
+                <div class="section-title">strength_categories</div>
+                <div class="category-list">
+                    <div class="category-item">
+                        <span class="category-range strong">25+ points</span>
+                        <span class="category-label">STRONG</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-range medium">15-24 points</span>
+                        <span class="category-label">MEDIUM</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-range weak">&lt;15 points</span>
+                        <span class="category-label">WEAK</span>
                     </div>
                 </div>
+            </div>
 
-                <!-- Strength Categories -->
-                <div class="strength-section">
-                    <div class="section-title">strength_categories</div>
-                    <div class="category-list">
-                        <div class="category-item">
-                            <span class="category-range strong">25+ points</span>
-                            <span class="category-label">STRONG</span>
-                        </div>
-                        <div class="category-item">
-                            <span class="category-range medium">15-24 points</span>
-                            <span class="category-label">MEDIUM</span>
-                        </div>
-                        <div class="category-item">
-                            <span class="category-range weak">&lt;15 points</span>
-                            <span class="category-label">WEAK</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Example -->
-                <div class="strength-section">
-                    <div class="section-title">example</div>
-                    <div class="example-content">
-                        <p class="example-hand">// hand: J♠ J♣ A♠ K♠ 9♥ (trump: ♠)</p>
-                        <p class="example-calc">= 12 + 11 + 10 + 9 + 0 = <span class="total">42 pts</span></p>
-                        <p class="hint">// max possible: 50 (right + left + A + K + Q)</p>
-                    </div>
+            <!-- Example -->
+            <div class="strength-section">
+                <div class="section-title">example</div>
+                <div class="example-content">
+                    <p class="example-hand">// hand: J&#9824; J&#9827; A&#9824; K&#9824; 9&#9829; (trump: &#9824;)</p>
+                    <p class="example-calc">= 12 + 11 + 10 + 9 + 0 = <span class="total">42 pts</span></p>
+                    <p class="hint">// max possible: 50 (right + left + A + K + Q)</p>
                 </div>
             </div>
         </div>
-    </div>
+    </BaseModal>
 </template>
 
 <script setup lang="ts">
+import BaseModal from "~/components/base/BaseModal.vue";
+
+interface Props {
+    isOpen: boolean;
+}
+
+defineProps<Props>();
+
 defineEmits<{
-    (e: 'close'): void;
+    (e: "close"): void;
 }>();
 </script>
 
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.strength-modal {
-    background: rgba(10, 20, 20, 0.98);
-    border: 2px solid rgba(56, 189, 186, 0.5);
-    border-radius: 12px;
-    max-width: 500px;
-    width: 95%;
-    max-height: 85vh;
-    overflow: auto;
-    box-shadow: 0 0 40px rgba(56, 189, 186, 0.3);
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-}
-
-.comment {
-    color: var(--color-text-muted);
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    color: var(--color-text-muted);
-    font-size: 1.75rem;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: color 0.2s;
-}
-
-.close-btn:hover {
-    color: #f87171;
-}
-
 .strength-content {
-    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;

@@ -1,22 +1,23 @@
 <template>
     <div class="hand-strength-panel">
-        <div class="panel-header">
-            <span class="comment">// </span>hand_strength
-            <span class="trump-indicator" v-if="trumpSuit && !showMatrix">
-                (if {{ getSuitSymbol(trumpSuit) }} trump)
-            </span>
-            <span class="round-indicator" v-if="showMatrix">
-                (round 2 - any suit)
-            </span>
-            <button
-                v-if="showHelp"
-                class="info-btn"
-                @click="$emit('show-help')"
-                title="View hand strength calculation"
-            >
-                ?
-            </button>
-        </div>
+        <BasePanelHeader title="hand_strength">
+            <template #actions>
+                <span class="trump-indicator" v-if="trumpSuit && !showMatrix">
+                    (if {{ getSuitSymbol(trumpSuit) }} trump)
+                </span>
+                <span class="round-indicator" v-if="showMatrix">
+                    (round 2 - any suit)
+                </span>
+                <button
+                    v-if="showHelp"
+                    class="info-btn"
+                    @click="$emit('show-help')"
+                    title="View hand strength calculation"
+                >
+                    ?
+                </button>
+            </template>
+        </BasePanelHeader>
 
         <!-- Single suit view (Round 1) -->
         <div class="strength-ranking" v-if="!showMatrix && trumpSuit">

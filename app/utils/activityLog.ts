@@ -18,9 +18,11 @@ export function formatCardPlayEntry(
 export function formatTrumpBidEntry(
   step: number,
   player: Position,
-  action: string
+  action: string,
+  goingAlone?: boolean
 ): string {
-  return `${String(step).padStart(2, "0")} | [${formatPosition(player)}] ACTION: ${action.toUpperCase()}`;
+  const aloneStr = goingAlone ? " (GOING ALONE)" : "";
+  return `${String(step).padStart(2, "0")} | [${formatPosition(player)}] ACTION: ${action.toUpperCase()}${aloneStr}`;
 }
 
 export function formatDiscardEntry(

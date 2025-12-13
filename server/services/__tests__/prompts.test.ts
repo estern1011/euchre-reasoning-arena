@@ -112,8 +112,10 @@ describe("Agent Prompts", () => {
     it("should respect strategyHints option", () => {
       const promptWithHints = buildCardPlaySystemPrompt(validCards, { strategyHints: true });
       const promptWithoutHints = buildCardPlaySystemPrompt(validCards, { strategyHints: false });
-      expect(promptWithHints).toContain("Strategy:");
-      expect(promptWithoutHints).not.toContain("Strategy:");
+      expect(promptWithHints).toContain("Strategy");
+      expect(promptWithHints).toContain("MAKERS");
+      expect(promptWithHints).toContain("DEFENDERS");
+      expect(promptWithoutHints).not.toContain("Strategy");
     });
   });
 

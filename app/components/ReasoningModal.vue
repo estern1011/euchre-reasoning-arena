@@ -1,18 +1,15 @@
 <template>
-    <Teleport to="body">
-        <div
-            v-if="isOpen"
-            class="modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reasoning-modal-title"
-            @click="close"
-            @keydown.escape="close"
-        >
-            <div ref="modalRef" class="modal-content" @click.stop>
+    <DialogRoot :open="isOpen" @update:open="handleOpenChange">
+        <DialogPortal>
+            <DialogOverlay class="modal-overlay" />
+            <DialogContent class="modal-content" @escape-key-down="close">
                 <div class="modal-header">
-                    <h3 id="reasoning-modal-title"><span class="keyword">const</span> <span class="variable">reasoningHistory</span> = {</h3>
-                    <button ref="closeButtonRef" class="close-button" @click="close" aria-label="Close modal">✕</button>
+                    <DialogTitle as-child>
+                        <h3 id="reasoning-modal-title"><span class="keyword">const</span> <span class="variable">reasoningHistory</span> = {</h3>
+                    </DialogTitle>
+                    <DialogClose as-child>
+                        <button class="close-button" aria-label="Close modal">✕</button>
+                    </DialogClose>
                 </div>
 
                 <div class="modal-body">
@@ -213,15 +210,23 @@
                     </div>
                     <span class="closing-brace">};</span>
                 </div>
-            </div>
-        </div>
-    </Teleport>
+            </DialogContent>
+        </DialogPortal>
+    </DialogRoot>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue';
+import { computed, ref, watch } from 'vue';
+import {
+    DialogRoot,
+    DialogPortal,
+    DialogOverlay,
+    DialogContent,
+    DialogTitle,
+    DialogClose,
+} from 'radix-vue';
 import Card from '~/components/Card.vue';
-import { useGameStore, type HandRecord, type TrumpDecisionRecord, type TrickRecord } from '~/stores/game';
+import { useGameStore, type TrumpDecisionRecord, type TrickRecord } from '~/stores/game';
 import type { Suit, Card as CardType, Position } from '../../lib/game/types';
 
 interface Props {
@@ -234,10 +239,6 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore();
-
-const modalRef = ref<HTMLElement | null>(null);
-const closeButtonRef = ref<HTMLButtonElement | null>(null);
-let previouslyFocusedElement: HTMLElement | null = null;
 
 const expandedHands = ref<Set<number>>(new Set());
 const expandedTricks = ref<Set<string>>(new Set());
@@ -349,47 +350,22 @@ const close = () => {
     emit('close')
 }
 
-// Focus trap
-function handleFocusTrap(event: KeyboardEvent) {
-    if (event.key !== 'Tab' || !modalRef.value) return;
-
-    const focusableElements = modalRef.value.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstFocusable = focusableElements[0];
-    const lastFocusable = focusableElements[focusableElements.length - 1];
-
-    if (event.shiftKey && document.activeElement === firstFocusable) {
-        event.preventDefault();
-        lastFocusable?.focus();
-    } else if (!event.shiftKey && document.activeElement === lastFocusable) {
-        event.preventDefault();
-        firstFocusable?.focus();
+const handleOpenChange = (open: boolean) => {
+    if (!open) {
+        close();
     }
-}
+};
 
-watch(() => props.isOpen, async (isOpen, wasOpen) => {
+// Expand current hand when modal opens
+watch(() => props.isOpen, (isOpen, wasOpen) => {
     if (isOpen && !wasOpen) {
-        // Modal just opened - expand the current/latest hand (if any exist)
         if (gameStore.gameHistory.hands.length > 0) {
             const currentHand = gameStore.gameHistory.hands[gameStore.gameHistory.currentHandIndex];
             expandedHands.value = new Set([currentHand?.handNumber || 1]);
         } else {
             expandedHands.value = new Set();
         }
-        
-        previouslyFocusedElement = document.activeElement as HTMLElement;
-        document.addEventListener('keydown', handleFocusTrap);
-        await nextTick();
-        closeButtonRef.value?.focus();
-    } else if (!isOpen) {
-        document.removeEventListener('keydown', handleFocusTrap);
-        previouslyFocusedElement?.focus();
     }
-});
-
-onBeforeUnmount(() => {
-    document.removeEventListener('keydown', handleFocusTrap);
 });
 </script>
 
@@ -399,11 +375,7 @@ onBeforeUnmount(() => {
     inset: 0;
     background: rgba(0, 0, 0, 0.9);
     backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 1000;
-    padding: 2rem;
     animation: fadeIn 0.2s ease;
 }
 
@@ -413,6 +385,10 @@ onBeforeUnmount(() => {
 }
 
 .modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background: rgba(10, 20, 20, 0.98);
     border: 2px solid rgba(56, 189, 186, 0.4);
     border-radius: 8px;
@@ -420,17 +396,24 @@ onBeforeUnmount(() => {
         0 0 40px rgba(0, 0, 0, 0.8),
         0 0 20px rgba(56, 189, 186, 0.1);
     max-width: 1000px;
-    width: 100%;
+    width: 95%;
     max-height: 85vh;
     display: flex;
     flex-direction: column;
     font-family: "Courier New", Consolas, Monaco, monospace;
-    animation: slideUp 0.3s ease;
+    z-index: 1001;
+    animation: slideIn 0.2s ease;
 }
 
-@keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
 
 .modal-header {

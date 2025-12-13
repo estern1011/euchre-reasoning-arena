@@ -150,6 +150,28 @@ describe("formatTrumpBidEntry", () => {
       "04 | [WEST] ACTION: CALL_TRUMP",
     ]);
   });
+
+  it("should format going alone indicator", () => {
+    const entry = formatTrumpBidEntry(1, "east", "order_up", true);
+    expect(entry).toBe("01 | [EAST] ACTION: ORDER_UP (GOING ALONE)");
+  });
+
+  it("should not show going alone when false", () => {
+    const entry = formatTrumpBidEntry(1, "east", "order_up", false);
+    expect(entry).toBe("01 | [EAST] ACTION: ORDER_UP");
+    expect(entry).not.toContain("GOING ALONE");
+  });
+
+  it("should not show going alone when undefined", () => {
+    const entry = formatTrumpBidEntry(1, "east", "order_up");
+    expect(entry).toBe("01 | [EAST] ACTION: ORDER_UP");
+    expect(entry).not.toContain("GOING ALONE");
+  });
+
+  it("should format call_trump with going alone", () => {
+    const entry = formatTrumpBidEntry(5, "south", "call_trump", true);
+    expect(entry).toBe("05 | [SOUTH] ACTION: CALL_TRUMP (GOING ALONE)");
+  });
 });
 
 describe("formatIllegalAttemptEntry", () => {

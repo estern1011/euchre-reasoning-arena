@@ -1,12 +1,5 @@
-import type { Position } from "../../../lib/game/types";
+import type { Position, GameState } from "../../../lib/game/types";
 import { playCard, getNextPlayer } from "../../../lib/game/game";
-import {
-  logCardPlayDecision,
-  updateTrickOutcomes,
-  completeHandTracking,
-  completeGameTracking,
-  type TrackedGameState,
-} from "../game-tracker";
 import type { StreamContext, PhaseResult, DecisionRecord } from "./types";
 
 /**
@@ -75,17 +68,6 @@ export async function handlePlayingPhase(ctx: StreamContext): Promise<PhaseResul
       toolUsed: playResult.toolUsed,
     });
 
-    // Log card play to database
-    logCardPlayDecision(game, currentPlayer, playerObj.modelId, {
-      card: playResult.card,
-      reasoning: playResult.reasoning,
-      confidence: playResult.confidence,
-      duration: playResult.duration,
-      toolUsed: playResult.toolUsed?.tool,
-      illegalAttempt: playResult.illegalAttempt,
-      isFallback: playResult.isFallback,
-    });
-
     decisions.push({
       player: currentPlayer,
       modelId: playerObj.modelId,
@@ -105,9 +87,6 @@ export async function handlePlayingPhase(ctx: StreamContext): Promise<PhaseResul
 
   const trickWinner = lastTrick.winner as Position;
   const trickNumber = game.completedTricks.length;
-
-  // Update decision outcomes now that we know who won the trick
-  updateTrickOutcomes(game, trickWinner, trickNumber);
 
   // Send appropriate completion event based on game state
   sendTrickCompletionEvent(ctx, game, decisions, trickWinner, trickNumber);
@@ -160,24 +139,12 @@ function createToolCallbacks(
  */
 function sendTrickCompletionEvent(
   ctx: StreamContext,
-  game: TrackedGameState,
+  game: GameState,
   decisions: DecisionRecord[],
   trickWinner: Position,
   trickNumber: number
 ): void {
   if (game.phase === "game_complete") {
-    // Complete hand tracking first
-    completeHandTracking(
-      game,
-      game.scores[0],
-      game.scores[1],
-      game.scores[0],
-      game.scores[1]
-    );
-
-    // Complete game tracking with calibration calculation
-    completeGameTracking(game, game.gameScores[0], game.gameScores[1]);
-
     ctx.sendEvent("round_complete", {
       gameState: game,
       phase: "game_complete",
@@ -190,15 +157,6 @@ function sendTrickCompletionEvent(
       winningTeam: game.gameScores[0] > game.gameScores[1] ? 0 : 1,
     });
   } else if (game.phase === "hand_complete") {
-    // Complete hand tracking
-    completeHandTracking(
-      game,
-      game.scores[0],
-      game.scores[1],
-      game.scores[0],
-      game.scores[1]
-    );
-
     ctx.sendEvent("round_complete", {
       gameState: game,
       phase: "hand_complete",

@@ -893,10 +893,21 @@ export function formatGameStateForCardPlay(
     ? `\nCompleted tricks:\n${completedTricksStr}\n`
     : "";
 
+  // Determine maker/defender status
+  const trumpCallerObj = game.players.find((p) => p.position === game.trumpCaller);
+  const isMaker = trumpCallerObj && player.team === trumpCallerObj.team;
+  const roleStr = isMaker ? "MAKER (your team called trump)" : "DEFENDER (opponents called trump)";
+
+  // Going alone info
+  const goingAloneStr = game.goingAlone
+    ? `\nGoing alone: ${game.goingAlone}${game.goingAlone === playerPosition ? " (YOU)" : game.goingAlone === partner?.position ? " (your partner - you're sitting out)" : " (opponent)"}`
+    : "";
+
   return `
-Trump: ${game.trump}
+Trump: ${game.trump} (called by ${game.trumpCaller})
 Your position: ${playerPosition} (Team ${player.team})
-Your partner: ${partner?.position}
+Your role: ${roleStr}
+Your partner: ${partner?.position}${goingAloneStr}
 ${trickHistorySection}
 Current trick (lead: ${game.currentTrick.leadPlayer}):
 ${currentTrickStr}

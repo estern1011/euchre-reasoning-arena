@@ -1,12 +1,13 @@
 <template>
     <div class="tool-panel" :class="{ 'has-activity': hasToolActivity }">
-        <div class="panel-header">
-            <span class="comment">// </span>tool_usage
-            <span v-if="hasToolActivity" class="active-indicator"></span>
-        </div>
+        <BasePanelHeader title="tool_usage">
+            <template #actions>
+                <span v-if="hasToolActivity" class="active-indicator"></span>
+            </template>
+        </BasePanelHeader>
 
-        <!-- ReACT Phase Indicator -->
-        <div class="react-phases" v-if="isStreaming">
+        <!-- ReACT Phase Indicator (only shown during active game streaming) -->
+        <div class="react-phases" v-if="isStreaming && showPhaseIndicator">
             <div
                 v-for="phase in phases"
                 :key="phase.id"
@@ -142,57 +143,64 @@ import type { Position } from '../../lib/game/types';
 
 interface Props {
     showAvailableTools?: boolean;
+    showPhaseIndicator?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     showAvailableTools: false,
+    showPhaseIndicator: true,
 });
+
+const showPhaseIndicator = props.showPhaseIndicator;
 
 const gameStore = useGameStore();
 
-// Get tool usage count for a specific agent and tool
-const getToolUsageForAgent = (position: Position, toolId: string): number => {
-    // Count tool usage from game history
-    let count = 0;
+// Memoized tool usage data - single pass through game history
+const toolUsageData = computed(() => {
+    // Initialize counters
+    const counts = {
+        north: { ask_audience: 0, ask_partner: 0, fifty_fifty: 0 },
+        east: { ask_audience: 0, ask_partner: 0, fifty_fifty: 0 },
+        south: { ask_audience: 0, ask_partner: 0, fifty_fifty: 0 },
+        west: { ask_audience: 0, ask_partner: 0, fifty_fifty: 0 },
+    };
+    const costs = { north: 0, east: 0, south: 0, west: 0 };
+
+    // Single pass through game history
     for (const hand of gameStore.gameHistory.hands) {
         // Check trump decisions
         for (const decision of hand.trumpDecisions) {
-            if (decision.player === position && decision.toolUsed?.tool === toolId) {
-                count++;
+            if (!decision.toolUsed) continue;
+            const tool = decision.toolUsed.tool as keyof typeof counts.north;
+            if (counts[decision.player] && tool in counts[decision.player]) {
+                counts[decision.player][tool]++;
             }
+            costs[decision.player] += decision.toolUsed.cost;
         }
         // Check card plays in tricks
         for (const trick of hand.tricks) {
             for (const play of trick.plays) {
-                if (play.player === position && play.toolUsed?.tool === toolId) {
-                    count++;
+                if (!play.toolUsed) continue;
+                const tool = play.toolUsed.tool as keyof typeof counts.north;
+                if (counts[play.player] && tool in counts[play.player]) {
+                    counts[play.player][tool]++;
                 }
+                costs[play.player] += play.toolUsed.cost;
             }
         }
     }
-    return count;
+
+    return { counts, costs };
+});
+
+// Helper functions that use the memoized data
+const getToolUsageForAgent = (position: Position, toolId: string): number => {
+    const positionCounts = toolUsageData.value.counts[position];
+    return (positionCounts as Record<string, number>)[toolId] || 0;
 };
 
-// Get total tool cost for an agent (calculated from game history)
 const getTotalToolCost = (position: Position): number => {
-    let totalCost = 0;
-    for (const hand of gameStore.gameHistory.hands) {
-        // Check trump decisions
-        for (const decision of hand.trumpDecisions) {
-            if (decision.player === position && decision.toolUsed) {
-                totalCost += decision.toolUsed.cost;
-            }
-        }
-        // Check card plays in tricks
-        for (const trick of hand.tricks) {
-            for (const play of trick.plays) {
-                if (play.player === position && play.toolUsed) {
-                    totalCost += play.toolUsed.cost;
-                }
-            }
-        }
-    }
-    return totalCost;
+    return toolUsageData.value.costs[position];
 };
 
 const phases = [
@@ -306,21 +314,6 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
 .tool-panel.has-activity {
     border-color: rgba(163, 230, 53, 0.5);
     box-shadow: 0 0 15px rgba(163, 230, 53, 0.1);
-}
-
-.panel-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.comment {
-    color: var(--color-text-muted);
 }
 
 .active-indicator {

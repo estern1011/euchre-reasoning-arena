@@ -97,7 +97,12 @@ export function buildCardPlaySystemPrompt(
   const { strategyHints = true, agentReflections } = options;
   const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
   const strategy = strategyHints
-    ? `\nStrategy: Lead trump to draw out opponent trump. Save high trump for critical moments. Support partner's plays.`
+    ? `
+Strategy (adapt based on your role):
+- MAKERS: Lead trump to draw out opponent trump. Play aggressively to win 3+ tricks.
+- DEFENDERS: Try to euchre makers (stop them from winning 3 tricks). Save trump to trump their winners.
+- Going alone: Even higher stakes - play to maximize/minimize tricks.
+- Support partner's plays. Save high trump for critical moments.`
     : '';
   return `You are an expert Euchre player. Select a card to play.
 

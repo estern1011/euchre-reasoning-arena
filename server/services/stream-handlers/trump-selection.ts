@@ -1,11 +1,5 @@
-import type { Position, TrumpBidAction } from "../../../lib/game/types";
+import type { Position, TrumpBidAction, GameState } from "../../../lib/game/types";
 import { makeTrumpBid, dealerDiscard } from "../../../lib/game/game";
-import {
-  logTrumpBidDecision,
-  logDiscardDecision,
-  updateTrumpBidOutcomes,
-  type TrackedGameState,
-} from "../game-tracker";
 import type { StreamContext, PhaseResult, DecisionRecord } from "./types";
 
 /**
@@ -77,16 +71,6 @@ export async function handleTrumpSelection(ctx: StreamContext): Promise<PhaseRes
       duration: bidResult.duration,
     });
 
-    // Log trump bid to database
-    logTrumpBidDecision(game, currentBidder, playerObj.modelId, {
-      action: bidResult.action,
-      suit: bidResult.suit,
-      goingAlone: bidResult.goingAlone,
-      reasoning: bidResult.reasoning,
-      confidence: bidResult.confidence,
-      duration: bidResult.duration,
-    });
-
     decisions.push({
       player: currentBidder,
       modelId: playerObj.modelId,
@@ -108,11 +92,6 @@ export async function handleTrumpSelection(ctx: StreamContext): Promise<PhaseRes
 
     // If trump was set and dealer has 6 cards, they need to discard
     if (game.phase === "playing") {
-      // Update trump bid outcomes - maker's bid was successful
-      if (game.trumpCaller) {
-        updateTrumpBidOutcomes(game, game.trumpCaller);
-      }
-
       game = await handleDealerDiscard(ctx, game, decisions);
       break;
     }
@@ -143,9 +122,9 @@ export async function handleTrumpSelection(ctx: StreamContext): Promise<PhaseRes
  */
 async function handleDealerDiscard(
   ctx: StreamContext,
-  game: TrackedGameState,
+  game: GameState,
   decisions: DecisionRecord[]
-): Promise<TrackedGameState> {
+): Promise<GameState> {
   const dealerObj = game.players.find(
     (p: { position: Position }) => p.position === game.dealer
   );
@@ -182,14 +161,6 @@ async function handleDealerDiscard(
     player: game.dealer,
     modelId: dealerObj.modelId,
     action: "discard",
-    card: discardResult.card,
-    reasoning: discardResult.reasoning,
-    confidence: discardResult.confidence,
-    duration: discardResult.duration,
-  });
-
-  // Log discard to database
-  logDiscardDecision(game, game.dealer, dealerObj.modelId, {
     card: discardResult.card,
     reasoning: discardResult.reasoning,
     confidence: discardResult.confidence,

@@ -1,15 +1,10 @@
-import {
-  startNewHand,
-  completeGameTracking,
-  type TrackedGameState,
-} from "../game-tracker";
 import type { StreamContext, PhaseResult } from "./types";
 
 /**
  * Handle hand_complete phase - start a new hand
  */
 export async function handleHandComplete(ctx: StreamContext): Promise<PhaseResult> {
-  const game = startNewHand(ctx.game);
+  const game = ctx.game;
 
   ctx.sendEvent("round_complete", {
     gameState: game,
@@ -28,9 +23,6 @@ export async function handleHandComplete(ctx: StreamContext): Promise<PhaseResul
  */
 export async function handleGameComplete(ctx: StreamContext): Promise<PhaseResult> {
   const game = ctx.game;
-
-  // Complete game tracking if not already done
-  completeGameTracking(game, game.gameScores[0], game.gameScores[1]);
 
   ctx.sendEvent("round_complete", {
     gameState: game,

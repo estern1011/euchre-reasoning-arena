@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/vue-query";
+import { useMutation } from "@tanstack/vue-query";
 import { useGameStore } from "~/stores/game";
 import type { GameState, Position } from "~/types/game";
 
@@ -48,7 +48,6 @@ async function createGame(params: CreateGameParams): Promise<NewGameResponse> {
  * TanStack Query composable for game API operations
  */
 export function useGameApi() {
-  const queryClient = useQueryClient();
   const gameStore = useGameStore();
 
   // Create new game mutation

@@ -35,9 +35,7 @@
         <div class="game-content">
             <!-- Left Panel: Arena View -->
             <main class="main-panel" aria-label="Game board">
-                <div class="panel-header">
-                    <span class="comment">// </span>arena
-                </div>
+                <BasePanelHeader title="arena" />
 
                 <!-- Table View / Game Summary -->
                 <div v-if="!gameStore.isGameComplete" class="table-view">
@@ -73,9 +71,7 @@
 
             <!-- Right Panel: Intelligence Sidebar -->
             <aside class="side-panel" aria-label="Game information">
-                <div class="panel-header">
-                    <span class="comment">// </span>intelligence
-                </div>
+                <BasePanelHeader title="intelligence" />
 
                 <!-- Activity Log (on top) -->
                 <ActivityLog :entries="activityLog" class="activity-log-fixed" />
@@ -121,7 +117,7 @@
 
         <!-- Scoring Rules Modal -->
         <ScoringModal
-            v-if="showScoringModal"
+            :is-open="showScoringModal"
             @close="showScoringModal = false"
         />
 
@@ -600,7 +596,7 @@ const handlePlayNextRound = async () => {
                     } else {
                         // Trump decision
                         activityLog.value.push(
-                            formatTrumpBidEntry(step, message.player!, message.action!)
+                            formatTrumpBidEntry(step, message.player!, message.action!, message.goingAlone)
                         );
                         
                         // For order_up, the trump suit is the turned-up card's suit
@@ -721,8 +717,8 @@ const handlePlayNextRound = async () => {
         }
     } catch (error) {
         console.error('Streaming Error:', error);
-        // Rollback any pending plays that weren't confirmed
         gameStore.rollbackPendingPlays();
+        gameStore.clearStreamingState();
         const errorMsg = error instanceof Error ? error.message : 'An unknown error occurred';
         activityLog.value.push(formatErrorEntry(errorMsg));
     } finally {
@@ -817,9 +813,54 @@ const handleNewGame = () => {
     navigateTo('/');
 };
 
-// Initialize game on mount
+// Rebuild activity log from game history when returning to page
+const reconstructActivityLog = () => {
+    const entries: string[] = [];
+    let step = 1;
+
+    entries.push(formatGameInitialized());
+    step++;
+
+    for (const hand of gameStore.gameHistory.hands) {
+        if (hand.handNumber > 1) {
+            entries.push(formatNewHandStart(hand.handNumber, hand.dealer));
+            step++;
+        }
+
+        for (const decision of hand.trumpDecisions) {
+            if (decision.action === "pass") {
+                entries.push(formatTrumpBidEntry(step, decision.player, "pass"));
+            } else if (decision.action === "order_up" || decision.action === "call_trump") {
+                entries.push(formatTrumpBidEntry(step, decision.player, `${decision.action} ${decision.suit}`, decision.goingAlone));
+            }
+            step++;
+        }
+
+        for (const trick of hand.tricks) {
+            for (const play of trick.plays) {
+                entries.push(formatCardPlayEntry(step, play.player, play.card));
+                step++;
+            }
+            if (trick.winner) {
+                entries.push(formatTrickComplete({
+                    type: "round_complete",
+                    phase: "trick_complete",
+                    trickWinner: trick.winner,
+                }));
+                step++;
+            }
+        }
+    }
+
+    return entries;
+};
+
 onMounted(() => {
-    handleInitializeGame();
+    if (gameStore.gameState) {
+        activityLog.value = reconstructActivityLog();
+    } else {
+        handleInitializeGame();
+    }
 });
 </script>
 

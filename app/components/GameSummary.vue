@@ -117,12 +117,16 @@ const playerStats = computed((): PlayerStats[] => {
     const handHistory = gameStore.gameHistory.hands;
 
     for (const player of props.gameState.players) {
-        // Count tricks won by this player (from last hand only - completedTricks is per hand)
-        const tricksWon = props.gameState.completedTricks.filter(
-            trick => trick.winner === player.position
-        ).length;
-
-        const totalTricks = props.gameState.completedTricks.length;
+        let tricksWon = 0;
+        let totalTricks = 0;
+        for (const hand of handHistory) {
+            for (const trick of hand.tricks) {
+                totalTricks++;
+                if (trick.winner === player.position) {
+                    tricksWon++;
+                }
+            }
+        }
         const winRate = totalTricks > 0 ? Math.round((tricksWon / totalTricks) * 100) : 0;
 
         // Count trump calls and success rate from hand history

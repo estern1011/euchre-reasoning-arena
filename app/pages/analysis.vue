@@ -70,12 +70,7 @@
 
                 <!-- Tool Economy -->
                 <div class="panel panel-tools">
-                    <ToolPanel :show-available-tools="true" />
-                </div>
-
-                <!-- Agent Reflections -->
-                <div class="panel panel-reflections">
-                    <AgentReflectionsPanel />
+                    <ToolPanel :show-available-tools="true" :show-phase-indicator="false" />
                 </div>
             </div>
 
@@ -154,20 +149,20 @@
 
         <!-- Scoring Rules Modal -->
         <ScoringModal
-            v-if="showScoringModal"
+            :is-open="showScoringModal"
             @close="showScoringModal = false"
         />
 
         <!-- Hand Strength Modal -->
         <HandStrengthModal
-            v-if="showHandStrengthModal"
+            :is-open="showHandStrengthModal"
             @close="showHandStrengthModal = false"
         />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
 import ScoringModal from "~/components/ScoringModal.vue";
 import HandStrengthModal from "~/components/HandStrengthModal.vue";
@@ -201,9 +196,7 @@ const potentialTrumpSuit = computed(() => {
 });
 
 const isRoundTwo = computed(() => {
-    const state = gameStore.gameState;
-    if (!state) return false;
-    return (state as any).trumpRound === 2;
+    return gameStore.gameState?.trumpSelection?.round === 2;
 });
 
 // Game state display values
@@ -404,8 +397,16 @@ watch(
         if (autoMode && !isStreaming && !gameStore.isGameComplete) {
             scheduleNextAutoPlay();
         }
-    }
+    },
+    { immediate: true }
 );
+
+// Cleanup on unmount
+onUnmounted(() => {
+    if (autoModeTimeoutId) {
+        clearTimeout(autoModeTimeoutId);
+    }
+});
 
 // Convert activity log entries to structured format - accumulates ALL events
 const activityEntries = computed(() => {
@@ -484,7 +485,7 @@ const activityEntries = computed(() => {
     return entries.reverse(); // Most recent first
 });
 
-function getPlayerClass(player: string): string {
+function getPlayerClass(player: Position): string {
     return player === "north" || player === "south" ? "team-ns" : "team-ew";
 }
 

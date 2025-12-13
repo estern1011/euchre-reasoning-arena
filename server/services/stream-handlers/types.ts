@@ -1,5 +1,4 @@
-import type { Position, TrumpBidAction, Suit, Card } from "../../../lib/game/types";
-import type { TrackedGameState } from "../game-tracker";
+import type { Position, TrumpBidAction, Suit, Card, GameState } from "../../../lib/game/types";
 import type { ToolResult } from "../tools/types";
 import type { PromptOptions } from "../ai-agent/prompts";
 
@@ -55,7 +54,7 @@ export interface DecisionMadeData {
 }
 
 export interface RoundCompleteData {
-  gameState: TrackedGameState;
+  gameState: GameState;
   phase: string;
   decisions: DecisionRecord[];
   trickWinner?: Position;
@@ -123,12 +122,12 @@ export type TypedSendEvent = <T extends SSEEvent["type"]>(
  */
 export interface StreamContext {
   sendEvent: (type: string, data: Record<string, unknown>) => void;
-  game: TrackedGameState;
+  game: GameState;
   promptOptions?: PromptOptions;  // Options including strategy hints and agent reflections
 }
 
 export interface PhaseResult {
-  game: TrackedGameState;
+  game: GameState;
   decisions: DecisionRecord[];
 }
 

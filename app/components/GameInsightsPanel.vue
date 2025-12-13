@@ -1,11 +1,12 @@
 <template>
     <div class="game-insights-panel">
-        <div class="panel-header">
-            <span class="comment">// </span>game_insights
-            <span class="hand-indicator" v-if="handNumber > 0">
-                [Hand {{ handNumber }}]
-            </span>
-        </div>
+        <BasePanelHeader title="game_insights">
+            <template #actions>
+                <span class="hand-indicator" v-if="handNumber > 0">
+                    [Hand {{ handNumber }}]
+                </span>
+            </template>
+        </BasePanelHeader>
 
         <div class="insights-content" v-if="hasInsights">
             <!-- Latest Hand Summary -->

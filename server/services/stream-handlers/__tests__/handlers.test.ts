@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createNewGame, createGameWithTrump } from "../../../../lib/game/game";
 import type { StreamContext, DecisionRecord } from "../types";
-import type { TrackedGameState } from "../../game-tracker";
 import type { GameState, Position, Card } from "../../../../lib/game/types";
 
 /**
@@ -15,19 +14,6 @@ vi.mock("../../ai-agent", () => ({
   makeDiscardDecisionStreaming: vi.fn(),
 }));
 
-// Mock the game tracker functions
-vi.mock("../../game-tracker", () => ({
-  ensureTracking: vi.fn((game) => ({ ...game, _tracking: {} })),
-  logTrumpBidDecision: vi.fn(),
-  logDiscardDecision: vi.fn(),
-  logCardPlayDecision: vi.fn(),
-  updateTrickOutcomes: vi.fn(),
-  updateTrumpBidOutcomes: vi.fn(),
-  startNewHand: vi.fn((game) => ({ ...game, phase: "trump_selection" })),
-  completeHandTracking: vi.fn(),
-  completeGameTracking: vi.fn(),
-}));
-
 // Import game module for spying in tests
 import * as gameModule from "../../../../lib/game/game";
 
@@ -39,14 +25,14 @@ function createMockContext(): { ctx: StreamContext; events: Array<{ type: string
     sendEvent: (type: string, data: Record<string, unknown>) => {
       events.push({ type, data });
     },
-    game: createNewGame(modelIds) as TrackedGameState,
+    game: createNewGame(modelIds),
   };
   return { ctx, events };
 }
 
 function createPlayingContext(): { ctx: StreamContext; events: Array<{ type: string; data: Record<string, unknown> }> } {
   const events: Array<{ type: string; data: Record<string, unknown> }> = [];
-  const game = createGameWithTrump(modelIds, "hearts") as TrackedGameState;
+  const game = createGameWithTrump(modelIds, "hearts");
   const ctx: StreamContext = {
     sendEvent: (type: string, data: Record<string, unknown>) => {
       events.push({ type, data });
@@ -381,10 +367,9 @@ describe("Completion Handlers", () => {
 
   it("handleHandComplete should send round_complete with hand info", async () => {
     const { handleHandComplete } = await import("../completion");
-    const { startNewHand } = await import("../../game-tracker");
 
     const events: Array<{ type: string; data: any }> = [];
-    const game = createNewGame(modelIds) as TrackedGameState;
+    const game = createNewGame(modelIds);
     game.phase = "hand_complete";
     game.scores = [2, 1];
     game.gameScores = [4, 2];
@@ -397,7 +382,6 @@ describe("Completion Handlers", () => {
 
     await handleHandComplete(ctx);
 
-    expect(startNewHand).toHaveBeenCalled();
     const roundComplete = events.find((e) => e.type === "round_complete");
     expect(roundComplete).toBeDefined();
     expect(roundComplete?.data.phase).toBe("hand_complete");
@@ -407,10 +391,9 @@ describe("Completion Handlers", () => {
 
   it("handleGameComplete should send round_complete with winner", async () => {
     const { handleGameComplete } = await import("../completion");
-    const { completeGameTracking } = await import("../../game-tracker");
 
     const events: Array<{ type: string; data: any }> = [];
-    const game = createNewGame(modelIds) as TrackedGameState;
+    const game = createNewGame(modelIds);
     game.phase = "game_complete";
     game.gameScores = [10, 6];
 
@@ -421,7 +404,6 @@ describe("Completion Handlers", () => {
 
     await handleGameComplete(ctx);
 
-    expect(completeGameTracking).toHaveBeenCalled();
     const roundComplete = events.find((e) => e.type === "round_complete");
     expect(roundComplete).toBeDefined();
     expect(roundComplete?.data.phase).toBe("game_complete");

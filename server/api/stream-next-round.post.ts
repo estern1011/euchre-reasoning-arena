@@ -2,7 +2,6 @@ import { createNewGame } from "../../lib/game/game";
 import type { GameState } from "../../lib/game/types";
 import { getDefaultModelIdsArray } from "../../lib/config/defaults";
 import { PlayNextRoundRequestSchema } from "../schemas/game-schemas";
-import { ensureTracking, type TrackedGameState } from "../services/game-tracker";
 import {
   handleTrumpSelection,
   handlePlayingPhase,
@@ -40,11 +39,9 @@ export default defineEventHandler(async (event) => {
   };
 
   // Initialize game state
-  const initialGame: GameState = body.gameState
+  const game: GameState = body.gameState
     ? (body.gameState as GameState)
     : createNewGame(body.modelIds || getDefaultModelIdsArray());
-
-  const game: TrackedGameState = ensureTracking(initialGame, body.presetName);
 
   // Create SSE stream
   const encoder = new TextEncoder();

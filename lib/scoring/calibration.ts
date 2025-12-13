@@ -35,6 +35,25 @@ export const CONFIDENCE_THRESHOLDS = {
 } as const;
 
 /**
+ * Brier score thresholds for rating quality
+ * Lower is better: 0 = perfect, 0.25 = random guessing
+ */
+export const BRIER_THRESHOLDS = {
+  EXCELLENT: 0.1,
+  GOOD: 0.2,
+  FAIR: 0.3,
+} as const;
+
+export type BrierRating = 'excellent' | 'good' | 'fair' | 'poor';
+
+export function getBrierRating(brier: number): BrierRating {
+  if (brier <= BRIER_THRESHOLDS.EXCELLENT) return 'excellent';
+  if (brier <= BRIER_THRESHOLDS.GOOD) return 'good';
+  if (brier <= BRIER_THRESHOLDS.FAIR) return 'fair';
+  return 'poor';
+}
+
+/**
  * Scoring weights for different decision types
  * Trump decisions are weighted higher because they're more consequential
  */
