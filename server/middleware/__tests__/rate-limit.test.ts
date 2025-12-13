@@ -25,11 +25,12 @@ vi.stubGlobal("defineEventHandler", (handler: any) => handler);
 const { default: rateLimitHandler } = await import("../rate-limit");
 
 function createMockEvent(path: string, ip: string = "127.0.0.1") {
-  mockGetHeader.mockImplementation((event, header) => {
+  mockGetHeader.mockImplementation((_event: unknown, header: string) => {
     if (header === "x-forwarded-for") return ip;
     return undefined;
   });
 
+  // Return a minimal mock event - cast to unknown first for test purposes
   return {
     path,
     node: {
@@ -39,7 +40,7 @@ function createMockEvent(path: string, ip: string = "127.0.0.1") {
         },
       },
     },
-  };
+  } as unknown as Parameters<typeof rateLimitHandler>[0];
 }
 
 describe("Rate Limiting Middleware", () => {
@@ -180,7 +181,7 @@ describe("Rate Limiting Middleware", () => {
     const event = {
       path: "/api/test",
       node: { req: { socket: { remoteAddress: "127.0.0.1" } } },
-    };
+    } as unknown as Parameters<typeof rateLimitHandler>[0];
 
     rateLimitHandler(event);
 
@@ -224,7 +225,7 @@ describe("Rate Limiting Middleware", () => {
     const event = {
       path: "/api/test",
       node: { req: { socket: { remoteAddress: "127.0.0.1" } } },
-    };
+    } as unknown as Parameters<typeof rateLimitHandler>[0];
 
     rateLimitHandler(event);
 

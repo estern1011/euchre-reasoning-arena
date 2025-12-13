@@ -3,6 +3,14 @@ import { useGameStreaming } from "../useGameStreaming";
 import type { SSEMessage } from "../useGameStreaming";
 import type { GameState } from "~/types/game";
 
+// Helper to create a mock fetch that satisfies the type checker
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockFetch = (response: any) =>
+  vi.fn().mockResolvedValue(response) as unknown as typeof fetch;
+
+const mockFetchRejected = (error: Error) =>
+  vi.fn().mockRejectedValue(error) as unknown as typeof fetch;
+
 // Helper to access message at index with type assertion for tests
 // This is safe in tests since we control the mock data
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +52,7 @@ const encodeText = (text: string): Uint8Array => {
   return new TextEncoder().encode(text);
 };
 
-// Mock ReadableStream reader
+// Mock ReadableStream reader - cast to satisfy type checker in tests
 const createMockReader = (chunks: string[]) => {
   let index = 0;
   return {
@@ -57,7 +65,7 @@ const createMockReader = (chunks: string[]) => {
       index++;
       return { done: false, value };
     }),
-  };
+  } as unknown as ReadableStreamDefaultReader<Uint8Array>;
 };
 
 describe("useGameStreaming", () => {
@@ -79,7 +87,7 @@ describe("useGameStreaming", () => {
         player: "north",
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader([playerThinkingMsg]),
@@ -106,7 +114,7 @@ describe("useGameStreaming", () => {
         createSSEMessage({ type: "reasoning_token", player: "north", token: "play " }),
       ];
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader(messages),
@@ -142,7 +150,7 @@ describe("useGameStreaming", () => {
         }),
       ];
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader(messages),
@@ -172,7 +180,7 @@ describe("useGameStreaming", () => {
         fullMessage.substring(30),     // "ing\",\"player\":\"north\"}\n"
       ];
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader(chunks),
@@ -197,7 +205,7 @@ describe("useGameStreaming", () => {
         createSSEMessage({ type: "reasoning_token", player: "north", token: "Test" }) +
         createSSEMessage({ type: "decision_made", player: "north", card: { rank: "9", suit: "hearts" } });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader([chunk]),
@@ -225,7 +233,7 @@ describe("useGameStreaming", () => {
         "\n\n" +
         createSSEMessage({ type: "reasoning_token", player: "north", token: "Test" });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader([chunk]),
@@ -251,7 +259,7 @@ describe("useGameStreaming", () => {
         "event: custom\n" +
         createSSEMessage({ type: "reasoning_token", player: "north", token: "Test" });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader([chunk]),
@@ -272,7 +280,7 @@ describe("useGameStreaming", () => {
 
   describe("error handling", () => {
     it("should handle HTTP error responses", async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: false,
         status: 500,
       });
@@ -294,7 +302,7 @@ describe("useGameStreaming", () => {
     });
 
     it("should handle missing response body", async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: null,
       });
@@ -324,7 +332,7 @@ describe("useGameStreaming", () => {
       // Mock console.error to suppress error output during test
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => createMockReader(chunks),
@@ -350,7 +358,7 @@ describe("useGameStreaming", () => {
     });
 
     it("should handle network errors", async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error("Network timeout"));
+      global.fetch = mockFetchRejected(new Error("Network timeout"));
 
       const { streamGameRound } = useGameStreaming();
 
@@ -373,9 +381,9 @@ describe("useGameStreaming", () => {
         read: vi.fn()
           .mockResolvedValueOnce({ done: false, value: encodeText(createSSEMessage({ type: "player_thinking", player: "north" })) })
           .mockRejectedValueOnce(new Error("Read error")),
-      };
+      } as unknown as ReadableStreamDefaultReader<Uint8Array>;
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => mockReader,
@@ -408,7 +416,7 @@ describe("useGameStreaming", () => {
         player: "east",
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([msg]) },
       });
@@ -431,7 +439,7 @@ describe("useGameStreaming", () => {
         token: "I think ",
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([msg]) },
       });
@@ -456,7 +464,7 @@ describe("useGameStreaming", () => {
         isFallback: false,
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([msg]) },
       });
@@ -484,7 +492,7 @@ describe("useGameStreaming", () => {
         duration: 2000,
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([msg]) },
       });
@@ -512,7 +520,7 @@ describe("useGameStreaming", () => {
         trickNumber: 1,
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([msg]) },
       });
@@ -536,7 +544,7 @@ describe("useGameStreaming", () => {
         message: "AI model failed",
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([errorMsg]) },
       });
@@ -562,7 +570,7 @@ describe("useGameStreaming", () => {
     it("should be true during streaming", async () => {
       const msg = createSSEMessage({ type: "player_thinking", player: "north" });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: {
           getReader: () => {
@@ -573,13 +581,13 @@ describe("useGameStreaming", () => {
                 called = true;
                 return { done: false, value: encodeText(msg) };
               },
-            };
+            } as unknown as ReadableStreamDefaultReader<Uint8Array>;
           },
         },
       });
 
       const { isStreaming, streamGameRound } = useGameStreaming();
-      
+
       expect(isStreaming.value).toBe(false);
 
       const streamPromise = (async () => {
@@ -596,7 +604,7 @@ describe("useGameStreaming", () => {
     it("should be false after streaming completes", async () => {
       const msg = createSSEMessage({ type: "player_thinking", player: "north" });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader([msg]) },
       });
@@ -611,7 +619,7 @@ describe("useGameStreaming", () => {
     });
 
     it("should be false after error", async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
+      global.fetch = mockFetchRejected(new Error("Network error"));
 
       const { isStreaming, streamGameRound } = useGameStreaming();
 
@@ -661,7 +669,7 @@ describe("useGameStreaming", () => {
         }),
       ];
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader(messages) },
       });
@@ -700,7 +708,7 @@ describe("useGameStreaming", () => {
         }),
       ];
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = mockFetch({
         ok: true,
         body: { getReader: () => createMockReader(messages) },
       });

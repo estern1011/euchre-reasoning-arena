@@ -2,8 +2,8 @@ import type { ToolOption } from "../ai-agent/schemas";
 import type { ToolRequest, ToolResult, ToolContext, ToolCallbacks } from "./types";
 import { TOOL_DEFINITIONS, getToolCost } from "./types";
 import { executeAskAudience } from "./ask-audience";
+import { executeAskPartner } from "./ask-partner";
 import { executeFiftyFifty } from "./fifty-fifty";
-import { executeSituationLookup } from "./situation-lookup";
 
 /**
  * Tool Registry for Metacognition Arena
@@ -37,8 +37,8 @@ export async function executeTool(
       case "ask_audience":
         result = await executeAskAudience(request, callbacks);
         break;
-      case "situation_lookup":
-        result = await executeSituationLookup(request, callbacks);
+      case "ask_partner":
+        result = await executeAskPartner(request, callbacks);
         break;
       case "fifty_fifty":
         result = await executeFiftyFifty(request, callbacks);

@@ -177,9 +177,9 @@ function formatToolResult(result: { tool: string; result: unknown; cost: number;
         }
         return 'No consensus';
     }
-    if (result.tool === 'situation_lookup') {
-        const lookupResult = result.result as { situationsFound?: number };
-        return `${lookupResult.situationsFound || 0} similar situations found`;
+    if (result.tool === 'ask_partner') {
+        const partnerResult = result.result as { partnerAdvice?: string; partnerModelName?: string };
+        return `${partnerResult.partnerModelName || 'Partner'}: "${partnerResult.partnerAdvice || 'No advice'}"`;
     }
     if (result.tool === 'fifty_fifty') {
         const fiftyResult = result.result as { winningOptions?: number; totalOptions?: number };

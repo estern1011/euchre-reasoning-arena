@@ -64,7 +64,7 @@ function prepareDiscardContext(game: GameState, modelId: string, promptOptions?:
   }
 
   const handList = hand.map(formatCardForPrompt).join(", ");
-  const systemPrompt = buildDiscardSystemPrompt(handList, game.trump, promptOptions);
+  const systemPrompt = buildDiscardSystemPrompt(handList, game.trump, promptOptions, player);
 
   return { player, modelId, hand, handList, systemPrompt };
 }

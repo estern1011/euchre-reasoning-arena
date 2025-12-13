@@ -59,21 +59,20 @@ Consensus: "${result.consensus.decision}" with ${Math.round(result.consensus.agr
 Now make your final decision, taking this advice into account.`;
   }
 
-  if (toolResult.tool === "situation_lookup") {
+  if (toolResult.tool === "ask_partner") {
     const result = toolResult.result as {
-      situationsFound: number;
-      recommendations: Array<{ decision: string; successRate: number; occurrences: number }>;
+      partnerPosition: string;
+      partnerModelName: string;
+      partnerAdvice: string;
+      partnerConfidence: number;
     };
 
-    const recs = result.recommendations
-      .map((r) => `  - "${r.decision}": ${r.successRate}% success rate (${r.occurrences} occurrences)`)
-      .join("\n");
+    return `TOOL RESULT - Ask Partner:
+Your partner (${result.partnerPosition}, ${result.partnerModelName}) says:
+"${result.partnerAdvice}"
+(${result.partnerConfidence}% confident in this advice)
 
-    return `TOOL RESULT - Situation Lookup:
-Found ${result.situationsFound} similar historical situations:
-${recs}
-
-Now make your final decision based on this historical data.`;
+Remember: Your partner cannot see your hand. Now make your final decision.`;
   }
 
   if (toolResult.tool === "fifty_fifty") {
@@ -143,7 +142,7 @@ function prepareCardPlayContext(
   }
 
   const validCardsList = validCards.map(formatCardForPrompt).join(", ");
-  const systemPrompt = customPrompt || buildCardPlaySystemPrompt(validCardsList, promptOptions);
+  const systemPrompt = customPrompt || buildCardPlaySystemPrompt(validCardsList, promptOptions, player);
 
   return {
     game,

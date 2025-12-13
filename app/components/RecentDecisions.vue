@@ -145,7 +145,7 @@ const getConfidenceClass = (confidence: number): string => {
 const getToolIcon = (tool: string): string => {
     const icons: Record<string, string> = {
         ask_audience: '👥',
-        situation_lookup: '📚',
+        ask_partner: '🤝',
         fifty_fifty: '🎯',
     };
     return icons[tool] || '🔧';

@@ -40,7 +40,7 @@ function getTrumpBidConfig(game: GameState, player: Position, promptOptions?: Pr
       schema: TrumpBidRound1Schema,
       schemaName: "TrumpBidRound1",
       schemaDescription: "Round 1 trump bid: order_up or pass",
-      systemPrompt: buildTrumpBidSystemPrompt(1, excludedSuit, false, promptOptions),
+      systemPrompt: buildTrumpBidSystemPrompt(1, excludedSuit, false, promptOptions, player),
     };
   }
 
@@ -49,7 +49,7 @@ function getTrumpBidConfig(game: GameState, player: Position, promptOptions?: Pr
       schema: createRound2DealerSchemaExcludingSuit(excludedSuit),
       schemaName: "TrumpBidRound2Dealer",
       schemaDescription: `Round 2 dealer must call trump (not ${excludedSuit})`,
-      systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, true, promptOptions),
+      systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, true, promptOptions, player),
     };
   }
 
@@ -57,7 +57,7 @@ function getTrumpBidConfig(game: GameState, player: Position, promptOptions?: Pr
     schema: createRound2SchemaExcludingSuit(excludedSuit),
     schemaName: "TrumpBidRound2",
     schemaDescription: `Round 2 trump bid: call_trump (not ${excludedSuit}) or pass`,
-    systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, false, promptOptions),
+    systemPrompt: buildTrumpBidSystemPrompt(2, excludedSuit, false, promptOptions, player),
   };
 }
 

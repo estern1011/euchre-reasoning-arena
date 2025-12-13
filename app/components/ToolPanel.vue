@@ -52,10 +52,10 @@
                         <span class="response-recommendation">{{ response.recommendation }}</span>
                     </div>
                 </template>
-                <template v-else-if="toolResult.tool === 'situation_lookup'">
-                    <div class="lookup-result">
-                        <span class="lookup-label">Similar situations:</span>
-                        <span class="lookup-value">{{ formatLookupResult(toolResult.result) }}</span>
+                <template v-else-if="toolResult.tool === 'ask_partner'">
+                    <div class="partner-result">
+                        <span class="partner-label">Partner says:</span>
+                        <span class="partner-value">{{ formatPartnerResult(toolResult.result) }}</span>
                     </div>
                 </template>
                 <template v-else-if="toolResult.tool === 'fifty_fifty'">
@@ -204,7 +204,7 @@ const phases = [
 
 const availableTools = [
     { id: 'ask_audience', name: 'Ask Audience', cost: 2, icon: '👥' },
-    { id: 'situation_lookup', name: 'Situation Lookup', cost: 1, icon: '📚' },
+    { id: 'ask_partner', name: 'Ask Partner', cost: 2, icon: '🤝' },
     { id: 'fifty_fifty', name: '50/50', cost: 3, icon: '🎯' },
 ];
 
@@ -228,7 +228,7 @@ const isPhaseCompleted = (phaseId: string): boolean => {
 const getToolIcon = (tool: string): string => {
     const icons: Record<string, string> = {
         ask_audience: '👥',
-        situation_lookup: '📚',
+        ask_partner: '🤝',
         fifty_fifty: '🎯',
     };
     return icons[tool] || '🔧';
@@ -237,7 +237,7 @@ const getToolIcon = (tool: string): string => {
 const formatToolName = (tool: string): string => {
     const names: Record<string, string> = {
         ask_audience: 'Ask Audience',
-        situation_lookup: 'Situation Lookup',
+        ask_partner: 'Ask Partner',
         fifty_fifty: '50/50',
     };
     return names[tool] || tool;
@@ -271,14 +271,11 @@ const formatAskAudienceResult = (result: unknown): AudienceResponse[] => {
         }));
 };
 
-const formatLookupResult = (result: unknown): string => {
-    if (!isRecord(result)) return 'No similar situations found';
+const formatPartnerResult = (result: unknown): string => {
+    if (!isRecord(result)) return 'Partner unavailable';
 
-    if (typeof result.summary === 'string') return result.summary;
-    if (Array.isArray(result.situations)) {
-        return `Found ${result.situations.length} similar situation(s)`;
-    }
-    return 'No similar situations found';
+    if (typeof result.partnerAdvice === 'string') return result.partnerAdvice;
+    return 'Partner had no advice';
 };
 
 const formatFiftyFiftyResult = (result: unknown): string[] => {
@@ -501,21 +498,22 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
     font-weight: 500;
 }
 
-/* Lookup Results */
-.lookup-result {
+/* Partner Results */
+.partner-result {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.lookup-label {
+.partner-label {
     font-size: 0.75rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
 }
 
-.lookup-value {
-    color: var(--color-text-primary);
+.partner-value {
+    color: #60a5fa;
+    font-style: italic;
 }
 
 /* 50/50 Results */

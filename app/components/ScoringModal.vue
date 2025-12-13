@@ -69,8 +69,8 @@
                             <span class="multiplier-value penalty">-2 pts</span>
                         </div>
                         <div class="multiplier-item">
-                            <span class="multiplier-label">situation_lookup</span>
-                            <span class="multiplier-value penalty">-1 pt</span>
+                            <span class="multiplier-label">ask_partner</span>
+                            <span class="multiplier-value penalty">-2 pts</span>
                         </div>
                         <div class="multiplier-item">
                             <span class="multiplier-label">fifty_fifty</span>

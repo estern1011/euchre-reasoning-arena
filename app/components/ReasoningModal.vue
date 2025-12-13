@@ -315,10 +315,10 @@ const togglePhase = (handNumber: number, phase: string) => {
 
 const formatModelId = (modelId: string): string => {
     const parts = modelId.split('/');
-    return parts[parts.length - 1];
+    return parts[parts.length - 1] || modelId;
 };
 
-const formatTrumpAction = (decision: DecisionRecord): string => {
+const formatTrumpAction = (decision: TrumpDecisionRecord): string => {
     if (decision.action === 'order_up') {
         return decision.goingAlone ? 'ORDER UP (ALONE)' : 'ORDER UP';
     }
@@ -326,10 +326,7 @@ const formatTrumpAction = (decision: DecisionRecord): string => {
         const suitSymbol = formatSuitSymbol(decision.suit);
         return decision.goingAlone ? `CALL ${suitSymbol} (ALONE)` : `CALL ${suitSymbol}`;
     }
-    if (decision.action === 'discard' && decision.card) {
-        return `DISCARD ${decision.card.rank}${formatSuitSymbol(decision.card.suit)}`;
-    }
-    return decision.action?.toUpperCase() || '';
+    return decision.action.toUpperCase();
 };
 
 const formatSuitSymbol = (suit?: Suit): string => {

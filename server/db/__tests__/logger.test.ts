@@ -83,6 +83,7 @@ describe("logger", () => {
         southModel: "m3",
         westModel: "m4",
         winningScore: 10,
+        startedAt: Date.now(),
       });
 
       expect(id).toBeNull();

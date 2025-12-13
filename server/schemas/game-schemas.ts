@@ -96,9 +96,16 @@ export const NewGameRequestSchema = z.object({
   winningScore: z.number().min(1).max(100).optional().default(10),
 });
 
+// Agent reflections from previous hands ("What I Learned")
+export const AgentReflectionsSchema = z.record(
+  PositionSchema,
+  z.array(z.string())
+).optional();
+
 // Game options that affect AI behavior
 export const GameOptionsSchema = z.object({
   strategyHints: z.boolean().optional().default(true), // Include strategy hints in prompts
+  agentReflections: AgentReflectionsSchema, // Reflections from previous hands per agent
 });
 
 export const PlayNextRoundRequestSchema = z.object({

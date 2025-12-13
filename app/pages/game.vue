@@ -343,6 +343,108 @@ const analyzeCompletedHand = async (handNumber: number, handScores: [number, num
     }
 };
 
+// Generate reflections for each agent after a hand completes
+const generateAgentReflections = async (handNumber: number, handScores: [number, number]) => {
+    const currentHand = gameStore.getCurrentHand();
+    if (!currentHand) return;
+
+    const positions: Position[] = ['north', 'east', 'south', 'west'];
+    const nsPoints = handScores[0];
+    const ewPoints = handScores[1];
+    const winningTeam = nsPoints > 0 ? 'NS' : 'EW';
+    const points = Math.max(nsPoints, ewPoints);
+
+    // Find the trump caller
+    const callerDecision = currentHand.trumpDecisions.find(
+        d => d.action === 'order_up' || d.action === 'call_trump'
+    );
+    const callingTeam = callerDecision
+        ? (['north', 'south'].includes(callerDecision.player) ? 'NS' : 'EW')
+        : winningTeam;
+
+    const wasEuchred = callingTeam !== winningTeam;
+    const wasMarch = points >= 2 && !wasEuchred;
+
+    // Build summaries for each agent
+    const summaries = positions.map(position => {
+        const playerTeam = ['north', 'south'].includes(position) ? 'NS' : 'EW';
+        const teamWon = playerTeam === winningTeam;
+        const isOnCallingTeam = playerTeam === callingTeam;
+
+        // Find this player's trump decision
+        const playerTrumpDecision = currentHand.trumpDecisions.find(d => d.player === position);
+
+        // Count tricks won by this player's team
+        const tricksWon = currentHand.tricks.filter(t => {
+            if (!t.winner) return false;
+            const winnerTeam = ['north', 'south'].includes(t.winner) ? 'NS' : 'EW';
+            return winnerTeam === playerTeam;
+        }).length;
+
+        // Find tool usage in this hand
+        const toolUsed = playerTrumpDecision?.toolUsed
+            ? { tool: playerTrumpDecision.toolUsed.tool, cost: playerTrumpDecision.toolUsed.cost }
+            : currentHand.tricks
+                .flatMap(t => t.plays)
+                .find(p => p.player === position && p.toolUsed)?.toolUsed
+                ? { tool: currentHand.tricks.flatMap(t => t.plays).find(p => p.player === position && p.toolUsed)!.toolUsed!.tool, cost: currentHand.tricks.flatMap(t => t.plays).find(p => p.player === position && p.toolUsed)!.toolUsed!.cost }
+                : null;
+
+        return {
+            handNumber,
+            position,
+            modelId: gameStore.modelIds[position],
+            trumpDecision: playerTrumpDecision ? {
+                action: playerTrumpDecision.action,
+                suit: playerTrumpDecision.suit,
+                confidence: playerTrumpDecision.confidence,
+                wasSuccessful: !wasEuchred || !isOnCallingTeam,
+            } : null,
+            tricksWon,
+            toolUsed,
+            outcome: {
+                winningTeam: winningTeam as 'NS' | 'EW',
+                callingTeam: callingTeam as 'NS' | 'EW',
+                wasEuchred,
+                wasMarch,
+                points,
+            },
+            isOnCallingTeam,
+            teamWon,
+        };
+    });
+
+    // Get previous reflections per agent
+    const previousReflections: Record<Position, string[]> = {
+        north: gameStore.getReflections('north').map(r => r.reflection),
+        east: gameStore.getReflections('east').map(r => r.reflection),
+        south: gameStore.getReflections('south').map(r => r.reflection),
+        west: gameStore.getReflections('west').map(r => r.reflection),
+    };
+
+    try {
+        gameStore.setGeneratingReflections(true);
+
+        const response = await $fetch('/api/generate-reflections', {
+            method: 'POST',
+            body: {
+                summaries,
+                previousReflections,
+            },
+        });
+
+        if (response.success && response.reflections) {
+            for (const reflection of response.reflections) {
+                gameStore.addReflection(reflection.position, handNumber, reflection.reflection);
+            }
+        }
+    } catch (error) {
+        console.error('Reflection generation failed:', error);
+    } finally {
+        gameStore.setGeneratingReflections(false);
+    }
+};
+
 // Activity log for tracking game events
 const activityLog = ref<string[]>([]);
 
@@ -393,8 +495,18 @@ const handlePlayNextRound = async () => {
     gameStore.startStreaming();
 
     try {
+        // Build reflections for injection into prompts
+        const agentReflections: Partial<Record<Position, string[]>> = {};
+        for (const position of ['north', 'east', 'south', 'west'] as Position[]) {
+            const reflections = gameStore.getReflections(position);
+            if (reflections.length > 0) {
+                agentReflections[position] = reflections.map(r => r.reflection);
+            }
+        }
+
         for await (const message of streamGameRound(gameStore.gameState, {
             strategyHints: gameStore.strategyHints,
+            agentReflections,
         })) {
             switch (message.type) {
                 case 'player_thinking':
@@ -554,6 +666,11 @@ const handlePlayNextRound = async () => {
                             message.handNumber || gameStore.handNumber,
                             (message.handScores || [0, 0]) as [number, number]
                         );
+                        // Generate agent reflections (async, non-blocking)
+                        generateAgentReflections(
+                            message.handNumber || gameStore.handNumber,
+                            (message.handScores || [0, 0]) as [number, number]
+                        );
                     } else if (message.phase === 'hand_complete') {
                         activityLog.value.push(formatTrickComplete({
                             trickNumber: message.trickNumber!,
@@ -576,6 +693,8 @@ const handlePlayNextRound = async () => {
                         gameStore.recordHandComplete(handWinningTeam, message.handScores!);
                         // Analyze the completed hand (async, non-blocking)
                         analyzeCompletedHand(message.handNumber!, message.handScores! as [number, number]);
+                        // Generate agent reflections (async, non-blocking)
+                        generateAgentReflections(message.handNumber!, message.handScores! as [number, number]);
                     } else if (message.phase === 'playing_trick') {
                         activityLog.value.push(formatTrickComplete({
                             trickNumber: message.trickNumber!,

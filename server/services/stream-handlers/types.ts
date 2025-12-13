@@ -1,6 +1,7 @@
 import type { Position, TrumpBidAction, Suit, Card } from "../../../lib/game/types";
 import type { TrackedGameState } from "../game-tracker";
 import type { ToolResult } from "../tools/types";
+import type { PromptOptions } from "../ai-agent/prompts";
 
 /**
  * Shared types for SSE stream phase handlers
@@ -123,6 +124,7 @@ export type TypedSendEvent = <T extends SSEEvent["type"]>(
 export interface StreamContext {
   sendEvent: (type: string, data: Record<string, unknown>) => void;
   game: TrackedGameState;
+  promptOptions?: PromptOptions;  // Options including strategy hints and agent reflections
 }
 
 export interface PhaseResult {
