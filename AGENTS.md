@@ -70,6 +70,7 @@ app/                # Frontend Vue.js application
 
 ## Git Workflows
 
+- **Never commit without explicit user consent or instruction**
 - `main` branch for stable releases
 - Feature branches for development
 - All changes via pull request
