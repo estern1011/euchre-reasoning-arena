@@ -9,9 +9,11 @@
             >
                 <div class="modal-header">
                     <DialogTitle as-child>
-                        <span :id="titleId" class="modal-title">
-                            <span class="comment">// </span>{{ title }}
-                        </span>
+                        <slot name="title">
+                            <span :id="titleId" class="modal-title">
+                                <span class="comment">// </span>{{ title }}
+                            </span>
+                        </slot>
                     </DialogTitle>
                     <DialogClose as-child>
                         <button class="close-btn" aria-label="Close modal">&times;</button>

@@ -7,7 +7,10 @@
     --color-accent-bg-hover: rgba(56, 189, 186, 0.15);
 
     /* Status colors */
-    --color-error: #ef4444;
+    --color-success: #a3e635;
+    --color-warning: #fbbf24;
+    --color-error: #f87171;
+    --color-error-dark: #ef4444;
     --color-live: #3b82f6;
 
     /* Text hierarchy - WCAG AA compliant (4.5:1 min contrast on #000) */

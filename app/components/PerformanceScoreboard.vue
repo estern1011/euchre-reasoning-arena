@@ -1,16 +1,17 @@
 <template>
     <div class="performance-scoreboard">
-        <div class="scoreboard-header">
-            <span class="comment">// </span>performance_scores
-            <button
-                v-if="showScoringInfo"
-                class="info-btn"
-                @click="$emit('show-scoring-rules')"
-                title="View scoring rules"
-            >
-                ?
-            </button>
-        </div>
+        <PanelHeader title="performance_scores">
+            <template #actions>
+                <button
+                    v-if="showScoringInfo"
+                    class="info-btn"
+                    @click="$emit('show-scoring-rules')"
+                    title="View scoring rules"
+                >
+                    ?
+                </button>
+            </template>
+        </PanelHeader>
         <div class="scoreboard-grid">
             <div
                 v-for="position in positions"
@@ -70,6 +71,7 @@
 import type { Position } from '~/types/game';
 import { useGameStore } from '~/stores/game';
 import { calculateBrierScore, getBrierRating } from '../../lib/scoring/calibration';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 
 interface Props {
     currentPlayer?: Position | null;
@@ -151,17 +153,6 @@ const getBrierBarPercent = (position: Position): number => {
     overflow: hidden;
 }
 
-.scoreboard-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 .info-btn {
     width: 20px;
     height: 20px;
@@ -183,9 +174,6 @@ const getBrierBarPercent = (position: Position): number => {
     border-color: rgba(56, 189, 186, 0.6);
 }
 
-.comment {
-    color: var(--color-text-muted);
-}
 
 .scoreboard-grid {
     display: grid;

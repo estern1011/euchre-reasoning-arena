@@ -1,9 +1,10 @@
 <template>
     <div class="post-game-report">
-        <div class="report-header">
-            <span class="comment">// </span>metacognition_report
-            <span class="version">v1.0</span>
-        </div>
+        <PanelHeader title="metacognition_report">
+            <template #actions>
+                <span class="version">v1.0</span>
+            </template>
+        </PanelHeader>
 
         <!-- Performance Rankings -->
         <section class="report-section">
@@ -140,6 +141,7 @@ import {
     getBrierRating,
     type BrierRating,
 } from '../../lib/scoring/calibration';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 
 const gameStore = useGameStore();
 
@@ -282,24 +284,7 @@ const getEfficiencyClass = (efficiency: string): string => {
     overflow: hidden;
 }
 
-.report-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    background: rgba(56, 189, 186, 0.1);
-    border-bottom: 1px solid rgba(56, 189, 186, 0.3);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text);
-}
-
-.comment {
-    color: var(--color-text-muted);
-}
-
 .version {
-    margin-left: auto;
     font-size: 0.75rem;
     color: var(--color-text-muted);
 }

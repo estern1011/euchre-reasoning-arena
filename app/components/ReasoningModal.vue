@@ -1,18 +1,10 @@
 <template>
-    <DialogRoot :open="isOpen" @update:open="handleOpenChange">
-        <DialogPortal>
-            <DialogOverlay class="modal-overlay" />
-            <DialogContent class="modal-content" @escape-key-down="close">
-                <div class="modal-header">
-                    <DialogTitle as-child>
-                        <h3 id="reasoning-modal-title"><span class="keyword">const</span> <span class="variable">reasoningHistory</span> = {</h3>
-                    </DialogTitle>
-                    <DialogClose as-child>
-                        <button class="close-button" aria-label="Close modal">✕</button>
-                    </DialogClose>
-                </div>
+    <BaseModal :is-open="isOpen" title="reasoningHistory" size="xl" @close="close">
+        <template #title>
+            <h3 id="reasoning-modal-title"><span class="keyword">const</span> <span class="variable">reasoningHistory</span> = {</h3>
+        </template>
 
-                <div class="modal-body">
+        <div class="modal-content">
                     <!-- Organized by Hands -->
                     <div v-if="organizedHands.length > 0" class="hands-container">
                         <div
@@ -202,29 +194,22 @@
                     <div v-else class="empty-state">
                         <span class="comment">// </span>No reasoning history yet. Play a round to see AI decisions.
                     </div>
-                </div>
+        </div>
 
-                <div class="modal-footer">
-                    <div class="stats">
-                        {{ gameStore.totalDecisions }} decision{{ gameStore.totalDecisions !== 1 ? 's' : '' }} recorded
-                    </div>
-                    <span class="closing-brace">};</span>
+        <template #footer>
+            <div class="footer-content">
+                <div class="stats">
+                    {{ gameStore.totalDecisions }} decision{{ gameStore.totalDecisions !== 1 ? 's' : '' }} recorded
                 </div>
-            </DialogContent>
-        </DialogPortal>
-    </DialogRoot>
+                <span class="closing-brace">};</span>
+            </div>
+        </template>
+    </BaseModal>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import {
-    DialogRoot,
-    DialogPortal,
-    DialogOverlay,
-    DialogContent,
-    DialogTitle,
-    DialogClose,
-} from 'radix-vue';
+import BaseModal from '~/components/base/BaseModal.vue';
 import Card from '~/components/Card.vue';
 import { useGameStore, type TrumpDecisionRecord, type TrickRecord } from '~/stores/game';
 import type { Suit, Card as CardType, Position } from '../../lib/game/types';
@@ -348,12 +333,6 @@ const getSuitClass = (suit?: Suit): string => {
 
 const close = () => {
     emit('close')
-}
-
-const handleOpenChange = (open: boolean) => {
-    if (!open) {
-        close();
-    }
 };
 
 // Expand current hand when modal opens
@@ -370,61 +349,8 @@ watch(() => props.isOpen, (isOpen, wasOpen) => {
 </script>
 
 <style scoped>
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.9);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.modal-content {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(10, 20, 20, 0.98);
-    border: 2px solid rgba(56, 189, 186, 0.4);
-    border-radius: 8px;
-    box-shadow:
-        0 0 40px rgba(0, 0, 0, 0.8),
-        0 0 20px rgba(56, 189, 186, 0.1);
-    max-width: 1000px;
-    width: 95%;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    font-family: "Courier New", Consolas, Monaco, monospace;
-    z-index: 1001;
-    animation: slideIn 0.2s ease;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -48%);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(56, 189, 186, 0.2);
-}
-
-.modal-header h3 {
+/* Title styling */
+h3 {
     margin: 0;
     font-size: 1rem;
     font-weight: 500;
@@ -432,34 +358,8 @@ watch(() => props.isOpen, (isOpen, wasOpen) => {
 }
 
 .keyword { color: #c084fc; }
-.variable { color: #38bdb8; }
+.variable { color: var(--color-accent); }
 .comment { color: var(--color-text-muted); }
-
-.close-button {
-    background: rgba(56, 189, 186, 0.1);
-    border: 1px solid rgba(56, 189, 186, 0.3);
-    color: #38bdb8;
-    font-size: 1.25rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.close-button:hover {
-    background: rgba(56, 189, 186, 0.2);
-    border-color: rgba(56, 189, 186, 0.5);
-}
-
-.modal-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem;
-}
 
 .hands-container {
     display: flex;
@@ -819,12 +719,12 @@ watch(() => props.isOpen, (isOpen, wasOpen) => {
     font-size: 0.875rem;
 }
 
-.modal-footer {
+/* Footer */
+.footer-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1.5rem;
-    border-top: 1px solid rgba(56, 189, 186, 0.2);
+    width: 100%;
 }
 
 .stats {
