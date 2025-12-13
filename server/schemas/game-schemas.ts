@@ -97,10 +97,14 @@ export const NewGameRequestSchema = z.object({
 });
 
 // Agent reflections from previous hands ("What I Learned")
-export const AgentReflectionsSchema = z.record(
-  PositionSchema,
-  z.array(z.string())
-).optional();
+// Using z.object().partial() instead of z.record(enum, ...) because z.record with enum keys
+// expects ALL enum values to be present, but we only send positions that have reflections
+export const AgentReflectionsSchema = z.object({
+  north: z.array(z.string()),
+  east: z.array(z.string()),
+  south: z.array(z.string()),
+  west: z.array(z.string()),
+}).partial().optional();
 
 // Game options that affect AI behavior
 export const GameOptionsSchema = z.object({
