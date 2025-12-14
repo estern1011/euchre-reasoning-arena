@@ -1,10 +1,9 @@
 <template>
     <div class="post-game-report">
-        <PanelHeader title="metacognition_report">
-            <template #actions>
-                <span class="version">v1.0</span>
-            </template>
-        </PanelHeader>
+        <div class="report-header">
+            <span class="comment">// </span>metacognition_report
+            <span class="version">v1.0</span>
+        </div>
 
         <!-- Performance Rankings -->
         <section class="report-section">
@@ -141,7 +140,6 @@ import {
     getBrierRating,
     type BrierRating,
 } from '../../lib/scoring/calibration';
-import PanelHeader from '~/components/base/PanelHeader.vue';
 
 const gameStore = useGameStore();
 
@@ -279,12 +277,29 @@ const getEfficiencyClass = (efficiency: string): string => {
 <style scoped>
 .post-game-report {
     background: rgba(10, 20, 20, 0.95);
-    border: 2px solid rgba(56, 189, 186, 0.4);
+    border: 2px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
     border-radius: 12px;
     overflow: hidden;
 }
 
+.report-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.comment {
+    color: var(--color-text-muted);
+}
+
 .version {
+    margin-left: auto;
     font-size: 0.75rem;
     color: var(--color-text-muted);
 }
@@ -336,19 +351,19 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .ranking-item.top-performer {
-    border-color: rgba(163, 230, 53, 0.5);
-    background: rgba(163, 230, 53, 0.05);
-    box-shadow: 0 0 15px rgba(163, 230, 53, 0.1);
+    border-color: color-mix(in srgb, var(--color-success) 50%, transparent);
+    background: color-mix(in srgb, var(--color-success) 5%, transparent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--color-success) 10%, transparent);
 }
 
 .ranking-item.north,
 .ranking-item.south {
-    border-left: 3px solid rgba(56, 189, 186, 0.5);
+    border-left: 3px solid var(--color-accent-muted);
 }
 
 .ranking-item.east,
 .ranking-item.west {
-    border-left: 3px solid rgba(248, 113, 113, 0.5);
+    border-left: 3px solid color-mix(in srgb, var(--color-error) 50%, transparent);
 }
 
 .rank {
@@ -360,7 +375,7 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .ranking-item.top-performer .rank {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .agent-info {
@@ -396,11 +411,11 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .stat-value.positive {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .stat-value.negative {
-    color: #f87171;
+    color: var(--color-error);
 }
 
 .stat-value.neutral {
@@ -449,44 +464,44 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .brier-badge.excellent {
-    background: rgba(163, 230, 53, 0.2);
-    color: #a3e635;
+    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+    color: var(--color-success);
 }
 
 .brier-badge.good {
-    background: rgba(56, 189, 186, 0.2);
-    color: #38bdb8;
+    background: var(--color-accent-subtle);
+    color: var(--color-accent);
 }
 
 .brier-badge.fair {
-    background: rgba(251, 191, 36, 0.2);
-    color: #fbbf24;
+    background: color-mix(in srgb, var(--color-warning) 20%, transparent);
+    color: var(--color-warning);
 }
 
 .brier-badge.poor {
-    background: rgba(248, 113, 113, 0.2);
-    color: #f87171;
+    background: color-mix(in srgb, var(--color-error) 20%, transparent);
+    color: var(--color-error);
 }
 
 /* Brier value colors */
 .stat-value.excellent,
 .value.excellent {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .stat-value.good,
 .value.good {
-    color: #38bdb8;
+    color: var(--color-accent);
 }
 
 .stat-value.fair,
 .value.fair {
-    color: #fbbf24;
+    color: var(--color-warning);
 }
 
 .stat-value.poor,
 .value.poor {
-    color: #f87171;
+    color: var(--color-error);
 }
 
 .card-stats {
@@ -511,11 +526,11 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .stat-row .value.correct {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .stat-row .value.wrong {
-    color: #f87171;
+    color: var(--color-error);
 }
 
 /* Tool Stats */
@@ -558,13 +573,13 @@ const getEfficiencyClass = (efficiency: string): string => {
 }
 
 .efficiency.good {
-    background: rgba(163, 230, 53, 0.2);
-    color: #a3e635;
+    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+    color: var(--color-success);
 }
 
 .efficiency.poor {
-    background: rgba(248, 113, 113, 0.2);
-    color: #f87171;
+    background: color-mix(in srgb, var(--color-error) 20%, transparent);
+    color: var(--color-error);
 }
 
 .efficiency.neutral {
@@ -574,7 +589,7 @@ const getEfficiencyClass = (efficiency: string): string => {
 
 /* Summary */
 .summary {
-    background: rgba(56, 189, 186, 0.05);
+    background: var(--color-accent-bg);
 }
 
 .summary-grid {

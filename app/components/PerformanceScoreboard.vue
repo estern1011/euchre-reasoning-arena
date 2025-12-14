@@ -159,7 +159,7 @@ const getBrierBarPercent = (position: Position): number => {
     border-radius: 50%;
     background: rgba(56, 189, 186, 0.2);
     border: 1px solid rgba(56, 189, 186, 0.4);
-    color: #38bdb8;
+    color: var(--color-accent);
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
@@ -253,11 +253,11 @@ const getBrierBarPercent = (position: Position): number => {
 }
 
 .stat-value.positive {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .stat-value.negative {
-    color: #f87171;
+    color: var(--color-error);
 }
 
 .stat-value.neutral {
@@ -316,19 +316,19 @@ const getBrierBarPercent = (position: Position): number => {
 }
 
 .brier-fill.excellent {
-    background: linear-gradient(90deg, #a3e635, #22c55e);
+    background: linear-gradient(90deg, var(--color-success), #22c55e);
 }
 
 .brier-fill.good {
-    background: linear-gradient(90deg, #22c55e, #38bdb8);
+    background: linear-gradient(90deg, #22c55e, var(--color-accent));
 }
 
 .brier-fill.fair {
-    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    background: linear-gradient(90deg, var(--color-warning), #f59e0b);
 }
 
 .brier-fill.poor {
-    background: linear-gradient(90deg, #f87171, #ef4444);
+    background: linear-gradient(90deg, var(--color-error), var(--color-error-dark));
 }
 
 .confidence-breakdown {
@@ -351,11 +351,11 @@ const getBrierBarPercent = (position: Position): number => {
 }
 
 .breakdown-value.correct {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .breakdown-value.wrong {
-    color: #f87171;
+    color: var(--color-error);
 }
 
 .breakdown-value.neutral {
@@ -369,22 +369,22 @@ const getBrierBarPercent = (position: Position): number => {
 /* Brier score color classes */
 .brier-value.excellent,
 .brier-rating.excellent {
-    color: #a3e635;
+    color: var(--color-success);
 }
 
 .brier-value.good,
 .brier-rating.good {
-    color: #38bdb8;
+    color: var(--color-accent);
 }
 
 .brier-value.fair,
 .brier-rating.fair {
-    color: #fbbf24;
+    color: var(--color-warning);
 }
 
 .brier-value.poor,
 .brier-rating.poor {
-    color: #f87171;
+    color: var(--color-error);
 }
 
 .brier-value.neutral,

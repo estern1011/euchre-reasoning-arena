@@ -1,12 +1,12 @@
 <template>
     <div class="reflections-panel">
-        <BasePanelHeader title="what_i_learned">
+        <PanelHeader title="what_i_learned">
             <template #actions>
                 <span class="reflections-count" v-if="totalReflections > 0">
                     {{ totalReflections }} reflections
                 </span>
             </template>
-        </BasePanelHeader>
+        </PanelHeader>
 
         <div class="reflections-content" v-if="hasReflections">
             <div
@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 import { useGameStore, type AgentReflection } from '~/stores/game';
 import type { Position } from '../../lib/game/types';
 

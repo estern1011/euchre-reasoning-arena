@@ -1,12 +1,12 @@
 <template>
     <div class="recent-decisions">
-        <BasePanelHeader title="recent_decisions">
+        <PanelHeader title="recent_decisions">
             <template #actions>
                 <span class="decision-count" v-if="recentDecisions.length > 0">
                     {{ recentDecisions.length }}
                 </span>
             </template>
-        </BasePanelHeader>
+        </PanelHeader>
 
         <div class="decisions-list" v-if="recentDecisions.length > 0">
             <div
@@ -42,6 +42,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 import { useGameStore } from '~/stores/game';
 import { calculateDecisionScore, CONFIDENCE_THRESHOLDS } from '../../lib/scoring/calibration';
 import type { Position } from '../../lib/game/types';

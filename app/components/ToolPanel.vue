@@ -1,10 +1,10 @@
 <template>
     <div class="tool-panel" :class="{ 'has-activity': hasToolActivity }">
-        <BasePanelHeader title="tool_usage">
+        <PanelHeader title="tool_usage">
             <template #actions>
                 <span v-if="hasToolActivity" class="active-indicator"></span>
             </template>
-        </BasePanelHeader>
+        </PanelHeader>
 
         <!-- ReACT Phase Indicator (only shown during active game streaming) -->
         <div class="react-phases" v-if="isStreaming && showPhaseIndicator">
@@ -138,6 +138,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 import { useGameStore } from '~/stores/game';
 import type { Position } from '../../lib/game/types';
 

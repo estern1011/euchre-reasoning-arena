@@ -120,7 +120,39 @@
                         :class="entry.type"
                     >
                         <span class="entry-step">{{ entry.step.toString().padStart(3, '0') }}</span>
-                        <span class="entry-content" v-html="entry.html"></span>
+                        <span class="entry-content">
+                            <!-- Hand start marker -->
+                            <span v-if="entry.kind === 'hand-start'" class="hand-marker">
+                                {{ entry.text }}
+                            </span>
+
+                            <!-- Trump decision -->
+                            <template v-else-if="entry.kind === 'trump-decision'">
+                                <span :class="entry.playerClass">{{ entry.player }}</span>
+                                {{ entry.action }}
+                                <span v-if="entry.suit" :class="entry.suitClass">{{ entry.suit }}</span>
+                                <span v-if="entry.toolUsed" class="tool-used" :title="entry.toolTitle">
+                                    [{{ entry.toolIcon }}]
+                                </span>
+                            </template>
+
+                            <!-- Card play -->
+                            <template v-else-if="entry.kind === 'card-play'">
+                                <span :class="entry.playerClass">{{ entry.player }}</span>
+                                {{ ' played ' }}
+                                <span class="card">{{ entry.card }}</span>
+                                <span v-if="entry.toolUsed" class="tool-used" :title="entry.toolTitle">
+                                    [{{ entry.toolIcon }}]
+                                </span>
+                            </template>
+
+                            <!-- Trick complete -->
+                            <template v-else-if="entry.kind === 'trick-complete'">
+                                <span class="trick-win">{{ entry.trickText }}</span>
+                                {{ ' won by ' }}
+                                <span :class="entry.winnerClass">{{ entry.winner }}</span>
+                            </template>
+                        </span>
                     </div>
                     <div v-if="activityEntries.length === 0" class="empty-state">
                         <span class="comment">// awaiting game events...</span>
@@ -408,9 +440,54 @@ onUnmounted(() => {
     }
 });
 
+// Activity entry types
+type HandStartEntry = {
+    kind: "hand-start";
+    step: number;
+    type: string;
+    text: string;
+};
+
+type TrumpDecisionEntry = {
+    kind: "trump-decision";
+    step: number;
+    type: string;
+    player: string;
+    playerClass: string;
+    action: string;
+    suit?: string;
+    suitClass?: string;
+    toolUsed?: boolean;
+    toolIcon?: string;
+    toolTitle?: string;
+};
+
+type CardPlayEntry = {
+    kind: "card-play";
+    step: number;
+    type: string;
+    player: string;
+    playerClass: string;
+    card: string;
+    toolUsed?: boolean;
+    toolIcon?: string;
+    toolTitle?: string;
+};
+
+type TrickCompleteEntry = {
+    kind: "trick-complete";
+    step: number;
+    type: string;
+    trickText: string;
+    winner: string;
+    winnerClass: string;
+};
+
+type ActivityEntry = HandStartEntry | TrumpDecisionEntry | CardPlayEntry | TrickCompleteEntry;
+
 // Convert activity log entries to structured format - accumulates ALL events
 const activityEntries = computed(() => {
-    const entries: Array<{ step: number; html: string; type: string }> = [];
+    const entries: ActivityEntry[] = [];
     let step = 1;
 
     // Process ALL hands in game history
@@ -418,8 +495,9 @@ const activityEntries = computed(() => {
         // Hand start marker
         if (hand.handNumber > 1) {
             entries.push({
+                kind: "hand-start",
                 step,
-                html: `<span class="hand-marker">Hand ${hand.handNumber} started</span>`,
+                text: `Hand ${hand.handNumber} started`,
                 type: "hand-start",
             });
             step++;
@@ -429,24 +507,36 @@ const activityEntries = computed(() => {
         for (const decision of hand.trumpDecisions) {
             const playerClass = getPlayerClass(decision.player);
             const suitDisplay = decision.suit ? formatSuit(decision.suit) : "?";
-            const actionText = decision.action === "pass"
-                ? "passed"
-                : decision.action === "order_up"
-                    ? `ordered up ${suitDisplay}`
-                    : `called ${suitDisplay}`;
+            const suitClass = decision.suit && (decision.suit === "hearts" || decision.suit === "diamonds") ? "red" : "black";
 
-            // Add tool usage indicator
-            const toolTag = decision.toolUsed
-                ? ` <span class="tool-used" title="Used ${decision.toolUsed.tool} (cost: ${decision.toolUsed.cost})">[${getToolIcon(decision.toolUsed.tool)}]</span>`
-                : "";
+            let actionText: string;
+            let suit: string | undefined;
+
+            if (decision.action === "pass") {
+                actionText = " passed";
+            } else if (decision.action === "order_up") {
+                actionText = " ordered up ";
+                suit = suitDisplay;
+            } else {
+                actionText = " called ";
+                suit = suitDisplay;
+            }
 
             const baseType = decision.action === "pass" ? "pass" : "trump-call";
             const entryType = decision.toolUsed ? `${baseType} tool-used-entry` : baseType;
 
             entries.push({
+                kind: "trump-decision",
                 step,
-                html: `<span class="${playerClass}">${decision.player}</span> ${actionText}${toolTag}`,
                 type: entryType,
+                player: decision.player,
+                playerClass,
+                action: actionText,
+                suit,
+                suitClass,
+                toolUsed: !!decision.toolUsed,
+                toolIcon: decision.toolUsed ? getToolIcon(decision.toolUsed.tool) : undefined,
+                toolTitle: decision.toolUsed ? `Used ${decision.toolUsed.tool} (cost: ${decision.toolUsed.cost})` : undefined,
             });
             step++;
         }
@@ -457,15 +547,16 @@ const activityEntries = computed(() => {
                 const playerClass = getPlayerClass(play.player);
                 const cardText = `${play.card.rank}${formatSuit(play.card.suit)}`;
 
-                // Add tool usage indicator
-                const toolTag = play.toolUsed
-                    ? ` <span class="tool-used" title="Used ${play.toolUsed.tool} (cost: ${play.toolUsed.cost})">[${getToolIcon(play.toolUsed.tool)}]</span>`
-                    : "";
-
                 entries.push({
+                    kind: "card-play",
                     step,
-                    html: `<span class="${playerClass}">${play.player}</span> played <span class="card">${cardText}</span>${toolTag}`,
                     type: play.toolUsed ? "card-play tool-used-entry" : "card-play",
+                    player: play.player,
+                    playerClass,
+                    card: cardText,
+                    toolUsed: !!play.toolUsed,
+                    toolIcon: play.toolUsed ? getToolIcon(play.toolUsed.tool) : undefined,
+                    toolTitle: play.toolUsed ? `Used ${play.toolUsed.tool} (cost: ${play.toolUsed.cost})` : undefined,
                 });
                 step++;
             }
@@ -473,9 +564,12 @@ const activityEntries = computed(() => {
             if (trick.winner) {
                 const winnerClass = getPlayerClass(trick.winner);
                 entries.push({
+                    kind: "trick-complete",
                     step,
-                    html: `<span class="trick-win">Trick ${trick.trickNumber}</span> won by <span class="${winnerClass}">${trick.winner}</span>`,
                     type: "trick-complete",
+                    trickText: `Trick ${trick.trickNumber}`,
+                    winner: trick.winner,
+                    winnerClass,
                 });
                 step++;
             }
@@ -827,23 +921,31 @@ function getToolIcon(tool: string): string {
     color: var(--color-text-secondary);
 }
 
-.entry-content :deep(.team-ns) {
+.entry-content .team-ns {
     color: #a3e635;
     font-weight: 500;
 }
 
-.entry-content :deep(.team-ew) {
+.entry-content .team-ew {
     color: #60a5fa;
     font-weight: 500;
 }
 
-.entry-content :deep(.card) {
+.entry-content .card {
     color: #fbbf24;
     font-weight: 600;
 }
 
-.entry-content :deep(.trick-win) {
+.entry-content .trick-win {
     color: #38bdb8;
+}
+
+.entry-content .red {
+    color: #f87171;
+}
+
+.entry-content .black {
+    color: var(--color-text);
 }
 
 .activity-entry.trump-call {
@@ -865,12 +967,12 @@ function getToolIcon(tool: string): string {
     border-left: 2px solid #fbbf24;
 }
 
-.entry-content :deep(.hand-marker) {
+.entry-content .hand-marker {
     color: #38bdb8;
     font-weight: 600;
 }
 
-.entry-content :deep(.tool-used) {
+.entry-content .tool-used {
     color: #fbbf24;
     font-size: 0.625rem;
     font-weight: 600;

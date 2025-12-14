@@ -209,8 +209,8 @@ const handleClick = () => {
     border-color: rgba(56, 189, 186, 0.6);
 }
 
-/* Active player glow - cyan for current player's cards */
-.playing-card.active-player {
+/* Active player glow - color matches card suit */
+.playing-card.active-player.black {
     border-color: #38bdb8;
     box-shadow:
         0 0 10px rgba(56, 189, 186, 0.9),
@@ -221,13 +221,14 @@ const handleClick = () => {
 }
 
 .playing-card.active-player.red {
-    color: #38bdb8;
-    border-color: #38bdb8;
-}
-
-.playing-card.active-player.black {
-    color: #38bdb8;
-    border-color: #38bdb8;
+    color: #f87171;
+    border-color: #f87171;
+    box-shadow:
+        0 0 10px rgba(248, 113, 113, 0.9),
+        0 0 20px rgba(248, 113, 113, 0.6),
+        0 0 35px rgba(248, 113, 113, 0.4),
+        0 0 50px rgba(248, 113, 113, 0.2),
+        inset 0 0 15px rgba(248, 113, 113, 0.1);
 }
 
 .card-corner {

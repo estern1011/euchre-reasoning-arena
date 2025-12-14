@@ -1,12 +1,12 @@
 <template>
     <div class="game-insights-panel">
-        <BasePanelHeader title="game_insights">
+        <PanelHeader title="game_insights">
             <template #actions>
                 <span class="hand-indicator" v-if="handNumber > 0">
                     [Hand {{ handNumber }}]
                 </span>
             </template>
-        </BasePanelHeader>
+        </PanelHeader>
 
         <div class="insights-content" v-if="hasInsights">
             <!-- Latest Hand Summary -->
@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 import type { Position } from '~/types/game';
 import type { EvolvedInsights } from '../../server/services/analysis/types';
 

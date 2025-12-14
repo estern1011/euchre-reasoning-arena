@@ -1,6 +1,6 @@
 <template>
     <div class="hand-strength-panel">
-        <BasePanelHeader title="hand_strength">
+        <PanelHeader title="hand_strength">
             <template #actions>
                 <span class="trump-indicator" v-if="trumpSuit && !showMatrix">
                     (if {{ getSuitSymbol(trumpSuit) }} trump)
@@ -17,7 +17,7 @@
                     ?
                 </button>
             </template>
-        </BasePanelHeader>
+        </PanelHeader>
 
         <!-- Single suit view (Round 1) -->
         <div class="strength-ranking" v-if="!showMatrix && trumpSuit">
@@ -75,6 +75,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import PanelHeader from '~/components/base/PanelHeader.vue';
 import type { Position, Suit, Card } from '~/types/game';
 import {
     calculateAllHandStrengths,
