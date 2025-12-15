@@ -24,6 +24,7 @@
                             <div v-for="position in positions" :key="position" class="model-row">
                                 <label class="model-label">{{ position }}:</label>
                                 <ModelSelector v-model="gameStore.modelIds[position]" :options="modelOptions" />
+                                <span class="strategy-label">strategy:</span>
                                 <div class="preset-selector compact">
                                     <button
                                         v-for="option in presetOptions"
@@ -288,6 +289,12 @@ const startGame = async () => {
     font-size: 1.5rem;
     color: var(--color-text);
     padding: 0 0 1rem 0rem;
+}
+
+.strategy-label {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
 }
 
 .config-section {
