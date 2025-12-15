@@ -3,6 +3,17 @@ import { setActivePinia, createPinia } from "pinia";
 import { useGameStore } from "../game";
 import type { Card, Position } from "../../../lib/game/types";
 
+/** Assert value is defined and return it with narrowed type */
+function assertDefined<T>(value: T | undefined | null, message?: string): T {
+  expect(value, message).toBeDefined();
+  return value as T;
+}
+
+/** Get array element with assertion */
+function at<T>(arr: T[], index: number): T {
+  return assertDefined(arr[index], `Expected element at index ${index}`);
+}
+
 describe("game store - recordPlay", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -29,15 +40,15 @@ describe("game store - recordPlay", () => {
       store.recordPlay(createPlay("south", { suit: "hearts", rank: "queen" }));
       store.recordPlay(createPlay("west", { suit: "hearts", rank: "jack" }));
 
-      const hand = store.getCurrentHand();
-      expect(hand?.tricks.length).toBe(1);
-      expect(hand?.tricks[0].plays.length).toBe(4);
+      const hand = assertDefined(store.getCurrentHand());
+      expect(hand.tricks.length).toBe(1);
+      expect(at(hand.tricks, 0).plays.length).toBe(4);
 
       // Play first card of trick 2
       store.recordPlay(createPlay("north", { suit: "clubs", rank: "ace" }));
 
-      expect(hand?.tricks.length).toBe(2);
-      expect(hand?.tricks[1].plays.length).toBe(1);
+      expect(hand.tricks.length).toBe(2);
+      expect(at(hand.tricks, 1).plays.length).toBe(1);
     });
 
     it("should group plays correctly across multiple tricks", () => {
@@ -61,18 +72,18 @@ describe("game store - recordPlay", () => {
       const players: Position[] = ["north", "east", "south", "west"];
 
       trick1Cards.forEach((card, i) => {
-        store.recordPlay(createPlay(players[i], card));
+        store.recordPlay(createPlay(at(players, i), card));
       });
       trick2Cards.forEach((card, i) => {
-        store.recordPlay(createPlay(players[i], card));
+        store.recordPlay(createPlay(at(players, i), card));
       });
 
-      const hand = store.getCurrentHand();
-      expect(hand?.tricks.length).toBe(2);
-      expect(hand?.tricks[0].plays.length).toBe(4);
-      expect(hand?.tricks[1].plays.length).toBe(4);
-      expect(hand?.tricks[0].trickNumber).toBe(1);
-      expect(hand?.tricks[1].trickNumber).toBe(2);
+      const hand = assertDefined(store.getCurrentHand());
+      expect(hand.tricks.length).toBe(2);
+      expect(at(hand.tricks, 0).plays.length).toBe(4);
+      expect(at(hand.tricks, 1).plays.length).toBe(4);
+      expect(at(hand.tricks, 0).trickNumber).toBe(1);
+      expect(at(hand.tricks, 1).trickNumber).toBe(2);
     });
   });
 
@@ -92,23 +103,23 @@ describe("game store - recordPlay", () => {
         duration: 100,
       });
 
-      const hand = store.getCurrentHand();
-      expect(hand?.goingAlone).toBe("north");
+      const hand = assertDefined(store.getCurrentHand());
+      expect(hand.goingAlone).toBe("north");
 
       // Play 3 cards for trick 1 (partner south sits out)
       store.recordPlay(createPlay("north", { suit: "hearts", rank: "ace" }));
       store.recordPlay(createPlay("east", { suit: "hearts", rank: "king" }));
       store.recordPlay(createPlay("west", { suit: "hearts", rank: "queen" }));
 
-      expect(hand?.tricks.length).toBe(1);
-      expect(hand?.tricks[0].plays.length).toBe(3);
+      expect(hand.tricks.length).toBe(1);
+      expect(at(hand.tricks, 0).plays.length).toBe(3);
 
       // Play first card of trick 2
       store.recordPlay(createPlay("north", { suit: "clubs", rank: "ace" }));
 
-      expect(hand?.tricks.length).toBe(2);
-      expect(hand?.tricks[0].plays.length).toBe(3);
-      expect(hand?.tricks[1].plays.length).toBe(1);
+      expect(hand.tricks.length).toBe(2);
+      expect(at(hand.tricks, 0).plays.length).toBe(3);
+      expect(at(hand.tricks, 1).plays.length).toBe(1);
     });
 
     it("should correctly group 5 tricks with 3 plays each when going alone", () => {
@@ -126,7 +137,7 @@ describe("game store - recordPlay", () => {
         duration: 100,
       });
 
-      const hand = store.getCurrentHand();
+      const hand = assertDefined(store.getCurrentHand());
 
       // Play 15 unique cards total (5 tricks * 3 plays each)
       const players: Position[] = ["east", "south", "north"]; // West sits out
@@ -154,11 +165,11 @@ describe("game store - recordPlay", () => {
       ];
 
       allCards.forEach((card, i) => {
-        store.recordPlay(createPlay(players[i % 3], card));
+        store.recordPlay(createPlay(at(players, i % 3), card));
       });
 
-      expect(hand?.tricks.length).toBe(5);
-      hand?.tricks.forEach((trick, i) => {
+      expect(hand.tricks.length).toBe(5);
+      hand.tricks.forEach((trick, i) => {
         expect(trick.plays.length).toBe(3);
         expect(trick.trickNumber).toBe(i + 1);
       });
@@ -188,14 +199,14 @@ describe("game store - recordPlay", () => {
       store.recordPlay(createPlay("east", { suit: "clubs", rank: "king" }));
       store.recordPlay(createPlay("west", { suit: "clubs", rank: "queen" }));
 
-      const hand = store.getCurrentHand();
-      expect(hand?.tricks.length).toBe(2);
-      expect(hand?.tricks[0].plays.length).toBe(3);
-      expect(hand?.tricks[1].plays.length).toBe(3);
+      const hand = assertDefined(store.getCurrentHand());
+      expect(hand.tricks.length).toBe(2);
+      expect(at(hand.tricks, 0).plays.length).toBe(3);
+      expect(at(hand.tricks, 1).plays.length).toBe(3);
 
       // Verify no play appears in wrong trick
-      const trick1Players = hand?.tricks[0].plays.map((p) => p.player);
-      const trick2Players = hand?.tricks[1].plays.map((p) => p.player);
+      const trick1Players = at(hand.tricks, 0).plays.map((p) => p.player);
+      const trick2Players = at(hand.tricks, 1).plays.map((p) => p.player);
       expect(trick1Players).toEqual(["north", "east", "west"]);
       expect(trick2Players).toEqual(["north", "east", "west"]);
     });
@@ -211,8 +222,8 @@ describe("game store - recordPlay", () => {
       store.recordPlay(createPlay("north", card));
       store.recordPlay(createPlay("east", card)); // Same card, should be ignored
 
-      const hand = store.getCurrentHand();
-      expect(hand?.tricks[0].plays.length).toBe(1);
+      const hand = assertDefined(store.getCurrentHand());
+      expect(at(hand.tricks, 0).plays.length).toBe(1);
     });
   });
 
@@ -249,8 +260,8 @@ describe("game store - recordPlay", () => {
 
       // Pending keys cleared but plays remain
       expect(store.pendingPlayKeys.size).toBe(0);
-      const hand = store.getCurrentHand();
-      expect(hand?.tricks[0].plays.length).toBe(2);
+      const hand = assertDefined(store.getCurrentHand());
+      expect(at(hand.tricks, 0).plays.length).toBe(2);
     });
   });
 });

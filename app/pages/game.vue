@@ -378,12 +378,13 @@ const generateAgentReflections = async (handNumber: number, handScores: [number,
         }).length;
 
         // Find tool usage in this hand
+        const playWithTool = currentHand.tricks
+            .flatMap(t => t.plays)
+            .find(p => p.player === position && p.toolUsed);
         const toolUsed = playerTrumpDecision?.toolUsed
             ? { tool: playerTrumpDecision.toolUsed.tool, cost: playerTrumpDecision.toolUsed.cost }
-            : currentHand.tricks
-                .flatMap(t => t.plays)
-                .find(p => p.player === position && p.toolUsed)?.toolUsed
-                ? { tool: currentHand.tricks.flatMap(t => t.plays).find(p => p.player === position && p.toolUsed)!.toolUsed!.tool, cost: currentHand.tricks.flatMap(t => t.plays).find(p => p.player === position && p.toolUsed)!.toolUsed!.cost }
+            : playWithTool?.toolUsed
+                ? { tool: playWithTool.toolUsed.tool, cost: playWithTool.toolUsed.cost }
                 : null;
 
         return {
@@ -843,8 +844,7 @@ const reconstructActivityLog = () => {
             }
             if (trick.winner) {
                 entries.push(formatTrickComplete({
-                    type: "round_complete",
-                    phase: "trick_complete",
+                    trickNumber: trick.trickNumber,
                     trickWinner: trick.winner,
                 }));
                 step++;

@@ -37,12 +37,16 @@ export default defineEventHandler(async (event): Promise<NewGameResponse> => {
 
   const gameState = createNewGame(modelIds, dealer, winningScore);
 
+  if (!gameState.trumpSelection) {
+    throw new Error("New game must have trump selection state");
+  }
+
   return {
     gameState,
     metadata: {
       modelIds,
       dealer,
-      firstBidder: gameState.trumpSelection!.currentBidder,
+      firstBidder: gameState.trumpSelection.currentBidder,
     },
   };
 });

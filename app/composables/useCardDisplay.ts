@@ -56,10 +56,8 @@ export function useCardDisplay() {
    * Get the lead card of the current trick
    */
   const leadCard = computed<Card | null>(() => {
-    if (!gameStore.gameState?.currentTrick || gameStore.gameState.currentTrick.plays.length === 0) {
-      return null;
-    }
-    return gameStore.gameState.currentTrick.plays[0]!.card;
+    const firstPlay = gameStore.gameState?.currentTrick?.plays[0];
+    return firstPlay?.card ?? null;
   });
 
   /**

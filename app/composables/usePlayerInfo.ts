@@ -72,22 +72,24 @@ export function usePlayerInfo() {
       const positions: Position[] = ["north", "east", "south", "west"];
       const leadIndex = positions.indexOf(trick.leadPlayer);
       const nextIndex = (leadIndex + trick.plays.length) % 4;
-      const nextPlayer = positions[nextIndex]!;
+      const nextPlayer = positions[nextIndex];
+      if (!nextPlayer) return null;
 
       // Skip if player's partner is going alone
-      if (gameStore.gameState.goingAlone) {
+      const goingAlonePosition = gameStore.gameState.goingAlone;
+      if (goingAlonePosition) {
         const alonePlayer = gameStore.gameState.players.find(
-          (p: { position: Position }) => p.position === gameStore.gameState!.goingAlone,
+          (p: { position: Position }) => p.position === goingAlonePosition,
         );
         if (alonePlayer) {
           const partnerTeam = alonePlayer.team;
           const nextPlayerObj = gameStore.gameState.players.find(
             (p: { position: Position }) => p.position === nextPlayer,
           );
-          if (nextPlayerObj?.team === partnerTeam && nextPlayer !== gameStore.gameState.goingAlone) {
+          if (nextPlayerObj?.team === partnerTeam && nextPlayer !== goingAlonePosition) {
             // This player sits out, find next player
             const afterNextIndex = (nextIndex + 1) % 4;
-            return positions[afterNextIndex]!;
+            return positions[afterNextIndex] ?? null;
           }
         }
       }

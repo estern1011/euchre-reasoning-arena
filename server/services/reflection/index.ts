@@ -80,11 +80,12 @@ function generateFallbackReflection(summary: HandSummaryForAgent): string {
 export async function generateReflections(input: ReflectionInput): Promise<ReflectionOutput> {
     const { summaries, previousReflections } = input;
 
-    if (summaries.length === 0) {
+    const firstSummary = summaries[0];
+    if (!firstSummary) {
         throw new Error('No summaries provided for reflection');
     }
 
-    const handNumber = summaries[0]!.handNumber;
+    const handNumber = firstSummary.handNumber;
 
     // Generate reflections in parallel for all agents
     const reflectionPromises = summaries.map(async (summary): Promise<AgentReflectionOutput> => {

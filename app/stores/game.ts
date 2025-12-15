@@ -259,10 +259,9 @@ export const useGameStore = defineStore('game', {
       // Build a Set of played card keys for O(1) lookup per position
       const playedCardSets = new Map<Position, Set<string>>()
       for (const { player, card } of this.cardsPlayedThisRound) {
-        if (!playedCardSets.has(player)) {
-          playedCardSets.set(player, new Set())
-        }
-        playedCardSets.get(player)!.add(`${card.suit}-${card.rank}`)
+        const playerSet = playedCardSets.get(player) ?? new Set<string>()
+        playerSet.add(`${card.suit}-${card.rank}`)
+        playedCardSets.set(player, playerSet)
       }
 
       const hands: { north: Card[]; south: Card[]; east: Card[]; west: Card[] } = {

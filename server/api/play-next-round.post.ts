@@ -78,7 +78,11 @@ export default defineEventHandler(
     // Determine what phase we're in
     if (game.phase === "trump_selection") {
       // Trump selection phase
-      const round = game.trumpSelection!.round;
+      const trumpSelection = game.trumpSelection;
+      if (!trumpSelection) {
+        throw new Error("Trump selection state required during trump selection phase");
+      }
+      const round = trumpSelection.round;
       const phase =
         round === 1 ? "trump_selection_round_1" : "trump_selection_round_2";
 
@@ -86,19 +90,22 @@ export default defineEventHandler(
       const bidsNeeded = 4;
       const currentRoundBids =
         round === 1
-          ? game.trumpSelection!.bids.filter(
+          ? trumpSelection.bids.filter(
               (b: { action: TrumpBidAction }) =>
                 b.action === "order_up" || b.action === "pass",
             )
-          : game.trumpSelection!.bids.slice(4); // Round 2 bids
+          : trumpSelection.bids.slice(4); // Round 2 bids
 
       for (let i = currentRoundBids.length; i < bidsNeeded; i++) {
-        const currentBidder = game.trumpSelection!.currentBidder;
+        const currentBidder = trumpSelection.currentBidder;
 
         // Call AI model to make bid decision
         const playerObj = game.players.find(
           (p: { position: Position }) => p.position === currentBidder,
-        )!;
+        );
+        if (!playerObj) {
+          throw new Error(`Player ${currentBidder} not found`);
+        }
         const { makeTrumpBidDecision } = await import("../services/ai-agent");
 
         const bidResult = await makeTrumpBidDecision(

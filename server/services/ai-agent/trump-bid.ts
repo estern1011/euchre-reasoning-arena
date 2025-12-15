@@ -80,7 +80,10 @@ async function makeTrumpBidDecisionInternal(options: TrumpBidOptions): Promise<T
   const startTime = Date.now();
   const gameContext = formatTrumpSelectionForAI(game, player);
   const config = getTrumpBidConfig(game, player, promptOptions);
-  const round = game.trumpSelection!.round;
+  if (!game.trumpSelection) {
+    throw new Error("Trump selection state required for trump bid");
+  }
+  const round = game.trumpSelection.round;
   const isStreaming = !!onToken;
 
   logger.info(`Trump bid ${isStreaming ? "streaming " : ""}starting`, {

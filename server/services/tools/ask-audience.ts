@@ -104,8 +104,12 @@ function calculateConsensus(opinions: AudienceOpinion[]): { decision: string; ag
     decisionCounts.set(decision, (decisionCounts.get(decision) || 0) + 1);
   }
 
+  const firstOpinion = opinions[0];
+  if (!firstOpinion) {
+    throw new Error("No opinions provided for consensus");
+  }
   let maxCount = 0;
-  let consensusDecision = opinions[0]!.decision;
+  let consensusDecision = firstOpinion.decision;
   for (const [decision, count] of decisionCounts) {
     if (count > maxCount) {
       maxCount = count;

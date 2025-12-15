@@ -51,15 +51,24 @@ export function createNewGame(
   const deck = shuffleDeck(createDeck());
 
   const positions: Position[] = ["north", "east", "south", "west"];
-  const players: Player[] = positions.map((position, index) => ({
-    position,
-    team: (index % 2) as 0 | 1, // 0 and 2 are team 0, 1 and 3 are team 1
-    hand: deck.slice(index * CARDS_PER_HAND, (index + 1) * CARDS_PER_HAND),
-    modelId: modelIds[index]!,
-  }));
+  const players: Player[] = positions.map((position, index) => {
+    const modelId = modelIds[index];
+    if (!modelId) {
+      throw new Error(`Missing modelId for player ${index}`);
+    }
+    return {
+      position,
+      team: (index % 2) as 0 | 1, // 0 and 2 are team 0, 1 and 3 are team 1
+      hand: deck.slice(index * CARDS_PER_HAND, (index + 1) * CARDS_PER_HAND),
+      modelId,
+    };
+  });
 
   // Card after dealing all hands is turned up for bidding
-  const turnedUpCard = deck[PLAYERS_PER_GAME * CARDS_PER_HAND]!;
+  const turnedUpCard = deck[PLAYERS_PER_GAME * CARDS_PER_HAND];
+  if (!turnedUpCard) {
+    throw new Error("Deck too small for turned up card");
+  }
 
   // First bidder is left of dealer (clockwise)
   const dealerIndex = positionToIndex(dealer);
@@ -231,13 +240,23 @@ export function makeTrumpBid(
 
   // If someone ordered up or called trump
   if (action === "order_up" || action === "call_trump") {
-    const trumpSuit = action === "order_up" ? turnedUpCard.suit : suit!;
+    let trumpSuit: Suit;
+    if (action === "order_up") {
+      trumpSuit = turnedUpCard.suit;
+    } else if (suit) {
+      trumpSuit = suit;
+    } else {
+      throw new Error("Must specify suit when calling trump");
+    }
 
     // If ordered up, add turned-up card to dealer's hand
     let updatedPlayers = game.players;
     if (action === "order_up") {
       const dealerIndex = game.players.findIndex((p) => p.position === dealer);
-      const dealerPlayer = game.players[dealerIndex]!;
+      const dealerPlayer = game.players[dealerIndex];
+      if (!dealerPlayer) {
+        throw new Error("Dealer not found");
+      }
       updatedPlayers = [...game.players];
       updatedPlayers[dealerIndex] = {
         ...dealerPlayer,
@@ -398,8 +417,9 @@ ${bidHistory}
  * Get the current lead suit of a trick (returns null if no cards played)
  */
 export function getLeadSuit(trick: Trick, trump: Suit): Suit | null {
-  if (trick.plays.length === 0) return null;
-  return effectiveSuit(trick.plays[0]!.card, trump);
+  const firstPlay = trick.plays[0];
+  if (!firstPlay) return null;
+  return effectiveSuit(firstPlay.card, trump);
 }
 
 /**
@@ -419,12 +439,20 @@ export function determineTrickWinner(
     );
   }
 
-  const leadSuit = getLeadSuit(trick, trump)!;
+  const leadSuit = getLeadSuit(trick, trump);
+  if (!leadSuit) {
+    throw new InvalidGameStateError("Trick has no lead card");
+  }
 
-  let winningPlay = trick.plays[0]!;
+  const firstPlay = trick.plays[0];
+  if (!firstPlay) {
+    throw new InvalidGameStateError("Trick has no plays");
+  }
+  let winningPlay = firstPlay;
 
   for (let i = 1; i < trick.plays.length; i++) {
-    const currentPlay = trick.plays[i]!;
+    const currentPlay = trick.plays[i];
+    if (!currentPlay) continue;
     const comparison = compareCards(
       currentPlay.card,
       winningPlay.card,
@@ -479,17 +507,18 @@ export function validatePlay(
   }
 
   // Check suit-following rules
-  const leadCard =
-    game.currentTrick.plays.length > 0 ? game.currentTrick.plays[0]!.card : null;
+  const firstPlay = game.currentTrick.plays[0];
+  const leadCard = firstPlay?.card ?? null;
 
   // If not leading, must follow suit if possible
-  if (leadCard && game.trump) {
-    const leadSuit = effectiveSuit(leadCard, game.trump);
+  const trump = game.trump;
+  if (leadCard && trump) {
+    const leadSuit = effectiveSuit(leadCard, trump);
     const canFollow = playerObj.hand.some(
-      (c) => effectiveSuit(c, game.trump!) === leadSuit,
+      (c) => effectiveSuit(c, trump) === leadSuit,
     );
 
-    if (canFollow && !followsSuit(card, leadCard, game.trump)) {
+    if (canFollow && !followsSuit(card, leadCard, trump)) {
       return { valid: false, error: "Must follow suit if possible" };
     }
   }
@@ -510,7 +539,8 @@ export function getValidCardsForPlay(
   }
 
   // If not in playing phase or no trump yet, allow any card from hand
-  if (game.phase !== "playing" || !game.trump) {
+  const trump = game.trump;
+  if (game.phase !== "playing" || !trump) {
     return playerObj.hand;
   }
 
@@ -520,15 +550,19 @@ export function getValidCardsForPlay(
   }
 
   // Otherwise must follow suit if possible
-  const leadCard = game.currentTrick.plays[0]!.card;
-  const leadSuit = effectiveSuit(leadCard, game.trump);
+  const leadPlay = game.currentTrick.plays[0];
+  if (!leadPlay) {
+    return playerObj.hand;
+  }
+  const leadCard = leadPlay.card;
+  const leadSuit = effectiveSuit(leadCard, trump);
   const canFollow = playerObj.hand.some(
-    (c) => effectiveSuit(c, game.trump!) === leadSuit,
+    (c) => effectiveSuit(c, trump) === leadSuit,
   );
 
   if (canFollow) {
     return playerObj.hand.filter(
-      (c) => effectiveSuit(c, game.trump!) === leadSuit,
+      (c) => effectiveSuit(c, trump) === leadSuit,
     );
   }
 
@@ -575,7 +609,11 @@ export function getNextPlayer(game: GameState): Position {
   }
 
   // Return the player at index equal to number of plays already made
-  return allPlayers[trick.plays.length]!;
+  const nextPlayer = allPlayers[trick.plays.length];
+  if (!nextPlayer) {
+    throw new Error("No next player - trick may be complete");
+  }
+  return nextPlayer;
 }
 
 /**
@@ -590,12 +628,15 @@ export function playCard(
   // Validate the play
   const validation = validatePlay(card, player, game);
   if (!validation.valid) {
-    throw new InvalidPlayError(validation.error!, player, card);
+    throw new InvalidPlayError(validation.error ?? "Invalid play", player, card);
   }
 
   // Find player and remove card from hand
   const playerIndex = game.players.findIndex((p) => p.position === player);
-  const playerObj = game.players[playerIndex]!;
+  const playerObj = game.players[playerIndex];
+  if (!playerObj) {
+    throw new Error(`Player ${player} not found`);
+  }
   const updatedPlayers = [...game.players];
   updatedPlayers[playerIndex] = {
     ...playerObj,
@@ -624,10 +665,13 @@ export function playCard(
   const expectedPlays = game.goingAlone ? 3 : PLAYERS_PER_GAME;
 
   if (updatedTrick.plays.length === expectedPlays) {
-    // Determine winner
+    // Determine winner - trump must be set during play phase
+    if (!game.trump) {
+      throw new Error("Trump must be set during playing phase");
+    }
     const winner = determineTrickWinner(
       updatedTrick,
-      game.trump!,
+      game.trump,
       !!game.goingAlone,
     );
     updatedTrick.winner = winner;

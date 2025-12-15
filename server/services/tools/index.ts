@@ -93,8 +93,9 @@ export function buildToolContext(
   if (decisionType === "card_play" && gameState.currentTrick) {
     context.currentTrick = gameState.currentTrick.plays.map((p) => p.card);
     // Get lead suit from first play if available
-    if (gameState.currentTrick.plays.length > 0) {
-      context.leadSuit = gameState.currentTrick.plays[0]!.card.suit;
+    const firstPlay = gameState.currentTrick.plays[0];
+    if (firstPlay) {
+      context.leadSuit = firstPlay.card.suit;
     }
     context.trump = gameState.trump ?? undefined;
   }
