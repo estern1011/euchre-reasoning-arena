@@ -77,9 +77,6 @@
                 <!-- Activity Log (on top) -->
                 <ActivityLog :entries="activityLog" class="activity-log-fixed" />
 
-                <!-- Tool Panel (Metacognition Arena) -->
-                <ToolPanel class="tool-section-sidebar" />
-
                 <!-- Real-Time Streaming Reasoning -->
                 <StreamingReasoning
                     :player="gameStore.displayedReasoningPlayer"
@@ -142,7 +139,6 @@ import GameBoard from "~/components/GameBoard.vue";
 import GameSummary from "~/components/GameSummary.vue";
 import ActivityLog from "~/components/ActivityLog.vue";
 import StreamingReasoning from "~/components/StreamingReasoning.vue";
-import ToolPanel from "~/components/ToolPanel.vue";
 import { usePlayerInfo } from "~/composables/usePlayerInfo";
 import { useGameStore } from "~/stores/game";
 import { useGameStreaming } from "~/composables/useGameStreaming";
@@ -1661,14 +1657,5 @@ onMounted(() => {
 
 .performance-section {
     flex-shrink: 0;
-}
-
-.tool-section {
-    flex-shrink: 0;
-}
-
-.tool-section-sidebar {
-    flex-shrink: 0;
-    margin: 0.5rem;
 }
 </style>

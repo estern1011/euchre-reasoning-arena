@@ -28,6 +28,10 @@ Models report their confidence (0-100%) for every decision they make. Models can
 
 [![End of Game Demo](https://vumbnail.com/1146471201.jpg)](https://vimeo.com/1146471201)
 
+**Tool Usage:** AI models using lifeline tools when uncertain
+
+[![Tool Usage Demo](https://vumbnail.com/1146766462.jpg)](https://vimeo.com/1146766462)
+
 ---
 
 ## Key Features
@@ -137,7 +141,9 @@ Watch AI models reason in real-time with confidence tracking:
 ### Tool Usage
 Models can use lifeline tools when uncertain:
 
-![Tool Use](screenshots/tool_use.png)
+![Tool Use 1](screenshots/tool_use_1.png)
+
+![Tool Use 2](screenshots/tool_use_2.png)
 
 ### Prompt Inspection
 See exactly what each model receives:
@@ -149,17 +155,19 @@ Review all decisions with full reasoning chains:
 
 ![History](screenshots/history_modal.png)
 
-### End of Game
-Final tricks and game conclusion:
-
-![End Game 1](screenshots/end_game_one.png)
-
-![End Game 2](screenshots/end_game_two.png)
-
-### Post-Game Analysis
+### Post-Hand Analysis
 Calibration scores and AI-generated insights:
 
 ![Analysis](screenshots/end_game_analysis_page.png)
+
+### End of Game
+Final tricks and game conclusion:
+
+![End Game 1](screenshots/end_game_1.png)
+
+![End Game 2](screenshots/end_game_2.png)
+
+![End Game 3](screenshots/end_game_3.png)
 
 ---
 

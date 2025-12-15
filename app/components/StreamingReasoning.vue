@@ -290,7 +290,6 @@ watch(() => props.reasoning, async () => {
 }
 
 .thought-text {
-    max-height: 8rem;
     overflow-y: auto;
 }
 
