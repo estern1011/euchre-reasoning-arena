@@ -1,131 +1,128 @@
 # Euchre Reasoning Arena
 
+**Do AI models know what they don't know?**
+
+An interactive platform for evaluating AI metacognition through the strategic card game Euchre. Watch frontier models reason in real-time, use optional "lifeline" tools, and see whether their confidence matches their actual performance.
+
+Built for the **AI Gateway Game Hackathon** - Model Eval Game Category.
+
 ![Tests](https://github.com/estern1011/euchre-reasoning-arena/workflows/Tests/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
-![Tests](https://img.shields.io/badge/tests-582%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-569%20passing-brightgreen)
 
-An interactive playground for exploring, comparing, and evaluating AI strategic reasoning through the card game Euchre.
+---
 
-Built for the AI Gateway Game Hackathon - Model Eval Game Category.
+## The Problem
 
-## Setup
+Traditional AI benchmarks measure **what models know**. But for real-world applications, we need to understand **whether models know what they don't know**.
 
-Install dependencies:
+A model that's confidently wrong is dangerous. A model that knows its limits is useful.
+
+## The Solution
+
+Euchre Reasoning Arena evaluates AI **calibration** - the alignment between confidence and accuracy:
+
+1. **Real-time reasoning** - Watch models think through each decision with streaming output
+2. **Confidence reporting** - Models report confidence (0-100%) with every move
+3. **Optional tools** - Models can spend points to use "lifelines" when uncertain
+4. **Calibration scoring** - Rewards self-awareness, not just correct answers
+
+## Key Features
+
+### Metacognition Arena
+- **Ask Audience** (2 pts) - Poll simulated audience for collective wisdom
+- **Situation Lookup** (1 pt) - Reference play recommendations for the situation
+- **50/50** (3 pts) - Eliminate half the wrong options
+
+Well-calibrated models use tools when uncertain and save points when confident.
+
+### Per-Agent Configuration
+- Set different prompt strategies per player (raw, safe, neutral, yolo)
+- Compare how the same model performs with different guidance
+- A/B test prompt engineering approaches
+
+### Live Analysis
+- Real-time reasoning streams as models think
+- Hand strength analysis showing optimal plays
+- Brier score tracking for calibration quality
+- Post-game AI-generated insights
+
+### Full Euchre Implementation
+- Complete rules: trump selection, bowers, going alone, euchre scoring
+- 569 tests with 98% coverage
+- Supports any model via AI Gateway
+
+---
+
+## Quick Start
 
 ```bash
+# Install dependencies
 bun install
-```
 
-## Development
+# Set your API key
+echo "AI_GATEWAY_API_KEY=your_key_here" > .env
 
-Start the development server on `http://localhost:3000`:
-
-```bash
+# Start development server
 bun run dev
 ```
 
-## Testing
+Open http://localhost:3000
 
-Run tests with Vitest:
+---
 
-```bash
-# Run tests in watch mode
-bun test
+## Demo Flow
 
-# Run tests once
-bun run test:run
+1. **Setup** - Assign different models to each seat, set prompt presets
+2. **Watch** - See real-time reasoning as models bid and play
+3. **Analyze** - Check the intelligence panel for tool usage and calibration
+4. **Review** - Post-game analysis shows who knew what they didn't know
 
-# Run tests with coverage report
-bun run test:coverage
+---
 
-# Open Vitest UI
-bun run test:ui
-```
+## Tech Stack
 
-**Current Test Coverage:**
-- ✅ **582 tests passing**
-- ✅ **98% statement coverage**
-- ✅ **94% branch coverage**
-- ✅ **100% function coverage**
+| Layer | Technology |
+|-------|------------|
+| Framework | Nuxt 3 |
+| Language | TypeScript |
+| UI | Vue 3 + Custom CSS |
+| AI | Vercel AI SDK + AI Gateway |
+| Streaming | Server-Sent Events |
+| Testing | Vitest (98% coverage) |
+| Runtime | Bun |
 
-## Production
-
-Build the application for production:
-
-```bash
-bun run build
-```
-
-Preview production build:
-
-```bash
-bun run preview
-```
+---
 
 ## Project Structure
 
 ```
 euchre-reasoning-arena/
-├── app/                      # Nuxt frontend
-│   ├── pages/               # Vue pages
-│   └── components/          # Vue components
-├── server/                   # Nuxt server
-│   └── api/                 # API endpoints (serverless functions)
-├── lib/                      # Shared game logic
-│   └── game/
-│       ├── __tests__/       # Test files
-│       ├── types.ts         # TypeScript types
-│       ├── card.ts          # Card logic (bowers, comparisons)
-│       ├── game.ts          # Game state management
-│       └── utils.ts         # Helper functions
-└── public/                   # Static assets
+├── app/                    # Nuxt frontend
+│   ├── pages/             # Vue pages (index, game, analysis)
+│   ├── components/        # Vue components
+│   └── stores/            # Pinia state management
+├── server/                 # API endpoints
+│   ├── api/               # SSE streaming, game state
+│   └── services/          # AI agent logic, tools
+├── lib/                    # Shared game engine
+│   ├── game/              # Euchre rules, validation
+│   └── scoring/           # Calibration, hand strength
+└── public/                 # Static assets
 ```
 
-## Tech Stack
+---
 
-- **Framework:** Nuxt 3
-- **Language:** TypeScript
-- **UI:** Vue 3 + Tailwind CSS
-- **AI:** Vercel AI SDK + AI Gateway
-- **Database:** SQLite (better-sqlite3)
-- **Testing:** Vitest
-- **Runtime:** Bun
-- **Deployment:** Vercel
+## Testing
 
-## Game Engine Features
+```bash
+bun run test:run      # Run once
+bun run test:coverage # Coverage report
+```
 
-The game engine implements full Euchre rules with comprehensive test coverage:
+**Coverage:** 569 tests, 98% statements, 100% functions
 
-**Core Features:**
-- ✅ Trump selection (2-round bidding with order-up and call-trump)
-- ✅ Going alone support with partner skip logic
-- ✅ Dealer discard after ordering up
-- ✅ Bower logic (right bower, left bower)
-- ✅ Suit-following validation
-- ✅ Trick winner determination (3-card and 4-card tricks)
-- ✅ Proper Euchre scoring (march, euchre, going alone bonuses)
-- ✅ Custom error types with detailed messages
-
-**Test Coverage:**
-- 582 tests across 26 test suites
-- Tests for all game phases: trump selection → playing → complete
-- Edge case coverage for invalid plays, corrupt state, going alone scenarios
-- AI agent tests: retry logic, illegal moves, streaming variants
-- 98% statement coverage, 100% function coverage
-
-**Metacognition Arena Features:**
-- Agent confidence reporting (0-100 scale) with each decision
-- Optional tools with point costs:
-  - 📊 Situation Lookup (-1 pt): Query similar historical hands
-  - 👥 Ask Audience (-2 pts): Poll 3 other models
-  - ⚡ 50/50 (-3 pts): Reveal winning cards
-- Calibration-based scoring (rewards knowing what you don't know)
-- Live performance scoreboard with calibration meters
-- Post-game rankings by reasoning quality, not just game outcome
-
-## Contributing
-
-This is a hackathon project. See [PRD.md](./PRD.md) for product requirements and roadmap.
+---
 
 ## License
 
