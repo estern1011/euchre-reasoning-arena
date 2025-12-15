@@ -4,8 +4,8 @@
 **Repository:** `estern1011/euchre-reasoning-arena`
 **Timeline:** 2 weeks (Nov 30 - Dec 13, 2025)
 **Target:** AI Gateway Game Hackathon - Model Eval Game Category
-**Status:** v1.7 - Production Hardening Complete 🔒
-**Last Updated:** Dec 4, 2025
+**Status:** v1.8 - Metacognition Arena Complete 🎯
+**Last Updated:** Dec 15, 2025
 
 ---
 
@@ -119,68 +119,47 @@
   - Fixed TypeScript types using LanguageModelUsage from AI SDK
   - Added timeout cleanup to prevent memory leaks
 
-### 🔄 In Progress
+### ✅ Metacognition Arena Complete
 
-**Polish Mode 1 - Visual Enhancements** (Branch: `polish-mode-1`)
+#### Tool System (Lifelines)
+- **Ask Audience** (cost: 2) - Poll simulated audience for collective wisdom
+- **Situation Lookup** (cost: 1) - Reference play recommendations for the situation
+- **50/50** (cost: 3) - Eliminate half the wrong options
 
-Current focus: Improving card visualization and game state display
+#### Calibration Scoring
+- Agents report confidence (0-100) with each decision
+- Score = confidence × correctness - tool costs
+- Tracks Brier scores, calibration curves, decision quality
 
-### 📋 Immediate Next Steps
+#### Hand Strength Analysis
+- Trump card values: Right Bower (12), Left Bower (11), A (10), K (9), Q (8), 10 (7), 9 (6)
+- Off-suit values: A (5), K (4), Q (3), J (2), 10 (1), 9 (0)
+- Categories: Strong (25+), Medium (15-24), Weak (<15)
+- Matrix view for Round 2 showing strength across all potential trump suits
 
-1. **Arena Mode Visual Polish** (Priority 1 - NEXT)
-   - **Header layout**: Move title to top-left, tabs to the right of it
-   - **Card positioning by player**:
-     - North: cards below name
-     - South: cards above name
-     - East: cards to left of name
-     - West: cards to right of name (current)
-   - **Diamond format played cards**: Cards fan toward center from player who played
-   - **Going alone visual**: Gray out partner when player goes alone
+#### Analysis Page
+- Game Insights panel with AI-generated observations
+- Performance Scoreboard with calibration metrics
+- Hand Strength panel (ranking view for Round 1, matrix for Round 2)
+- Tool Panel showing usage counts and costs per player
+- Activity Log with tool usage highlighting (icons: 👥 📖 50/50)
+- Reasoning History modal with full decision details
 
-2. **Thinking Indicator Fixes** (Priority 1 - BUG)
-   - **Indicator not moving**: Fix `currentThinkingPlayer` to update between agents
-   - **Immediate feedback**: Show thinking indicator on `player_thinking` event, before first token arrives
-   - User should always know which agent is thinking (no "hanging" feeling)
+#### Post-Hand Analysis
+- AI-generated insights after each hand
+- Tracks patterns across players and models
+- Evolving game narrative
 
-3. **Intelligence Mode Refinements** (Priority 2)
-   - **Tiny card visuals**: Show actual mini cards instead of suit symbols for hands
-   - **Dynamic trick order**: Don't use fixed N/E/S/W positions for current trick
-     - Show cards in order played: `[10♥, K♠, ...]`
-     - Lead player changes each trick
+### 🔄 Recent Updates
 
-4. **Polish Mode 1 - Remaining** (Priority 3)
-   - Add game completion modal with final scores
-   - Improve error handling UI for failed streams
-   - Test full 5-trick game completion
-   - Smooth animations and transitions
-
-5. **Deployment** (Priority 4)
-   - Set up AI_GATEWAY_API_KEY environment variable
-   - Deploy to Vercel
-   - Smoke test live deployment
-   - Verify streaming works in production
-
-6. **Mode 2: Experimentation** (Priority 5 - If Time Permits)
-   - Basic prompt editor for one player
-   - Pre-built templates (Aggressive, Conservative, Card Counting)
-   - Replay trick with new prompt
-   - Simple before/after comparison
+- **Strategy guidance UI** - Added inline "strategy:" labels with presets (none/safe/neutral/yolo)
+- **Pulsing glow** - playNextRound() button pulses when available to press
+- **Renamed raw → none** - Clearer labeling for strategy presets
 
 ### Timeline Status
 
 **Original Deadline:** Dec 13, 2025
-**Current Date:** Dec 4, 2025 (9 days remaining)
-**Status:** ✅ **AHEAD OF SCHEDULE!**
-
-**Updated Schedule:**
-- **Dec 2:** ~~Fix SSE frontend~~ ✅ **DONE!** ~~complete Mode 1~~ ✅ **DONE!**
-- **Dec 3:** ✅ Pinia migration, illegal moves, live reasoning, hands display, Card component
-- **Dec 4:** ✅ Production hardening - validation, accessibility, performance
-- **Dec 5-6:** 🎯 Metacognition Arena - Core infrastructure + Ask Audience tool
-- **Dec 7-8:** 🎯 Scoring system + Analysis view redesign
-- **Dec 9-10:** 🎯 SQLite + Situation Lookup tool + Post-game report
-- **Dec 11:** Polish + 50/50 tool + Demo prep
-- **Dec 12:** Final testing & submission
+**Status:** ✅ **COMPLETE - Submitted!**
 
 ---
 
@@ -227,10 +206,10 @@ Current focus: Improving card visualization and game state display
 
 ---
 
-### Mode 1.5: Metacognition Arena - **IN PROGRESS** 🎯
+### Mode 1.5: Metacognition Arena - **COMPLETE** ✅
 **Purpose:** Evaluate AI calibration and tool-use decision making
 
-**Status:** 🔄 **Active Development (Hackathon Focus)**
+**Status:** ✅ **Complete**
 
 **Research Question:** "Do AI models know what they don't know?"
 
@@ -554,39 +533,6 @@ euchre-reasoning-arena/
 
 ---
 
-### Database Decision
-
-**Recommended: Neon (Serverless Postgres)**
-
-| Option | Fit | Notes |
-|--------|-----|-------|
-| **Neon** | ⭐⭐⭐⭐⭐ | Direct port of `../euchre` PostgreSQL schema, scales to zero, generous free tier |
-| **Supabase** | ⭐⭐⭐⭐ | Postgres + realtime + auth. Good if human play is prioritized |
-| **Turso** | ⭐⭐⭐⭐ | SQLite at edge, simpler, schema still portable |
-
-The old `../euchre` repo has a complete PostgreSQL schema covering:
-- Tournament/game/hand hierarchy
-- Trump decisions with reasoning
-- Card plays with game state context
-- Prompt version history
-- LLM judge evaluations
-
-This can be ported almost directly to Neon/Supabase.
-
----
-
-### Assets from `../euchre` Repo (Ruby)
-
-High-value code to port:
-1. **Decision Logger** - Tracks all decisions with reasoning + context
-2. **Bower Accuracy Judge** - LLM evaluator with structured prompts
-3. **Prompt Manager** - Prompt versioning per agent
-4. **Learning Methods** - 6 evolution conditions (A-F)
-5. **Database Schema** - Complete tournament tracking structure
-6. **Game Session Manager** - WebSocket + REST for human play
-
----
-
 ### Long-term Vision
 
 **Goal:** Become the standard platform for evaluating AI strategic reasoning through interactive games.
@@ -628,8 +574,9 @@ After removing slop, provide a brief 1-3 sentence summary of what was changed.
 **Design Inspiration Sources:**
 - **Vercel.com** - Clean, monochrome, technical aesthetic
 - **dtc-benchmark-report-doug.vercel.app** - Data-driven reports with structured layouts
-- **helix-ai-doug.vercel.app** - Research-focused, scientific presentation
-- **ctx-engineering.vercel.app** - Code-style typography, technical documentation
+
+**Tools Used:**
+- **stitch.withgoogle.com** - Google's AI design tool for UI generation
 
 **Key Design Elements:**
 - **Typography:** Code-style fonts (monospace, technical). Avoid generic fonts like Inter, Arial, system defaults
@@ -645,71 +592,7 @@ After removing slop, provide a brief 1-3 sentence summary of what was changed.
 - Use creative, context-specific design choices
 - Implement bold maximalism or refined minimalism with clear intentionality
 
-## 8. Key Decisions & Trade-offs
-
-### Technology Choices
-
-**Why Nuxt 3 over Next.js?**
-- Vue's reactivity system
-- Nuxt UI component library
-- Server-side rendering flexibility
-
-**Why AI Gateway over direct SDK?**
-- Single API key for all providers
-- Built-in rate limiting
-- Simplified billing
-
-**Why SSE over WebSockets?**
-- Simpler protocol for one-way streaming
-- Better Vercel compatibility
-- Easier error handling
-
-### Scope Decisions
-
-**Included in Hackathon:**
-- ✅ Mode 1 (Simulation) - Core value prop
-- ✅ SSE streaming - Showcase AI SDK capability
-- ✅ Manual trick control - Interactive engagement
-
-**Deferred to Post-Hackathon:**
-- ❌ Complex prompt editor
-- ❌ Database-backed ratings
-- ❌ User accounts
-- ❌ Mobile optimization
-
-**Rationale:** Focus on shipping one mode extremely well rather than three modes poorly.
-
----
-
-## 8. Open Questions
-
-### Technical
-
-1. **SSE Implementation:** Should we use EventSource API instead of fetch()?
-   - **Current:** Using fetch() with ReadableStream
-   - **Alternative:** EventSource (built-in SSE support)
-   - **Decision:** Try EventSource if fetch continues to fail
-
-2. **Error Recovery:** How to handle mid-stream failures?
-   - **Option A:** Retry entire round
-   - **Option B:** Continue with fallback to non-streaming
-   - **Decision:** TBD after SSE is working
-
-### Product
-
-3. **Euchre Knowledge:** Assume users know rules?
-   - **Decision:** Collapsible rules tooltip + link to external guide
-
-4. **Model Selection:** Fixed set or user choice?
-   - **Current:** Fixed default set (Claude, Gemini, GPT, Grok)
-   - **Future:** Allow custom selection
-
-5. **Prompt Length:** Character limit for custom prompts?
-   - **Decision:** 1000 char limit for Mode 2
-
----
-
-## 9. Appendix
+## 8. Appendix
 
 ### Model Configuration
 
@@ -732,22 +615,6 @@ type SSEEvent =
   | { type: 'round_complete', gameState: GameState, phase: string, ... }
   | { type: 'error', message: string }
 ```
-
----
-
-## Sign-Off
-
-**Product Owner:** estern1011
-**Submission Deadline:** December 12, 2025, 11:59 PM PST
-**Days Remaining:** 11
-
-**Critical Path:**
-1. Fix SSE frontend connection (Dec 2-3)
-2. Complete Mode 1 end-to-end (Dec 3-4)
-3. Deploy and test live (Dec 4-5)
-4. Polish and demo video (Dec 11-12)
-
-**Status:** On track if SSE issue resolved by Dec 3
 
 ---
 
