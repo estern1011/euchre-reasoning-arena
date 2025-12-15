@@ -12,6 +12,35 @@ Built for the **AI Gateway Game Hackathon** - Model Eval Game Category.
 
 ---
 
+## Screenshots
+
+### Game Setup
+Configure models and prompt strategies for each player:
+
+![Setup](screenshots/setup_page.png)
+
+### Live Gameplay
+Watch AI models reason in real-time with confidence tracking:
+
+![Gameplay](screenshots/gameplay.png)
+
+### Prompt Inspection
+See exactly what each model receives:
+
+![Prompt Modal](screenshots/prompt_modal.png)
+
+### Reasoning History
+Review all decisions with full reasoning chains:
+
+![History](screenshots/history_modal.png)
+
+### Post-Game Analysis
+Calibration scores and AI-generated insights:
+
+![Analysis](screenshots/analysis_page.png)
+
+---
+
 ## The Problem
 
 Traditional AI benchmarks measure **what models know**. But for real-world applications, we need to understand **whether models know what they don't know**.

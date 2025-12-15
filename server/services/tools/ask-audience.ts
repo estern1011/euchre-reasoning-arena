@@ -20,8 +20,12 @@ const AUDIENCE_MODELS = [
 const AudienceResponseSchema = z.object({
   decision: z.string().describe("The recommended card or action (e.g., 'ace of hearts' or 'order_up')"),
   confidence: z.number().min(0).max(100).describe("How confident you are in this recommendation (0-100)"),
-  briefReasoning: z.string().max(100).describe("One sentence explaining why"),
+  briefReasoning: z.string().describe("One sentence explaining why"),
 });
+
+function truncate(str: string, maxLen: number): string {
+  return str.length > maxLen ? str.slice(0, maxLen - 3) + "..." : str;
+}
 
 async function pollSingleModel(
   modelConfig: (typeof AUDIENCE_MODELS)[number],
@@ -45,7 +49,7 @@ async function pollSingleModel(
           messages: [
             {
               role: "system",
-              content: `You are a quick Euchre advisor. Give a brief, confident recommendation. Keep reasoning under 100 characters.`,
+              content: `You are a quick Euchre advisor. Give a brief, confident recommendation.`,
             },
             { role: "user", content: prompt },
           ],
@@ -56,9 +60,9 @@ async function pollSingleModel(
     return {
       modelId: modelConfig.id,
       modelName: modelConfig.name,
-      decision: object.decision,
+      decision: truncate(object.decision, 50),
       confidence: object.confidence,
-      briefReasoning: object.briefReasoning,
+      briefReasoning: truncate(object.briefReasoning, 150),
     };
   } catch (error) {
     console.error(`[Ask Audience] ${modelConfig.name} failed:`, error);

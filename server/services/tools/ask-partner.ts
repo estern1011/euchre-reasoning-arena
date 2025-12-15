@@ -22,10 +22,14 @@ const PARTNER_POSITIONS: Record<Position, Position> = {
 };
 
 const PartnerAdviceSchema = z.object({
-  advice: z.string().max(150).describe("Your advice to your partner (max 150 chars)"),
+  advice: z.string().describe("Your advice to your partner"),
   confidence: z.number().min(0).max(100).describe("How confident you are in this advice (0-100)"),
-  reasoning: z.string().max(100).describe("Brief explanation of your reasoning"),
+  reasoning: z.string().describe("Brief explanation of your reasoning"),
 });
+
+function truncate(str: string, maxLen: number): string {
+  return str.length > maxLen ? str.slice(0, maxLen - 3) + "..." : str;
+}
 
 function getPartnerPosition(playerPosition: Position): Position {
   return PARTNER_POSITIONS[playerPosition];
@@ -143,7 +147,7 @@ Remember: You cannot see your partner's hand, so give general strategic guidance
       partnerModelId,
       partnerModelName,
       question: "What should I do?",
-      partnerAdvice: object.advice,
+      partnerAdvice: truncate(object.advice, 200),
       partnerConfidence: object.confidence,
     };
 
