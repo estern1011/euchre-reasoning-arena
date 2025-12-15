@@ -10,7 +10,7 @@ export type PromptPreset = 'none' | 'conservative' | 'neutral' | 'aggressive';
 
 // Display labels for prompt presets (used in UI)
 export const PROMPT_PRESET_LABELS: Record<PromptPreset, string> = {
-  none: 'raw',
+  none: 'none',
   conservative: 'safe',
   neutral: 'neutral',
   aggressive: 'yolo',
@@ -18,7 +18,7 @@ export const PROMPT_PRESET_LABELS: Record<PromptPreset, string> = {
 
 // Descriptions for prompt presets (used in tooltips)
 export const PROMPT_PRESET_DESCRIPTIONS: Record<PromptPreset, string> = {
-  none: 'Raw mode - No strategic guidance',
+  none: 'No strategic guidance',
   conservative: 'Safe mode - Conservative play style',
   neutral: 'Neutral mode - Balanced guidance',
   aggressive: 'YOLO mode - Aggressive risk-taking',

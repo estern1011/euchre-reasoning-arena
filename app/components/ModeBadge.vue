@@ -54,7 +54,7 @@ withDefaults(defineProps<Props>(), {
     font-weight: 600;
 }
 
-/* Raw/None mode - grey */
+/* None mode - grey */
 .mode-badge.none {
     border-color: color-mix(in srgb, var(--color-mode-none) 40%, transparent);
     background: color-mix(in srgb, var(--color-mode-none) 10%, transparent);
