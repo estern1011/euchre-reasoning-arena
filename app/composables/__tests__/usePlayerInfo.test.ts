@@ -12,7 +12,7 @@ const createMockGameState = (overrides?: Partial<GameState>): GameState => ({
     { position: "north", team: 0, hand: [], modelId: "anthropic/claude-haiku-4.5" },
     { position: "east", team: 1, hand: [], modelId: "google/gemini-2.5-flash" },
     { position: "south", team: 0, hand: [], modelId: "openai/gpt-5-mini" },
-    { position: "west", team: 1, hand: [], modelId: "xai/grok-4.1-fast-non-reasoning" },
+    { position: "west", team: 1, hand: [], modelId: "openai/o3-mini" },
   ],
   trump: "hearts",
   dealer: "north",
@@ -46,7 +46,7 @@ describe("usePlayerInfo", () => {
       expect(getModelId("north")).toBe("anthropic/claude-haiku-4.5");
       expect(getModelId("east")).toBe("google/gemini-2.5-flash");
       expect(getModelId("south")).toBe("openai/gpt-5-mini");
-      expect(getModelId("west")).toBe("xai/grok-4.1-fast-non-reasoning");
+      expect(getModelId("west")).toBe("openai/o3-mini");
     });
 
     it("should return empty string for non-existent position", () => {
@@ -77,7 +77,7 @@ describe("usePlayerInfo", () => {
       expect(getFormattedModelName("north")).toBe("CLAUDE-HAIKU-4.5");
       expect(getFormattedModelName("east")).toBe("GEMINI-2.5-FLASH");
       expect(getFormattedModelName("south")).toBe("GPT-5-MINI");
-      expect(getFormattedModelName("west")).toBe("GROK-4.1-FAST-NON-REASONING");
+      expect(getFormattedModelName("west")).toBe("O3-MINI");
     });
 
     it("should uppercase model name without provider", () => {
@@ -325,7 +325,7 @@ describe("usePlayerInfo", () => {
         north: "anthropic/claude-haiku-4.5",
         east: "google/gemini-2.5-flash",
         south: "openai/gpt-5-mini",
-        west: "xai/grok-4.1-fast-non-reasoning",
+        west: "openai/o3-mini",
       });
     });
   });
@@ -341,7 +341,7 @@ describe("usePlayerInfo", () => {
         north: "CLAUDE-HAIKU-4.5",
         east: "GEMINI-2.5-FLASH",
         south: "GPT-5-MINI",
-        west: "GROK-4.1-FAST-NON-REASONING",
+        west: "O3-MINI",
       });
     });
   });

@@ -9,7 +9,7 @@ export const DEFAULT_MODEL_IDS: Record<Position, string> = {
   north: "anthropic/claude-haiku-4.5",     // Tier 2: Fast & Balanced ($1.00/M)
   east: "google/gemini-2.5-flash",         // Tier 2: Fast & Balanced ($0.30/M)
   south: "openai/gpt-5-mini",              // Tier 1: Ultra-Fast & Cheap ($0.25/M)
-  west: "xai/grok-code-fast-1",            // Tier 1: Ultra-Fast & Cheap ($0.20/M)
+  west: "openai/o3-mini",                   // Tier 2: Reasoning model
 } as const;
 
 /** Get default model IDs as a tuple for API calls */
