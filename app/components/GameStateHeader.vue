@@ -76,6 +76,19 @@ defineEmits<{
     white-space: nowrap;
 }
 
+.play-next-button:not(:disabled) {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(56, 189, 186, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(56, 189, 186, 0.6), 0 0 30px rgba(56, 189, 186, 0.3);
+    }
+}
+
 .play-next-button:hover:not(:disabled) {
     background: rgba(56, 189, 186, 0.15);
     border-color: rgba(56, 189, 186, 0.5);
