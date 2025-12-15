@@ -401,7 +401,11 @@ export function formatTrumpSelectionForAI(
   const isDealer = playerPosition === dealer;
   const isLastBidderRound2 = round === 2 && bids.slice(BIDS_PER_ROUND).length === BIDS_PER_ROUND - 1;
 
+  const yourTeamScore = game.gameScores[player.team];
+  const opponentScore = game.gameScores[player.team === 0 ? 1 : 0];
+
   return `
+Game Score: Your team: ${yourTeamScore}, Opponents: ${opponentScore} (first to ${game.winningScore} wins)
 Turned-up card: ${cardToString(turnedUpCard)}
 Dealer: ${dealer}${isDealer ? " (you)" : ""}
 Your position: ${playerPosition} (Team ${player.team})
@@ -947,7 +951,21 @@ export function formatGameStateForCardPlay(
     ? `\nGoing alone: ${game.goingAlone}${game.goingAlone === playerPosition ? " (YOU)" : game.goingAlone === partner?.position ? " (your partner - you're sitting out)" : " (opponent)"}`
     : "";
 
+  // Calculate tricks won by each team this hand
+  const team0Tricks = game.completedTricks.filter(t => {
+    const winner = game.players.find(p => p.position === t.winner);
+    return winner?.team === 0;
+  }).length;
+  const team1Tricks = game.completedTricks.length - team0Tricks;
+
+  const yourTeamTricks = player.team === 0 ? team0Tricks : team1Tricks;
+  const opponentTricks = player.team === 0 ? team1Tricks : team0Tricks;
+
+  const yourTeamGameScore = game.gameScores[player.team];
+  const opponentGameScore = game.gameScores[player.team === 0 ? 1 : 0];
+
   return `
+Game Score: Your team: ${yourTeamGameScore}, Opponents: ${opponentGameScore} (first to ${game.winningScore} wins)
 Trump: ${game.trump} (called by ${game.trumpCaller})
 Your position: ${playerPosition} (Team ${player.team})
 Your role: ${roleStr}
@@ -956,8 +974,7 @@ ${trickHistorySection}
 Current trick (lead: ${game.currentTrick.leadPlayer}):
 ${currentTrickStr}
 
-Score: Team 0: ${game.scores[0]}, Team 1: ${game.scores[1]}
-Tricks this hand: ${game.completedTricks.length}/${TRICKS_PER_HAND}
+Tricks this hand: Your team: ${yourTeamTricks}, Opponents: ${opponentTricks} (of ${TRICKS_PER_HAND})
   `.trim();
 }
 

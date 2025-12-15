@@ -100,7 +100,7 @@ export function createTimeout(): TimeoutHandle {
 // Retry Logic
 // =============================================================================
 
-/** Check if an error is retryable (network, rate limit, etc.) */
+/** Check if an error is retryable (network, rate limit, timeout, abort, etc.) */
 function isRetryableError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
@@ -108,6 +108,7 @@ function isRetryableError(error: unknown): boolean {
       message.includes("rate limit") ||
       message.includes("timeout") ||
       message.includes("network") ||
+      message.includes("abort") ||
       message.includes("503") ||
       message.includes("502") ||
       message.includes("529") ||
