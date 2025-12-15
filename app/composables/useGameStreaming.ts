@@ -1,11 +1,12 @@
 import { ref } from "vue";
 import type { GameState, Position } from "~/types/game";
 import type { SSEMessage } from "../../lib/types/sse";
+import type { PromptPreset } from "../../server/services/ai-agent/prompts";
 
 export type { SSEMessage } from "../../lib/types/sse";
 
 export interface StreamOptions {
-  strategyHints?: boolean;
+  promptPresets?: Partial<Record<Position, PromptPreset>>;  // Per-agent strategy guidance
   agentReflections?: Partial<Record<Position, string[]>>;  // Per-agent reflections from previous hands
 }
 

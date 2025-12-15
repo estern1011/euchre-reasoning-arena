@@ -79,11 +79,43 @@ describe("Agent Prompts", () => {
       expect(prompt).not.toContain("Reflection 1");
     });
 
-    it("should respect strategyHints option", () => {
-      const promptWithHints = buildTrumpBidSystemPrompt(1, "hearts", false, { strategyHints: true });
-      const promptWithoutHints = buildTrumpBidSystemPrompt(1, "hearts", false, { strategyHints: false });
-      expect(promptWithHints).toContain("Strategy:");
-      expect(promptWithoutHints).not.toContain("Strategy:");
+    it("should respect promptPreset option - none", () => {
+      const prompt = buildTrumpBidSystemPrompt(1, "hearts", false, { promptPresets: { north: 'none' } }, 'north');
+      expect(prompt).not.toContain("Strategy:");
+    });
+
+    it("should respect promptPreset option - neutral (default)", () => {
+      const prompt = buildTrumpBidSystemPrompt(1, "hearts", false, { promptPresets: { north: 'neutral' } }, 'north');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("3+ hearts cards");
+    });
+
+    it("should respect promptPreset option - conservative", () => {
+      const prompt = buildTrumpBidSystemPrompt(1, "hearts", false, { promptPresets: { north: 'conservative' } }, 'north');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("STRONG hands");
+      expect(prompt).toContain("4+ hearts cards");
+    });
+
+    it("should respect promptPreset option - aggressive", () => {
+      const prompt = buildTrumpBidSystemPrompt(1, "hearts", false, { promptPresets: { north: 'aggressive' } }, 'north');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("2+ hearts cards");
+      expect(prompt).toContain("Trust your partner");
+    });
+
+    it("should use neutral as default when no preset specified for player", () => {
+      const prompt = buildTrumpBidSystemPrompt(1, "hearts", false, {}, 'north');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("3+ hearts cards");
+    });
+
+    it("should use different presets for different players", () => {
+      const options: PromptOptions = { promptPresets: { north: 'aggressive', south: 'conservative' } };
+      const northPrompt = buildTrumpBidSystemPrompt(1, "hearts", false, options, 'north');
+      const southPrompt = buildTrumpBidSystemPrompt(1, "hearts", false, options, 'south');
+      expect(northPrompt).toContain("2+ hearts cards");
+      expect(southPrompt).toContain("4+ hearts cards");
     });
   });
 
@@ -109,13 +141,28 @@ describe("Agent Prompts", () => {
       expect(prompt).toContain("Save high trump");
     });
 
-    it("should respect strategyHints option", () => {
-      const promptWithHints = buildCardPlaySystemPrompt(validCards, { strategyHints: true });
-      const promptWithoutHints = buildCardPlaySystemPrompt(validCards, { strategyHints: false });
-      expect(promptWithHints).toContain("Strategy");
-      expect(promptWithHints).toContain("MAKERS");
-      expect(promptWithHints).toContain("DEFENDERS");
-      expect(promptWithoutHints).not.toContain("Strategy");
+    it("should respect promptPreset option - none", () => {
+      const prompt = buildCardPlaySystemPrompt(validCards, { promptPresets: { west: 'none' } }, 'west');
+      expect(prompt).not.toContain("Strategy");
+    });
+
+    it("should respect promptPreset option - neutral (default)", () => {
+      const prompt = buildCardPlaySystemPrompt(validCards, { promptPresets: { west: 'neutral' } }, 'west');
+      expect(prompt).toContain("Strategy");
+      expect(prompt).toContain("MAKERS");
+      expect(prompt).toContain("DEFENDERS");
+    });
+
+    it("should respect promptPreset option - conservative", () => {
+      const prompt = buildCardPlaySystemPrompt(validCards, { promptPresets: { west: 'conservative' } }, 'west');
+      expect(prompt).toContain("Strategy");
+      expect(prompt).toContain("Save trump for emergencies");
+    });
+
+    it("should respect promptPreset option - aggressive", () => {
+      const prompt = buildCardPlaySystemPrompt(validCards, { promptPresets: { west: 'aggressive' } }, 'west');
+      expect(prompt).toContain("Strategy");
+      expect(prompt).toContain("Lead trump immediately");
     });
   });
 
@@ -143,11 +190,27 @@ describe("Agent Prompts", () => {
       expect(prompt).toContain("Never discard trump");
     });
 
-    it("should respect strategyHints option", () => {
-      const promptWithHints = buildDiscardSystemPrompt(hand, trump, { strategyHints: true });
-      const promptWithoutHints = buildDiscardSystemPrompt(hand, trump, { strategyHints: false });
-      expect(promptWithHints).toContain("Strategy:");
-      expect(promptWithoutHints).not.toContain("Strategy:");
+    it("should respect promptPreset option - none", () => {
+      const prompt = buildDiscardSystemPrompt(hand, trump, { promptPresets: { east: 'none' } }, 'east');
+      expect(prompt).not.toContain("Strategy:");
+    });
+
+    it("should respect promptPreset option - neutral (default)", () => {
+      const prompt = buildDiscardSystemPrompt(hand, trump, { promptPresets: { east: 'neutral' } }, 'east');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("Never discard trump");
+    });
+
+    it("should respect promptPreset option - conservative", () => {
+      const prompt = buildDiscardSystemPrompt(hand, trump, { promptPresets: { east: 'conservative' } }, 'east');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("absolute weakest card");
+    });
+
+    it("should respect promptPreset option - aggressive", () => {
+      const prompt = buildDiscardSystemPrompt(hand, trump, { promptPresets: { east: 'aggressive' } }, 'east');
+      expect(prompt).toContain("Strategy:");
+      expect(prompt).toContain("kings are expendable");
     });
   });
 

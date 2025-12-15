@@ -10,6 +10,7 @@ import {
   updatePerformance,
 } from '../../lib/scoring/calibration'
 import type { EvolvedInsights } from '../../server/services/analysis/types'
+import type { PromptPreset } from '../../server/services/ai-agent/prompts'
 
 export type ViewMode = 'arena' | 'analysis'
 
@@ -81,7 +82,12 @@ export const useGameStore = defineStore('game', {
     isInitialized: false,
     viewMode: 'arena' as ViewMode,
     configuredWinningScore: 10, // User-configured winning score
-    strategyHints: true, // Include strategy hints in prompts
+    promptPresets: {
+      north: 'neutral',
+      east: 'neutral',
+      south: 'neutral',
+      west: 'neutral',
+    } as Record<Position, PromptPreset>, // Per-agent strategy guidance
 
     // Game history
     gameHistory: {
@@ -315,8 +321,17 @@ export const useGameStore = defineStore('game', {
       this.configuredWinningScore = score
     },
 
-    setStrategyHints(enabled: boolean) {
-      this.strategyHints = enabled
+    setPromptPreset(position: Position, preset: PromptPreset) {
+      this.promptPresets[position] = preset
+    },
+
+    setAllPromptPresets(preset: PromptPreset) {
+      this.promptPresets = {
+        north: preset,
+        east: preset,
+        south: preset,
+        west: preset,
+      }
     },
 
     // Auto-mode actions
@@ -692,6 +707,12 @@ export const useGameStore = defineStore('game', {
       this.pendingPlayKeys = new Set()
       this.clearStreamingState()
       this.modelIds = { ...DEFAULT_MODEL_IDS }
+      this.promptPresets = {
+        north: 'neutral',
+        east: 'neutral',
+        south: 'neutral',
+        west: 'neutral',
+      }
       this.agentPerformance = {}
       this.evolvedInsights = null
       this.latestHandSummary = null

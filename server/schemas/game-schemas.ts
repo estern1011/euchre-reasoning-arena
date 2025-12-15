@@ -106,9 +106,20 @@ export const AgentReflectionsSchema = z.object({
   west: z.array(z.string()),
 }).partial().optional();
 
+// Prompt preset levels for strategy guidance
+export const PromptPresetSchema = z.enum(['none', 'conservative', 'neutral', 'aggressive']);
+
+// Per-position prompt presets
+export const PromptPresetsSchema = z.object({
+  north: PromptPresetSchema,
+  east: PromptPresetSchema,
+  south: PromptPresetSchema,
+  west: PromptPresetSchema,
+}).partial().optional();
+
 // Game options that affect AI behavior
 export const GameOptionsSchema = z.object({
-  strategyHints: z.boolean().optional().default(true), // Include strategy hints in prompts
+  promptPresets: PromptPresetsSchema, // Per-agent strategy guidance
   agentReflections: AgentReflectionsSchema, // Reflections from previous hands per agent
 });
 

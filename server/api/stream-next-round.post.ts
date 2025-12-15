@@ -35,7 +35,13 @@ export default defineEventHandler(async (event) => {
 
   // Extract options (with defaults)
   const promptOptions: PromptOptions = {
-    strategyHints: body.options?.strategyHints ?? true,
+    promptPresets: body.options?.promptPresets ?? {
+      north: 'neutral',
+      east: 'neutral',
+      south: 'neutral',
+      west: 'neutral',
+    },
+    agentReflections: body.options?.agentReflections,
   };
 
   // Initialize game state

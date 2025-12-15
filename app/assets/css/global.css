@@ -13,6 +13,12 @@
     --color-error-dark: #ef4444;
     --color-live: #3b82f6;
 
+    /* Mode indicator colors */
+    --color-mode-none: #9ca3af;        /* grey - raw/no guidance */
+    --color-mode-conservative: #22c55e; /* green - safe/conservative */
+    --color-mode-neutral: #eab308;      /* yellow - balanced */
+    --color-mode-aggressive: #ef4444;   /* red - yolo/aggressive */
+
     /* Text hierarchy - WCAG AA compliant (4.5:1 min contrast on #000) */
     --color-text: #e5e7eb;           /* ~14:1 contrast */
     --color-text-secondary: #9ca3af; /* ~6.5:1 contrast */

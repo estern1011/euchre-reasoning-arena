@@ -26,6 +26,7 @@
                         <div class="player-header">
                             <span class="player-position">{{ stat.position.toUpperCase() }}</span>
                             <span class="team-badge">Team {{ stat.team + 1 }}</span>
+                            <ModeBadge :mode="gameStore.promptPresets[stat.position]" compact class="summary-mode" />
                         </div>
                         <div class="model-name">{{ stat.modelName }}</div>
                     </div>
@@ -72,6 +73,7 @@ import { computed } from 'vue';
 import type { GameState, Position } from '~/types/game';
 import { useGameStore } from '~/stores/game';
 import PostGameReport from '~/components/PostGameReport.vue';
+import ModeBadge from '~/components/ModeBadge.vue';
 
 const emit = defineEmits<{
     newGame: []
@@ -331,6 +333,10 @@ const rankedPlayers = computed(() => {
     font-size: 0.875rem;
     color: var(--color-text-muted);
     font-family: "Courier New", monospace;
+}
+
+.summary-mode {
+    margin-left: auto;
 }
 
 .player-stats {

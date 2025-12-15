@@ -1,6 +1,8 @@
+import { z } from "zod";
 import { formatTrumpSelectionForAI, formatGameStateForCardPlay, getValidCardsForPlay } from "../../lib/game/game";
 import { buildTrumpBidSystemPrompt, buildCardPlaySystemPrompt, buildDiscardSystemPrompt, type PromptOptions } from "../services/ai-agent/prompts";
-import type { GameState, Position, Card } from "../../lib/game/types";
+import { GameStateSchema, PositionSchema, PromptPresetsSchema } from "../schemas/game-schemas";
+import type { Card } from "../../lib/game/types";
 
 // Format card for display in prompts
 function formatCardForPrompt(card: Card): string {
@@ -13,11 +15,11 @@ function formatCardForPrompt(card: Card): string {
   return `${card.rank}${suitSymbols[card.suit]}`;
 }
 
-interface ViewPromptRequest {
-  gameState: GameState;
-  player: Position;
-  strategyHints?: boolean;
-}
+const ViewPromptRequestSchema = z.object({
+  gameState: GameStateSchema,
+  player: PositionSchema,
+  promptPresets: PromptPresetsSchema,
+});
 
 interface PromptSection {
   label: string;
@@ -33,20 +35,21 @@ interface ViewPromptResponse {
 }
 
 export default defineEventHandler(async (event): Promise<ViewPromptResponse> => {
-  const body = await readBody<ViewPromptRequest>(event);
+  const rawBody = await readBody(event);
+  const parseResult = ViewPromptRequestSchema.safeParse(rawBody);
 
-  if (!body.gameState || !body.player) {
+  if (!parseResult.success) {
     return {
       success: false,
       phase: "unknown",
       decisionType: "unknown",
       sections: [],
-      error: "Missing gameState or player",
+      error: "Invalid request: " + parseResult.error.issues.map((e) => e.message).join(", "),
     };
   }
 
-  const { gameState, player, strategyHints = true } = body;
-  const promptOptions: PromptOptions = { strategyHints };
+  const { gameState, player, promptPresets } = parseResult.data;
+  const promptOptions: PromptOptions = { promptPresets };
 
   try {
     const sections: PromptSection[] = [];

@@ -1,6 +1,12 @@
 <template>
     <div class="player-plaque" :class="plaqueClasses">
         <div class="plaque-header">
+            <span
+                v-if="promptPreset"
+                class="mode-dot"
+                :class="`mode-${promptPreset}`"
+                :title="PROMPT_PRESET_HINTS[promptPreset]"
+            ></span>
             <span class="position-label">{{ position.toUpperCase() }}</span>
             <span v-if="isDealer" class="dealer-indicator">D</span>
             <!-- Trick chips (circles showing tricks won) -->
@@ -17,6 +23,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Position } from "~/types/game";
+import { type PromptPreset, PROMPT_PRESET_HINTS } from "../../server/services/ai-agent/prompts";
 
 interface Props {
     position: Position;
@@ -24,6 +31,7 @@ interface Props {
     isThinking?: boolean;
     isDealer?: boolean;
     tricksWon?: number;
+    promptPreset?: PromptPreset;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -157,5 +165,29 @@ const plaqueClasses = computed(() => {
 .player-plaque.east .position-label {
     font-size: 10px;
     letter-spacing: 1px;
+}
+
+/* Mode indicator dot */
+.mode-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.mode-dot.mode-none {
+    background: var(--color-mode-none);
+}
+
+.mode-dot.mode-conservative {
+    background: var(--color-mode-conservative);
+}
+
+.mode-dot.mode-neutral {
+    background: var(--color-mode-neutral);
+}
+
+.mode-dot.mode-aggressive {
+    background: var(--color-mode-aggressive);
 }
 </style>

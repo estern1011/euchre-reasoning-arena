@@ -61,7 +61,10 @@
                                         <span class="decision-time">{{ (decision.duration / 1000).toFixed(2) }}s</span>
                                     </div>
                                     <div class="decision-meta">
-                                        <div class="model-id">{{ formatModelId(decision.modelId) }}</div>
+                                        <div class="meta-row">
+                                            <span class="model-id">{{ formatModelId(decision.modelId) }}</span>
+                                            <ModeBadge :mode="gameStore.promptPresets[decision.player as Position]" compact />
+                                        </div>
                                         <div class="action">
                                             {{ formatTrumpAction(decision) }}
                                         </div>
@@ -100,7 +103,10 @@
                                         <span class="decision-time">{{ (decision.duration / 1000).toFixed(2) }}s</span>
                                     </div>
                                     <div class="decision-meta">
-                                        <div class="model-id">{{ formatModelId(decision.modelId) }}</div>
+                                        <div class="meta-row">
+                                            <span class="model-id">{{ formatModelId(decision.modelId) }}</span>
+                                            <ModeBadge :mode="gameStore.promptPresets[decision.player as Position]" compact />
+                                        </div>
                                         <div class="action">
                                             {{ formatTrumpAction(decision) }}
                                         </div>
@@ -170,7 +176,10 @@
                                             <span class="decision-time">{{ (play.duration / 1000).toFixed(2) }}s</span>
                                         </div>
                                         <div class="decision-meta">
-                                            <div class="model-id">{{ formatModelId(play.modelId) }}</div>
+                                            <div class="meta-row">
+                                                <span class="model-id">{{ formatModelId(play.modelId) }}</span>
+                                                <ModeBadge :mode="gameStore.promptPresets[play.player as Position]" compact />
+                                            </div>
                                             <div class="action card-action">
                                                 <Card
                                                     :suit="play.card.suit"
@@ -212,8 +221,9 @@
 import { computed, ref, watch } from 'vue';
 import BaseModal from '~/components/base/BaseModal.vue';
 import Card from '~/components/Card.vue';
+import ModeBadge from '~/components/ModeBadge.vue';
 import { useGameStore, type TrumpDecisionRecord, type TrickRecord } from '~/stores/game';
-import type { Suit } from '../../lib/game/types';
+import type { Suit, Position } from '../../lib/game/types';
 
 interface Props {
     isOpen: boolean;
@@ -518,6 +528,12 @@ watch(() => props.isOpen, (isOpen, wasOpen) => {
     gap: 0.25rem;
     margin-bottom: 0.5rem;
     font-size: 0.8125rem;
+}
+
+.meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .model-id {

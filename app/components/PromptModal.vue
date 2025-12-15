@@ -17,10 +17,14 @@
                     v-for="pos in positions"
                     :key="pos"
                     class="player-button"
-                    :class="{ active: selectedPlayer === pos }"
+                    :class="[
+                        { active: selectedPlayer === pos },
+                        `mode-${gameStore.promptPresets[pos]}`
+                    ]"
                     @click="selectPlayer(pos)"
                 >
-                    {{ pos.toUpperCase() }}
+                    <span class="player-name">{{ pos.toUpperCase() }}</span>
+                    <span class="player-mode-dot" :title="PROMPT_PRESET_LABELS[gameStore.promptPresets[pos]]"></span>
                 </button>
             </div>
         </div>
@@ -47,6 +51,7 @@
                     <span class="meta-label">decision:</span>
                     <span class="meta-value">{{ promptData.decisionType }}</span>
                 </span>
+                <ModeBadge :mode="gameStore.promptPresets[selectedPlayer]" class="meta-mode" />
             </div>
 
             <!-- Prompt Sections -->
@@ -81,8 +86,10 @@
 import { ref, watch } from 'vue';
 import BaseModal from '~/components/base/BaseModal.vue';
 import CollapsibleSection from '~/components/base/CollapsibleSection.vue';
+import ModeBadge from '~/components/ModeBadge.vue';
 import { useGameStore } from '~/stores/game';
 import type { Position } from '../../lib/game/types';
+import { PROMPT_PRESET_LABELS } from '../../server/services/ai-agent/prompts';
 
 interface PromptSection {
     label: string;
@@ -133,7 +140,7 @@ async function fetchPrompt(): Promise<void> {
             body: {
                 gameState: gameStore.gameState,
                 player: selectedPlayer.value,
-                strategyHints: gameStore.strategyHints,
+                promptPresets: gameStore.promptPresets,
             },
         });
 
@@ -227,6 +234,33 @@ watch(() => props.isOpen, async (isOpen, wasOpen) => {
     border-color: rgba(56, 189, 186, 0.5);
 }
 
+.player-button {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.player-mode-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Mode-specific dot colors */
+.player-button.mode-none .player-mode-dot {
+    background: var(--color-mode-none);
+}
+.player-button.mode-conservative .player-mode-dot {
+    background: var(--color-mode-conservative);
+}
+.player-button.mode-neutral .player-mode-dot {
+    background: var(--color-mode-neutral);
+}
+.player-button.mode-aggressive .player-mode-dot {
+    background: var(--color-mode-aggressive);
+}
+
 .meta-info {
     display: flex;
     gap: 1.5rem;
@@ -247,6 +281,10 @@ watch(() => props.isOpen, async (isOpen, wasOpen) => {
 .meta-value {
     color: #a3e635;
     margin-left: 0.25rem;
+}
+
+.meta-mode {
+    margin-left: auto;
 }
 
 .prompt-text {

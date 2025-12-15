@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import ReasoningModal from "~/components/ReasoningModal.vue";
 import ScoringModal from "~/components/ScoringModal.vue";
 import HandStrengthModal from "~/components/HandStrengthModal.vue";
@@ -432,6 +432,13 @@ watch(
     },
     { immediate: true }
 );
+
+// Redirect to setup page if no active game
+onMounted(() => {
+    if (!gameStore.gameState) {
+        navigateTo('/');
+    }
+});
 
 // Cleanup on unmount
 onUnmounted(() => {

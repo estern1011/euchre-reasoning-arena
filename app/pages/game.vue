@@ -57,6 +57,7 @@
                             :going-alone="gameStore.goingAlone"
                             :dealer="gameStore.dealer"
                             :tricks-won="tricksWonByPlayer"
+                            :prompt-presets="gameStore.promptPresets"
                         />
                     </div>
 
@@ -502,7 +503,7 @@ const handlePlayNextRound = async () => {
         }
 
         for await (const message of streamGameRound(gameStore.gameState, {
-            strategyHints: gameStore.strategyHints,
+            promptPresets: gameStore.promptPresets,
             agentReflections,
         })) {
             switch (message.type) {
@@ -856,11 +857,14 @@ const reconstructActivityLog = () => {
 };
 
 onMounted(() => {
-    if (gameStore.gameState) {
-        activityLog.value = reconstructActivityLog();
-    } else {
-        handleInitializeGame();
+    if (!gameStore.gameState) {
+        // No game state - redirect to setup page
+        navigateTo('/');
+        return;
     }
+
+    // Game exists - set up the activity log
+    activityLog.value = reconstructActivityLog();
 });
 </script>
 

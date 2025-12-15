@@ -5,10 +5,100 @@ import type { Suit, Position } from "../../../lib/game/types";
  * Includes Metacognition Arena: confidence levels and tool availability
  */
 
+// Prompt preset levels for strategy guidance
+export type PromptPreset = 'none' | 'conservative' | 'neutral' | 'aggressive';
+
+// Display labels for prompt presets (used in UI)
+export const PROMPT_PRESET_LABELS: Record<PromptPreset, string> = {
+  none: 'raw',
+  conservative: 'safe',
+  neutral: 'neutral',
+  aggressive: 'yolo',
+};
+
+// Descriptions for prompt presets (used in tooltips)
+export const PROMPT_PRESET_DESCRIPTIONS: Record<PromptPreset, string> = {
+  none: 'Raw mode - No strategic guidance',
+  conservative: 'Safe mode - Conservative play style',
+  neutral: 'Neutral mode - Balanced guidance',
+  aggressive: 'YOLO mode - Aggressive risk-taking',
+};
+
+// Short hints for prompt presets (used in compact UI elements)
+export const PROMPT_PRESET_HINTS: Record<PromptPreset, string> = {
+  none: 'No guidance',
+  conservative: 'Play it safe',
+  neutral: 'Standard tips',
+  aggressive: 'Take risks',
+};
+
 export interface PromptOptions {
-  strategyHints?: boolean;  // Include strategy hints (default: true)
+  promptPresets?: Partial<Record<Position, PromptPreset>>;  // Per-agent strategy guidance
   agentReflections?: Partial<Record<Position, string[]>>;  // Per-agent reflections from previous hands
 }
+
+// Strategy content by preset level
+const TRUMP_BID_ROUND1_STRATEGY: Record<PromptPreset, (suit: Suit) => string> = {
+  none: () => '',
+  conservative: (suit) => `
+Strategy: Only order up with STRONG hands - 4+ ${suit} cards, or 3 trump with Right/Left bower. Pass on marginal hands. Go alone only with 5 trump including both bowers.`,
+  neutral: (suit) => `
+Strategy: Order up with 3+ ${suit} cards, or 2 strong trump + other high cards. Go alone only with exceptional hand (4+ trump including bowers).`,
+  aggressive: (suit) => `
+Strategy: Order up with 2+ ${suit} cards if you have any bower, or 3+ cards of any strength. Trust your partner to help. Consider going alone with 3+ strong trump.`,
+};
+
+const TRUMP_BID_ROUND2_STRATEGY: Record<PromptPreset, string> = {
+  none: '',
+  conservative: `
+Strategy: Only call trump with a dominant suit - 3+ cards with high values, or 2 cards including a bower. When in doubt, pass to partner.`,
+  neutral: `
+Strategy: Call with strength in a suit (3+ cards or 2 high cards). Go alone only with exceptional hand.`,
+  aggressive: `
+Strategy: Call your longest suit even with moderate strength. 2+ cards with an ace or bower is enough. Partners will support you.`,
+};
+
+const TRUMP_BID_DEALER_MUST_CALL_STRATEGY: Record<PromptPreset, string> = {
+  none: '',
+  conservative: `
+Strategy: Pick your strongest suit (most cards or highest cards). Prefer suits with bowers.`,
+  neutral: `
+Strategy: Pick your strongest suit (most cards or highest cards).`,
+  aggressive: `
+Strategy: Pick any suit where you have 2+ cards. Length matters more than strength when you must call.`,
+};
+
+const CARD_PLAY_STRATEGY: Record<PromptPreset, string> = {
+  none: '',
+  conservative: `
+Strategy:
+- Lead your highest card to establish control
+- Save trump for emergencies - don't waste them early
+- Follow partner's lead and support their plays
+- When defending, focus on stopping 3 tricks rather than winning all`,
+  neutral: `
+Strategy (adapt based on your role):
+- MAKERS: Lead trump to draw out opponent trump. Play aggressively to win 3+ tricks.
+- DEFENDERS: Try to euchre makers (stop them from winning 3 tricks). Save trump to trump their winners.
+- Going alone: Even higher stakes - play to maximize/minimize tricks.
+- Support partner's plays. Save high trump for critical moments.`,
+  aggressive: `
+Strategy:
+- Lead trump immediately to establish control and draw out opponent trump
+- Take tricks when you can - don't wait for "perfect" opportunities
+- Force opponents to use their trump early
+- When making, push for all 5 tricks when possible`,
+};
+
+const DISCARD_STRATEGY: Record<PromptPreset, string> = {
+  none: '',
+  conservative: `
+Strategy: Never discard trump. Discard the absolute weakest card (9s, then 10s). Keep all aces and kings. Prefer keeping suited cards for potential runs.`,
+  neutral: `
+Strategy: Never discard trump. Discard weakest off-suit card (9s or 10s). Keep aces and kings.`,
+  aggressive: `
+Strategy: Never discard trump. Discard low off-suit cards quickly. Keep aces, but kings are expendable if you have trump control.`,
+};
 
 /**
  * Format reflections for injection into prompt (used by position-specific prompts)
@@ -49,13 +139,12 @@ export function buildTrumpBidSystemPrompt(
   options: PromptOptions = {},
   player?: Position,
 ): string {
-  const { strategyHints = true, agentReflections } = options;
+  const { promptPresets, agentReflections } = options;
+  const promptPreset = (player && promptPresets?.[player]) || 'neutral';
   const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
 
   if (round === 1) {
-    const strategy = strategyHints
-      ? `\nStrategy: Order up with 3+ ${turnedUpSuit} cards, or 2 strong trump + other high cards. Go alone only with exceptional hand (4+ trump including bowers).`
-      : '';
+    const strategy = TRUMP_BID_ROUND1_STRATEGY[promptPreset](turnedUpSuit);
     return `You are an expert Euchre player. ROUND 1 trump bidding.
 
 The turned-up card is ${turnedUpSuit}. You may:
@@ -66,9 +155,7 @@ ${METACOGNITION_PROMPT}`;
   }
 
   if (isDealerMustCall) {
-    const strategy = strategyHints
-      ? `\nStrategy: Pick your strongest suit (most cards or highest cards).`
-      : '';
+    const strategy = TRUMP_BID_DEALER_MUST_CALL_STRATEGY[promptPreset];
     return `You are an expert Euchre player. ROUND 2 trump bidding.
 
 The ${turnedUpSuit} was turned down. You are the dealer and MUST call trump.
@@ -77,9 +164,7 @@ ${strategy}${reflections}
 ${METACOGNITION_PROMPT}`;
   }
 
-  const strategy = strategyHints
-    ? `\nStrategy: Call with strength in a suit (3+ cards or 2 high cards). Go alone only with exceptional hand.`
-    : '';
+  const strategy = TRUMP_BID_ROUND2_STRATEGY[promptPreset];
   return `You are an expert Euchre player. ROUND 2 trump bidding.
 
 The ${turnedUpSuit} was turned down. You may:
@@ -94,16 +179,10 @@ export function buildCardPlaySystemPrompt(
   options: PromptOptions = {},
   player?: Position,
 ): string {
-  const { strategyHints = true, agentReflections } = options;
+  const { promptPresets, agentReflections } = options;
+  const promptPreset = (player && promptPresets?.[player]) || 'neutral';
   const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
-  const strategy = strategyHints
-    ? `
-Strategy (adapt based on your role):
-- MAKERS: Lead trump to draw out opponent trump. Play aggressively to win 3+ tricks.
-- DEFENDERS: Try to euchre makers (stop them from winning 3 tricks). Save trump to trump their winners.
-- Going alone: Even higher stakes - play to maximize/minimize tricks.
-- Support partner's plays. Save high trump for critical moments.`
-    : '';
+  const strategy = CARD_PLAY_STRATEGY[promptPreset];
   return `You are an expert Euchre player. Select a card to play.
 
 VALID CARDS: ${validCardsList}
@@ -117,11 +196,10 @@ export function buildDiscardSystemPrompt(
   options: PromptOptions = {},
   player?: Position,
 ): string {
-  const { strategyHints = true, agentReflections } = options;
+  const { promptPresets, agentReflections } = options;
+  const promptPreset = (player && promptPresets?.[player]) || 'neutral';
   const reflections = player && agentReflections ? formatReflections(agentReflections[player]) : '';
-  const strategy = strategyHints
-    ? `\nStrategy: Never discard trump. Discard weakest off-suit card (9s or 10s). Keep aces and kings.`
-    : '';
+  const strategy = DISCARD_STRATEGY[promptPreset];
   return `You are the dealer in Euchre. You picked up the trump card and now have 6 cards. Discard one.
 
 Trump: ${trump}

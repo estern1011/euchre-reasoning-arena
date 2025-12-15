@@ -9,6 +9,7 @@
                     :is-thinking="isCurrentPlayer('north') && isStreaming"
                     :is-dealer="dealer === 'north'"
                     :tricks-won="tricksWon?.north ?? 0"
+                    :prompt-preset="promptPresets?.north"
                 />
                 <PlayerHand :cards="playerHands.north" orientation="horizontal" :is-active="isCurrentPlayer('north')" />
             </div>
@@ -21,6 +22,7 @@
                     :is-thinking="isCurrentPlayer('west') && isStreaming"
                     :is-dealer="dealer === 'west'"
                     :tricks-won="tricksWon?.west ?? 0"
+                    :prompt-preset="promptPresets?.west"
                 />
                 <PlayerHand :cards="playerHands.west" orientation="vertical" :is-active="isCurrentPlayer('west')" />
             </div>
@@ -83,6 +85,7 @@
                     :is-thinking="isCurrentPlayer('east') && isStreaming"
                     :is-dealer="dealer === 'east'"
                     :tricks-won="tricksWon?.east ?? 0"
+                    :prompt-preset="promptPresets?.east"
                 />
             </div>
 
@@ -95,6 +98,7 @@
                     :is-thinking="isCurrentPlayer('south') && isStreaming"
                     :is-dealer="dealer === 'south'"
                     :tricks-won="tricksWon?.south ?? 0"
+                    :prompt-preset="promptPresets?.south"
                 />
             </div>
         </div>
@@ -107,6 +111,7 @@ import Card from "~/components/Card.vue";
 import PlayerPlaque from "~/components/PlayerPlaque.vue";
 import PlayerHand from "~/components/PlayerHand.vue";
 import type { Card as CardType, Position } from "~/types/game";
+import type { PromptPreset } from "../../server/services/ai-agent/prompts";
 
 // Fixed board dimensions (design size)
 const BOARD_WIDTH = 900;
@@ -167,6 +172,8 @@ interface TricksWon {
     west: number;
 }
 
+type PromptPresets = Record<Position, PromptPreset>;
+
 interface Props {
     playerHands: PlayerHands;
     playedCards: PlayedCards;
@@ -177,6 +184,7 @@ interface Props {
     goingAlone?: Position | null;
     dealer?: Position | null;
     tricksWon?: TricksWon;
+    promptPresets?: PromptPresets;
 }
 
 const props = defineProps<Props>();

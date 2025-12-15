@@ -21,27 +21,22 @@
                             Loading models...
                         </div>
                         <template v-else>
-                            <div class="model-row">
-                                <label class="model-label">north:</label>
-                                <ModelSelector v-model="gameStore.modelIds.north" :options="modelOptions" />
-                                <span class="comma">,</span>
-                            </div>
-
-                            <div class="model-row">
-                                <label class="model-label">east:</label>
-                                <ModelSelector v-model="gameStore.modelIds.east" :options="modelOptions" />
-                                <span class="comma">,</span>
-                            </div>
-
-                            <div class="model-row">
-                                <label class="model-label">south:</label>
-                                <ModelSelector v-model="gameStore.modelIds.south" :options="modelOptions" />
-                                <span class="comma">,</span>
-                            </div>
-
-                            <div class="model-row">
-                                <label class="model-label">west:</label>
-                                <ModelSelector v-model="gameStore.modelIds.west" :options="modelOptions" />
+                            <div v-for="position in positions" :key="position" class="model-row">
+                                <label class="model-label">{{ position }}:</label>
+                                <ModelSelector v-model="gameStore.modelIds[position]" :options="modelOptions" />
+                                <div class="preset-selector compact">
+                                    <button
+                                        v-for="option in presetOptions"
+                                        :key="option.value"
+                                        type="button"
+                                        class="preset-button"
+                                        :class="{ active: gameStore.promptPresets[position] === option.value }"
+                                        :title="option.hint"
+                                        @click="gameStore.setPromptPreset(position, option.value)"
+                                    >
+                                        {{ option.label }}
+                                    </button>
+                                </div>
                                 <span class="comma">,</span>
                             </div>
                         </template>
@@ -56,34 +51,23 @@
                                 <option :value="10">10</option>
                             </select>
                         </div>
-                        <div class="config-row">
-                            <label class="config-label">strategyHints:</label>
-                            <button
-                                type="button"
-                                class="toggle-button"
-                                :class="{ active: strategyHints }"
-                                @click="strategyHints = !strategyHints"
-                            >
-                                {{ strategyHints ? 'true' : 'false' }}
-                            </button>
-                            <span class="hint-text">{{ strategyHints ? '// guided mode' : '// raw reasoning' }}</span>
-                        </div>
                     </div>
 
                     <div class="closing-brace">}</div>
                 </div>
 
                 <div class="card-footer">
-                    <div class="start-button-shell">
+                    <div class="start-button-shell" :class="{ disabled: isStarting }">
                         <Primitive
                             as="button"
                             type="button"
                             class="start-button"
+                            :disabled="isStarting"
                             @click="startGame"
                             aria-label="Start Game"
                         >
-                            <span class="button-text">startGame()</span>
-                            <span class="button-arrow">→</span>
+                            <span class="button-text">{{ isStarting ? 'initializing...' : 'startGame()' }}</span>
+                            <span v-if="!isStarting" class="button-arrow">→</span>
                         </Primitive>
                     </div>
                 </div>
@@ -96,9 +80,20 @@
 import { ref, onMounted } from 'vue';
 import { Primitive } from "radix-vue";
 import { useGameStore } from '~/stores/game';
+import { useGameApi } from '~/composables/useGameApi';
 import ModelSelector from '~/components/ModelSelector.vue';
+import {
+    type PromptPreset,
+    PROMPT_PRESET_LABELS,
+    PROMPT_PRESET_HINTS,
+} from '../../server/services/ai-agent/prompts';
+import type { Position } from '../../lib/game/types';
 
-const gameStore = useGameStore()
+// All available presets in order
+const PRESET_ORDER: PromptPreset[] = ['none', 'conservative', 'neutral', 'aggressive'];
+
+const gameStore = useGameStore();
+const { initializeGame } = useGameApi();
 
 interface ModelOption {
     value: string;
@@ -107,9 +102,16 @@ interface ModelOption {
 
 const modelOptions = ref<ModelOption[]>([]);
 const loading = ref(true);
-
+const isStarting = ref(false);
 const winningScore = ref(10);
-const strategyHints = ref(true);
+
+const positions: Position[] = ['north', 'east', 'south', 'west'];
+
+const presetOptions = PRESET_ORDER.map((preset) => ({
+    value: preset,
+    label: PROMPT_PRESET_LABELS[preset],
+    hint: PROMPT_PRESET_HINTS[preset],
+}));
 
 // Fetch models from API on mount
 onMounted(async () => {
@@ -133,11 +135,35 @@ onMounted(async () => {
     }
 });
 
-const startGame = () => {
-    // Set game options in the store before navigating
-    gameStore.setWinningScore(winningScore.value);
-    gameStore.setStrategyHints(strategyHints.value);
-    navigateTo("/game");
+const startGame = async () => {
+    if (isStarting.value) return;
+
+    isStarting.value = true;
+    try {
+        // Set winning score in store
+        gameStore.setWinningScore(winningScore.value);
+
+        // Create the game - this sets gameState in the store
+        const result = await initializeGame(
+            gameStore.modelIdsArray,
+            undefined,
+            winningScore.value
+        );
+
+        // Start recording the first hand
+        const gs = result.gameState;
+        gameStore.startNewHandRecord(
+            gs.handNumber,
+            gs.dealer,
+            gs.trumpSelection?.turnedUpCard || null
+        );
+
+        // Navigate to game page
+        navigateTo("/game");
+    } catch (error) {
+        console.error('Failed to start game:', error);
+        isStarting.value = false;
+    }
 };
 </script>
 
@@ -215,9 +241,9 @@ const startGame = () => {
 }
 
 .model-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
     padding: 2rem 0 1.5rem;
     padding-left: 1.5rem;
 }
@@ -233,12 +259,12 @@ const startGame = () => {
 .model-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .model-row :deep(.model-select-trigger) {
-    flex: 1;
-    min-width: 0;
+    width: 240px;
+    flex-shrink: 0;
 }
 
 
@@ -248,6 +274,7 @@ const startGame = () => {
     letter-spacing: 0.025em;
     color: var(--color-accent);
     white-space: nowrap;
+    width: 60px;
     flex-shrink: 0;
 }
 
@@ -317,34 +344,60 @@ const startGame = () => {
     color: var(--color-text);
 }
 
-.toggle-button {
-    padding: 0.5rem 1rem;
+.preset-selector {
+    display: flex;
+    gap: 0;
+}
+
+.preset-selector.compact {
+    flex-shrink: 0;
+}
+
+.preset-button {
+    padding: 0.5rem 0.75rem;
     background: rgba(0, 0, 0, 0.4);
     border: 2px solid rgba(107, 114, 128, 0.3);
-    border-radius: 0;
-    color: #f87171;
+    border-right-width: 1px;
+    color: var(--color-text-muted);
     font-family: "Courier New", monospace;
-    font-size: 0.9375rem;
-    font-weight: 600;
+    font-size: 0.8125rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 80px;
+    min-width: 60px;
 }
 
-.toggle-button:hover {
+.preset-selector.compact .preset-button {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.6875rem;
+    min-width: unset;
+    border-width: 1px;
+}
+
+.preset-button:first-child {
+    border-radius: 0;
+}
+
+.preset-button:last-child {
+    border-right-width: 2px;
+    border-radius: 0;
+}
+
+.preset-button:hover {
     border-color: rgba(56, 189, 186, 0.5);
     background: rgba(56, 189, 186, 0.05);
+    color: var(--color-text);
 }
 
-.toggle-button.active {
-    color: #a3e635;
-    border-color: rgba(163, 230, 53, 0.4);
-    background: rgba(163, 230, 53, 0.1);
+.preset-button.active {
+    color: var(--color-accent);
+    border-color: rgba(56, 189, 186, 0.5);
+    background: rgba(56, 189, 186, 0.15);
 }
 
-.toggle-button.active:hover {
-    border-color: rgba(163, 230, 53, 0.6);
-    background: rgba(163, 230, 53, 0.15);
+.preset-button.active:hover {
+    border-color: rgba(56, 189, 186, 0.7);
+    background: rgba(56, 189, 186, 0.2);
 }
 
 .hint-text {
@@ -447,6 +500,18 @@ const startGame = () => {
     box-shadow:
         12px 12px 0px rgba(56, 189, 186, 0.5),
         0 0 0 4px rgba(56, 189, 186, 0.2);
+}
+
+.start-button-shell.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.15);
+}
+
+.start-button-shell.disabled:hover {
+    transform: none;
+    box-shadow: 4px 4px 0px rgba(56, 189, 186, 0.15);
 }
 
 :global(.start-button) {
