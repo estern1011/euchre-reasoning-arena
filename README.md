@@ -18,11 +18,15 @@ Models report their confidence (0-100%) for every decision they make. Models can
 
 ---
 
-## Demo Video
+## Demo Videos
 
-Watch a complete hand being played, from setup through analysis:
+**First Hand:** Setup, gameplay, and analysis
 
-[![Demo Video](https://vumbnail.com/1146463794.jpg)](https://vimeo.com/1146463794)
+[![First Hand Demo](https://vumbnail.com/1146463794.jpg)](https://vimeo.com/1146463794)
+
+**End of Game:** Final hands and winner determination
+
+[![End of Game Demo](https://vumbnail.com/1146471201.jpg)](https://vimeo.com/1146471201)
 
 ---
 
@@ -130,6 +134,11 @@ Watch AI models reason in real-time with confidence tracking:
 
 ![Gameplay](screenshots/gameplay.png)
 
+### Tool Usage
+Models can use lifeline tools when uncertain:
+
+![Tool Use](screenshots/tool_use.png)
+
 ### Prompt Inspection
 See exactly what each model receives:
 
@@ -140,10 +149,17 @@ Review all decisions with full reasoning chains:
 
 ![History](screenshots/history_modal.png)
 
+### End of Game
+Final tricks and game conclusion:
+
+![End Game 1](screenshots/end_game_one.png)
+
+![End Game 2](screenshots/end_game_two.png)
+
 ### Post-Game Analysis
 Calibration scores and AI-generated insights:
 
-![Analysis](screenshots/analysis_page.png)
+![Analysis](screenshots/end_game_analysis_page.png)
 
 ---
 
