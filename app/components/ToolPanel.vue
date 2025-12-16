@@ -2,6 +2,7 @@
     <div class="tool-panel" :class="{ 'has-activity': hasToolActivity }">
         <PanelHeader title="tool_usage">
             <template #actions>
+                <button class="info-btn" @click="showToolInfo = true" title="What are lifelines?">?</button>
                 <span v-if="hasToolActivity" class="active-indicator"></span>
             </template>
         </PanelHeader>
@@ -133,12 +134,15 @@
         <div class="idle-state" v-if="!hasToolActivity && !showAvailableTools">
             <span class="idle-text">No active tools</span>
         </div>
+
+        <ToolInfoModal :is-open="showToolInfo" @close="showToolInfo = false" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import PanelHeader from '~/components/base/PanelHeader.vue';
+import ToolInfoModal from '~/components/ToolInfoModal.vue';
 import { useGameStore } from '~/stores/game';
 import type { Position } from '../../lib/game/types';
 
@@ -153,6 +157,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const showPhaseIndicator = props.showPhaseIndicator;
+const showToolInfo = ref(false);
 
 const gameStore = useGameStore();
 
@@ -310,6 +315,27 @@ const formatFiftyFiftyResult = (result: unknown): string[] => {
     border-radius: 8px;
     overflow: hidden;
     transition: border-color 0.3s ease;
+}
+
+.info-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(56, 189, 186, 0.2);
+    border: 1px solid rgba(56, 189, 186, 0.4);
+    color: var(--color-accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.info-btn:hover {
+    background: rgba(56, 189, 186, 0.3);
+    border-color: rgba(56, 189, 186, 0.6);
 }
 
 .tool-panel.has-activity {

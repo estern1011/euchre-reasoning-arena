@@ -22,6 +22,7 @@
                         </div>
                         <template v-else>
                             <div v-for="position in positions" :key="position" class="model-row">
+                                <span class="team-badge" :class="getTeamClass(position)">{{ getTeamLabel(position) }}</span>
                                 <label class="model-label">{{ position }}:</label>
                                 <ModelSelector v-model="gameStore.modelIds[position]" :options="modelOptions" />
                                 <span class="strategy-label">strategy:</span>
@@ -107,6 +108,14 @@ const isStarting = ref(false);
 const winningScore = ref(10);
 
 const positions: Position[] = ['north', 'east', 'south', 'west'];
+
+const getTeamLabel = (position: Position): string => {
+    return position === 'north' || position === 'south' ? 'NS' : 'EW';
+};
+
+const getTeamClass = (position: Position): string => {
+    return position === 'north' || position === 'south' ? 'team-ns' : 'team-ew';
+};
 
 const presetOptions = PRESET_ORDER.map((preset) => ({
     value: preset,
@@ -268,6 +277,30 @@ const startGame = async () => {
     flex-shrink: 0;
 }
 
+
+.team-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    min-width: 24px;
+    text-align: center;
+}
+
+.team-badge.team-ns {
+    background: rgba(163, 230, 53, 0.15);
+    border: 1px solid rgba(163, 230, 53, 0.4);
+    color: #a3e635;
+}
+
+.team-badge.team-ew {
+    background: rgba(96, 165, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    color: #60a5fa;
+}
 
 .model-label {
     font-size: 1rem;
